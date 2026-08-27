@@ -1,0 +1,24 @@
+---
+import CheckoutMock from "./mocks/CheckoutMock.astro";
+import PhoneTapMock from "./mocks/PhoneTapMock.astro";
+import BackofficeMock from "./mocks/BackofficeMock.astro";
+import PayrollMock from "./mocks/PayrollMock.astro";
+
+interface Props {
+  id: string;
+}
+
+const { id } = Astro.props;
+---
+
+{
+  id === "alnetinum" ? (
+    <CheckoutMock />
+  ) : id === "stadnum" ? (
+    <PhoneTapMock />
+  ) : id === "hald" ? (
+    <BackofficeMock />
+  ) : (
+    <PayrollMock />
+  )
+}

@@ -1,5 +1,7 @@
 ---
 import { fo, type products } from "../content/fo";
+import ProductGraphic from "./ProductGraphic.astro";
+import PayLinkMock from "./mocks/PayLinkMock.astro";
 
 interface Props {
   product: (typeof products)[number];
@@ -10,19 +12,24 @@ const { product } = Astro.props;
 
 <section class="relative overflow-hidden">
   <div class="pointer-events-none absolute inset-y-0 left-0 hidden w-20 bg-green sm:block md:w-28 slab-thin"></div>
-  <div class="relative mx-auto max-w-6xl px-5 py-16 sm:px-8 sm:py-24 sm:pl-32 md:pl-40">
-    <p class="text-xs font-semibold uppercase tracking-[0.22em] text-green">{product.eyebrow}</p>
-    <h1 class="mt-4 max-w-3xl text-4xl font-semibold tracking-tight text-white sm:text-6xl">
-      {product.title}
-    </h1>
-    {
-      "comingSoon" in product && product.comingSoon && (
-        <p class="mt-5 inline-flex rounded-full bg-green px-3 py-1 text-xs font-semibold uppercase tracking-wider text-navy">
-          {fo.comingSoon}
-        </p>
-      )
-    }
-    <p class="mt-6 max-w-2xl text-lg leading-relaxed text-white/80">{product.lead}</p>
+  <div class="relative mx-auto grid max-w-6xl items-center gap-12 px-5 py-16 sm:px-8 sm:py-24 sm:pl-32 md:grid-cols-[1.1fr_0.9fr] md:pl-40">
+    <div>
+      <p class="text-xs font-semibold uppercase tracking-[0.22em] text-green">{product.eyebrow}</p>
+      <h1 class="mt-4 max-w-3xl text-4xl font-semibold tracking-tight text-white sm:text-6xl">
+        {product.title}
+      </h1>
+      {
+        "comingSoon" in product && product.comingSoon && (
+          <p class="mt-5 inline-flex rounded-full bg-green px-3 py-1 text-xs font-semibold uppercase tracking-wider text-navy">
+            {fo.comingSoon}
+          </p>
+        )
+      }
+      <p class="mt-6 max-w-2xl text-lg leading-relaxed text-white/80">{product.lead}</p>
+    </div>
+    <div class="md:justify-self-end">
+      <ProductGraphic id={product.id} />
+    </div>
   </div>
 </section>
 
@@ -41,6 +48,21 @@ const { product } = Astro.props;
     <span class="font-semibold text-white">{fo.audienceLabel}.</span>
     {product.audience}
   </p>
+  {
+    product.id === "alnetinum" && (
+      <div class="mt-12 grid items-center gap-8 rounded-3xl border border-white/10 bg-white/[0.03] p-6 md:grid-cols-2 md:p-10">
+        <div>
+          <h2 class="text-2xl font-semibold text-white">Einki nethandil? Send eitt leinki.</h2>
+          <p class="mt-3 text-sm leading-relaxed text-white/70">
+            Faktura, tillaging ella ein staka sølu. Kundin fær eitt leinki, rindar, og tú sært tað í backoffice.
+          </p>
+        </div>
+        <div class="justify-self-center md:justify-self-end">
+          <PayLinkMock />
+        </div>
+      </div>
+    )
+  }
 </section>
 
 <section class="mx-auto max-w-6xl px-5 pb-20 sm:px-8">
