@@ -1,0 +1,18 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import { fo } from "../content/fo";
+---
+
+<BaseLayout title={`Ikki funnið — betal`} description={fo.notFound.lead}>
+  <section class="mx-auto flex min-h-[60dvh] max-w-6xl flex-col justify-center px-5 py-24 sm:px-8">
+    <p class="text-xs font-semibold uppercase tracking-[0.22em] text-green">404</p>
+    <h1 class="mt-4 max-w-xl text-4xl font-semibold tracking-tight sm:text-6xl">{fo.notFound.title}</h1>
+    <p class="mt-6 max-w-md text-lg text-white/70">{fo.notFound.lead}</p>
+    <a
+      href="/"
+      class="mt-8 inline-flex w-fit rounded-full bg-green px-5 py-3 text-sm font-semibold text-navy"
+    >
+      {fo.notFound.home}
+    </a>
+  </section>
+</BaseLayout>

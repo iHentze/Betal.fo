@@ -1,0 +1,24 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import ContactForm from "../components/ContactForm.astro";
+import { fo } from "../content/fo";
+import { site } from "../content/site";
+---
+
+<BaseLayout title={`Samband — betal`} description={fo.contact.lead}>
+  <section class="relative overflow-hidden">
+    <div class="pointer-events-none absolute inset-y-0 left-0 hidden w-20 bg-green sm:block md:w-28 slab-thin"></div>
+    <div class="relative mx-auto max-w-6xl px-5 py-16 sm:px-8 sm:py-24 sm:pl-32 md:pl-40">
+      <p class="text-xs font-semibold uppercase tracking-[0.22em] text-green">{fo.contact.eyebrow}</p>
+      <h1 class="mt-4 max-w-2xl text-4xl font-semibold tracking-tight sm:text-6xl">{fo.contact.title}</h1>
+      <p class="mt-6 max-w-xl text-lg leading-relaxed text-white/75">{fo.contact.lead}</p>
+      <a href={`mailto:${site.email}`} class="mt-4 inline-block text-sm text-green hover:underline">{site.email}</a>
+    </div>
+  </section>
+
+  <section class="mx-auto max-w-6xl px-5 pb-24 sm:px-8 sm:pl-32 md:pl-40">
+    <div class="max-w-2xl">
+      <ContactForm />
+    </div>
+  </section>
+</BaseLayout>
