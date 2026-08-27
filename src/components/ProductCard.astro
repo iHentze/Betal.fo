@@ -1,5 +1,6 @@
 ---
 import { fo, type products } from "../content/fo";
+import { productIcons, type ProductIconId } from "../content/brand";
 
 interface Props {
   product: (typeof products)[number];
@@ -8,6 +9,7 @@ interface Props {
 
 const { product, index } = Astro.props;
 const n = String(index + 1).padStart(2, "0");
+const icon = productIcons[product.id as ProductIconId];
 ---
 
 <a
@@ -17,13 +19,16 @@ const n = String(index + 1).padStart(2, "0");
   <div class="absolute inset-y-0 left-0 w-1.5 bg-green opacity-0 transition group-hover:opacity-100"></div>
   <div class="flex items-start justify-between gap-4">
     <span class="text-xs font-semibold tracking-[0.2em] text-mist">{n}</span>
-    {
-      "comingSoon" in product && product.comingSoon && (
-        <span class="rounded-full border border-green/40 px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wider text-green">
-          {fo.comingSoon}
-        </span>
-      )
-    }
+    <div class="flex items-center gap-3">
+      {
+        "comingSoon" in product && product.comingSoon && (
+          <span class="rounded-full border border-green/40 px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wider text-green">
+            {fo.comingSoon}
+          </span>
+        )
+      }
+      {icon && <img src={icon.src} alt="" class="h-12 w-auto" />}
+    </div>
   </div>
   <div>
     <h3 class="text-2xl font-semibold tracking-tight text-white">{product.eyebrow}</h3>

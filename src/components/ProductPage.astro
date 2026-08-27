@@ -1,13 +1,13 @@
 ---
 import { fo, type products } from "../content/fo";
 import ProductGraphic from "./ProductGraphic.astro";
-import PayLinkMock from "./mocks/PayLinkMock.astro";
 
 interface Props {
   product: (typeof products)[number];
 }
 
 const { product } = Astro.props;
+const extra = "extra" in product ? product.extra : undefined;
 ---
 
 <section class="relative overflow-hidden">
@@ -49,17 +49,13 @@ const { product } = Astro.props;
     {product.audience}
   </p>
   {
-    product.id === "alnetinum" && (
-      <div class="mt-12 grid items-center gap-8 rounded-3xl border border-white/10 bg-white/[0.03] p-6 md:grid-cols-2 md:p-10">
-        <div>
-          <h2 class="text-2xl font-semibold text-white">Einki nethandil? Send eitt leinki.</h2>
-          <p class="mt-3 text-sm leading-relaxed text-white/70">
-            Faktura, tillaging ella ein staka sølu. Kundin fær eitt leinki, rindar, og tú sært tað í backoffice.
-          </p>
+    extra && (
+      <div class="mt-12 grid items-center overflow-hidden rounded-3xl border border-white/10 bg-white/[0.03] md:grid-cols-2">
+        <div class="p-6 md:p-10">
+          <h2 class="text-2xl font-semibold text-white">{extra.title}</h2>
+          <p class="mt-3 text-sm leading-relaxed text-white/70">{extra.body}</p>
         </div>
-        <div class="justify-self-center md:justify-self-end">
-          <PayLinkMock />
-        </div>
+        <img src={extra.photo} alt={extra.photoAlt} class="h-full min-h-[16rem] w-full object-cover" />
       </div>
     )
   }

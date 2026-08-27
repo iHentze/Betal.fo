@@ -1,24 +1,12 @@
 ---
-import CheckoutMock from "./mocks/CheckoutMock.astro";
-import PhoneTapMock from "./mocks/PhoneTapMock.astro";
-import BackofficeMock from "./mocks/BackofficeMock.astro";
-import PayrollMock from "./mocks/PayrollMock.astro";
+import { productIcons, type ProductIconId } from "../content/brand";
 
 interface Props {
   id: string;
 }
 
 const { id } = Astro.props;
+const asset = productIcons[(id as ProductIconId)] ?? productIcons.lon;
 ---
 
-{
-  id === "alnetinum" ? (
-    <CheckoutMock />
-  ) : id === "stadnum" ? (
-    <PhoneTapMock />
-  ) : id === "hald" ? (
-    <BackofficeMock />
-  ) : (
-    <PayrollMock />
-  )
-}
+<img src={asset.src} alt={asset.alt} class="mx-auto h-48 w-auto md:h-56" />
