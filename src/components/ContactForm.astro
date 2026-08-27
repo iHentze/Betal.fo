@@ -1,8 +1,6 @@
 ---
 import { fo, products } from "../content/fo";
 import { site } from "../content/site";
-
-const selected = Astro.url.searchParams.get("t") ?? "";
 ---
 
 <form class="grid gap-5" data-contact-form>
@@ -56,7 +54,7 @@ const selected = Astro.url.searchParams.get("t") ?? "";
       <option value="">{fo.contact.productAny}</option>
       {
         products.map((product) => (
-          <option value={product.eyebrow} selected={selected === product.id}>
+          <option value={product.eyebrow} data-id={product.id}>
             {product.eyebrow}
           </option>
         ))
@@ -91,6 +89,12 @@ const selected = Astro.url.searchParams.get("t") ?? "";
   const form = document.querySelector("[data-contact-form]");
   const error = document.querySelector("[data-form-error]");
   if (form instanceof HTMLFormElement) {
+    const select = form.querySelector("select[name=product]");
+    const requested = new URLSearchParams(window.location.search).get("t");
+    if (requested && select instanceof HTMLSelectElement) {
+      const option = select.querySelector(`[data-id="${requested}"]`);
+      if (option instanceof HTMLOptionElement) option.selected = true;
+    }
     form.addEventListener("submit", (event) => {
       event.preventDefault();
       const data = new FormData(form);
