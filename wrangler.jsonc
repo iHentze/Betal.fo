@@ -1,0 +1,9 @@
+{
+  "name": "betal-fo",
+  "compatibility_date": "2026-08-27",
+  "assets": {
+    "directory": "./dist",
+    "not_found_handling": "404-page",
+    "html_handling": "auto-trailing-slash"
+  }
+}

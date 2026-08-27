@@ -1,0 +1,129 @@
+---
+import { fo, products } from "../content/fo";
+import { site } from "../content/site";
+
+const selected = Astro.url.searchParams.get("t") ?? "";
+---
+
+<form class="grid gap-5" data-contact-form>
+  <div class="grid gap-5 sm:grid-cols-2">
+    <label class="grid gap-2 text-sm font-medium text-white">
+      {fo.contact.name}
+      <input
+        name="name"
+        type="text"
+        autocomplete="name"
+        required
+        class="rounded-xl border border-white/15 bg-white/5 px-4 py-3 text-base font-normal text-white outline-none ring-green placeholder:text-white/30 focus:border-green focus:ring-2"
+      />
+    </label>
+    <label class="grid gap-2 text-sm font-medium text-white">
+      {fo.contact.company}
+      <input
+        name="company"
+        type="text"
+        autocomplete="organization"
+        class="rounded-xl border border-white/15 bg-white/5 px-4 py-3 text-base font-normal text-white outline-none ring-green placeholder:text-white/30 focus:border-green focus:ring-2"
+      />
+    </label>
+    <label class="grid gap-2 text-sm font-medium text-white">
+      {fo.contact.phone}
+      <input
+        name="phone"
+        type="tel"
+        autocomplete="tel"
+        class="rounded-xl border border-white/15 bg-white/5 px-4 py-3 text-base font-normal text-white outline-none ring-green placeholder:text-white/30 focus:border-green focus:ring-2"
+      />
+    </label>
+    <label class="grid gap-2 text-sm font-medium text-white">
+      {fo.contact.email}
+      <input
+        name="email"
+        type="email"
+        autocomplete="email"
+        required
+        class="rounded-xl border border-white/15 bg-white/5 px-4 py-3 text-base font-normal text-white outline-none ring-green placeholder:text-white/30 focus:border-green focus:ring-2"
+      />
+    </label>
+  </div>
+
+  <label class="grid gap-2 text-sm font-medium text-white">
+    {fo.contact.product}
+    <select
+      name="product"
+      class="rounded-xl border border-white/15 bg-navy px-4 py-3 text-base font-normal text-white outline-none ring-green focus:border-green focus:ring-2"
+    >
+      <option value="">{fo.contact.productAny}</option>
+      {
+        products.map((product) => (
+          <option value={product.eyebrow} selected={selected === product.id}>
+            {product.eyebrow}
+          </option>
+        ))
+      }
+    </select>
+  </label>
+
+  <label class="grid gap-2 text-sm font-medium text-white">
+    {fo.contact.message}
+    <textarea
+      name="message"
+      rows="6"
+      required
+      class="resize-y rounded-xl border border-white/15 bg-white/5 px-4 py-3 text-base font-normal text-white outline-none ring-green placeholder:text-white/30 focus:border-green focus:ring-2"
+    ></textarea>
+  </label>
+
+  <p data-form-error class="hidden text-sm text-white" role="alert"></p>
+
+  <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
+    <button
+      type="submit"
+      class="rounded-full bg-green px-6 py-3 text-sm font-semibold text-navy transition hover:brightness-110"
+    >
+      {fo.contact.submit}
+    </button>
+    <p class="text-sm text-mist">{fo.contact.mailtoHint}</p>
+  </div>
+</form>
+
+<script define:vars={{ emailTo: site.email, requiredText: fo.contact.required }}>
+  const form = document.querySelector("[data-contact-form]");
+  const error = document.querySelector("[data-form-error]");
+  if (form instanceof HTMLFormElement) {
+    form.addEventListener("submit", (event) => {
+      event.preventDefault();
+      const data = new FormData(form);
+      const name = String(data.get("name") ?? "").trim();
+      const company = String(data.get("company") ?? "").trim();
+      const phone = String(data.get("phone") ?? "").trim();
+      const email = String(data.get("email") ?? "").trim();
+      const product = String(data.get("product") ?? "").trim();
+      const message = String(data.get("message") ?? "").trim();
+
+      if (!name || !email || !message) {
+        if (error instanceof HTMLElement) {
+          error.textContent = requiredText;
+          error.classList.remove("hidden");
+        }
+        return;
+      }
+
+      const subject = product ? `Betal: ${product}` : "Betal: samband";
+      const body = [
+        `Navn: ${name}`,
+        company && `Fyritøka: ${company}`,
+        phone && `Telefon: ${phone}`,
+        `Teldupostur: ${email}`,
+        product && `Tænasta: ${product}`,
+        "",
+        message,
+      ]
+        .filter((line) => line !== false)
+        .join("\n");
+
+      const url = `mailto:${emailTo}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+      window.location.href = url;
+    });
+  }
+</script>

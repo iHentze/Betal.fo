@@ -1,0 +1,18 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import { fo } from "../content/fo";
+---
+
+<BaseLayout title={`Privatlív — betal`} description={fo.privacy.lead}>
+  <section class="relative overflow-hidden">
+    <div class="pointer-events-none absolute inset-y-0 left-0 hidden w-20 bg-green sm:block md:w-28 slab-thin"></div>
+    <div class="relative mx-auto max-w-6xl px-5 py-16 sm:px-8 sm:py-24 sm:pl-32 md:pl-40">
+      <p class="text-xs font-semibold uppercase tracking-[0.22em] text-green">{fo.privacy.eyebrow}</p>
+      <h1 class="mt-4 max-w-2xl text-4xl font-semibold tracking-tight sm:text-6xl">{fo.privacy.title}</h1>
+      <p class="mt-6 max-w-xl text-lg leading-relaxed text-white/75">{fo.privacy.lead}</p>
+      <div class="mt-10 max-w-2xl space-y-5 text-base leading-relaxed text-white/70">
+        {fo.privacy.body.map((paragraph) => <p>{paragraph}</p>)}
+      </div>
+    </div>
+  </section>
+</BaseLayout>

@@ -1,11 +1,25 @@
-<div align="center">
+# betal.fo
 
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
+Faroese marketing site for Betal. Static Astro build, hosted as [Cloudflare Workers Static Assets](https://developers.cloudflare.com/workers/static-assets/).
 
-  <h1>Built with AI Studio</h2>
+## Develop
 
-  <p>The fastest path from prompt to production with Gemini.</p>
+```bash
+npm install
+npm run dev
+```
 
-  <a href="https://aistudio.google.com/apps">Start building</a>
+## Build and deploy
 
-</div>
+```bash
+npm run build
+npx wrangler deploy
+```
+
+Or in the Cloudflare dashboard: Workers → create → connect this GitHub repo.
+
+- Build command: `npm run build`
+- Output directory: `dist`
+- Wrangler config: `wrangler.jsonc` (no Pages project, no Node adapter)
+
+Copy lives in `src/content/fo.ts`. Contact email is in `src/content/site.ts`.
