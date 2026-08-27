@@ -1,0 +1,115 @@
+---
+// Interactive ePay-style Checkout Window simulator built with Betal brand styling
+---
+
+<div class="relative w-full max-w-sm sm:max-w-md mx-auto rounded-3xl border border-white/15 bg-[#0D0033]/90 shadow-2xl backdrop-blur-2xl overflow-hidden text-white font-sans transition-all duration-300 hover:border-green/50 hover:shadow-[0_0_40px_-10px_rgba(122,217,102,0.25)]">
+  <!-- Glowing top accent line -->
+  <div class="h-1.5 w-full bg-gradient-to-r from-green/30 via-green to-green/30"></div>
+
+  <!-- Header of checkout -->
+  <div class="px-6 py-5 border-b border-white/10 flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <div class="h-8 w-8 rounded-full bg-green/10 border border-green/30 flex items-center justify-center text-green">
+        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+        </svg>
+      </div>
+      <div>
+        <div class="flex items-center gap-2">
+          <span class="text-xs font-semibold uppercase tracking-wider text-green">Trygt gjaldsvindeyga</span>
+        </div>
+        <p class="text-xs text-white/50">ePay • Betal Checkout</p>
+      </div>
+    </div>
+    <div class="text-right">
+      <span class="text-xs text-white/40 block">Upphædd</span>
+      <span class="text-base font-bold text-white tracking-tight">499,00 DKK</span>
+    </div>
+  </div>
+
+  <!-- Quick Wallet Pay Buttons (ePay style) -->
+  <div class="p-6 space-y-4">
+    <div class="space-y-2">
+      <div class="grid grid-cols-2 gap-2.5">
+        <button type="button" class="group relative flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-white text-black font-semibold text-xs tracking-tight transition hover:bg-white/90 active:scale-[0.98]">
+          <svg class="h-4 w-auto fill-current" viewBox="0 0 170 170">
+            <path d="M150.37 130.25c-2.45 5.66-5.35 10.87-8.71 15.66-4.58 6.53-8.33 11.05-11.22 13.56-4.48 4.12-9.28 6.23-14.42 6.35-3.69 0-8.14-1.05-13.32-3.18-5.19-2.12-9.97-3.17-14.34-3.17-4.58 0-9.49 1.05-14.75 3.17-5.26 2.13-9.5 3.24-12.74 3.35-4.35.13-9.16-1.9-14.42-6.08-3.69-3.04-7.69-7.86-12-14.46-6.09-9.35-10.86-19.9-14.32-31.65-3.46-11.75-5.19-22.85-5.19-33.3 0-13.48 3.51-24.66 10.53-33.53 7.02-8.87 15.83-13.39 26.43-13.56 5.13.12 10.56 1.44 16.3 3.97 5.74 2.53 9.4 3.86 10.98 3.97 1.35-.11 5.19-1.49 11.53-4.13 6.34-2.64 11.95-3.85 16.84-3.63 12.18.98 21.68 5.68 28.5 14.1-10.76 6.53-16.03 15.44-15.82 26.74.22 8.91 3.58 16.42 10.09 22.52 6.51 6.1 14.19 9.68 23.04 10.77-2.39 7.18-5.33 14.46-8.81 21.84zM119.22 33.74c0-7.39 2.61-14.13 7.84-20.21 5.23-6.09 11.85-10.22 19.86-12.4 1.09 6.85.05 13.59-3.12 20.21-3.17 6.63-8.21 11.74-15.12 15.33-.87-.87-1.96-1.52-3.26-1.96-3.8-1.3-6.2-1.96-7.2-1.96z"/>
+          </svg>
+          <span>Apple Pay</span>
+        </button>
+        <button type="button" class="group relative flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-white/10 border border-white/15 text-white font-semibold text-xs tracking-tight transition hover:bg-white/15 active:scale-[0.98]">
+          <span class="font-bold">G</span>
+          <span>Pay</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Divider -->
+    <div class="relative flex py-1 items-center">
+      <div class="flex-grow border-t border-white/10"></div>
+      <span class="flex-shrink mx-3 text-[11px] font-medium uppercase tracking-wider text-white/40">ella við korti</span>
+      <div class="flex-grow border-t border-white/10"></div>
+    </div>
+
+    <!-- Card Fields Preview -->
+    <div class="space-y-3">
+      <div>
+        <label class="block text-[11px] font-medium text-white/60 mb-1.5">Kortnummar</label>
+        <div class="relative flex items-center">
+          <input
+            type="text"
+            readonly
+            value="4571 •••• •••• 8820"
+            class="w-full bg-white/5 border border-white/10 rounded-xl py-2.5 pl-3.5 pr-20 text-xs font-mono text-white tracking-wide focus:outline-none"
+          />
+          <div class="absolute right-3 flex items-center gap-1.5">
+            <span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-green/20 text-green border border-green/30">VISA</span>
+            <span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-white/10 text-white/70">MC</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-[11px] font-medium text-white/60 mb-1.5">Gildugt til</label>
+          <input
+            type="text"
+            readonly
+            value="08 / 28"
+            class="w-full bg-white/5 border border-white/10 rounded-xl py-2.5 px-3.5 text-xs font-mono text-white tracking-wide focus:outline-none"
+          />
+        </div>
+        <div>
+          <label class="block text-[11px] font-medium text-white/60 mb-1.5">CVC / CVV</label>
+          <input
+            type="password"
+            readonly
+            value="•••"
+            class="w-full bg-white/5 border border-white/10 rounded-xl py-2.5 px-3.5 text-xs font-mono text-white tracking-wide focus:outline-none"
+          />
+        </div>
+      </div>
+    </div>
+
+    <!-- Action Button -->
+    <div class="pt-2">
+      <div class="w-full py-3.5 rounded-xl bg-green text-navy font-semibold text-xs tracking-wide text-center flex items-center justify-center gap-2 shadow-lg shadow-green/20">
+        <span>Rinda 499,00 DKK</span>
+        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
+        </svg>
+      </div>
+    </div>
+
+    <!-- Trust Badges Footer -->
+    <div class="pt-2 flex items-center justify-between text-[10px] text-white/40">
+      <span class="flex items-center gap-1">
+        <svg class="w-3 h-3 text-green" fill="currentColor" viewBox="0 0 20 20">
+          <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+        </svg>
+        3D Secure 2.0 & SCA
+      </span>
+      <span>PCI-DSS Level 1</span>
+    </div>
+  </div>
+</div>

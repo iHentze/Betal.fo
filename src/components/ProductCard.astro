@@ -14,28 +14,41 @@ const icon = productIcons[product.id as ProductIconId];
 
 <a
   href={product.href}
-  class="group relative flex min-h-[220px] flex-col justify-between overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03] p-6 transition hover:border-green/60 hover:bg-white/[0.06] sm:p-8"
+  class="group relative flex min-h-[260px] flex-col justify-between overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-b from-white/[0.05] to-white/[0.01] p-7 transition-all duration-300 hover:border-green/50 hover:bg-white/[0.07] hover:shadow-[0_10px_30px_-10px_rgba(122,217,102,0.15)] hover:-translate-y-1 sm:p-8"
 >
-  <div class="absolute inset-y-0 left-0 w-1.5 bg-green opacity-0 transition group-hover:opacity-100"></div>
+  <!-- Subtle gradient highlight line on top hover -->
+  <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-green to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100"></div>
+
   <div class="flex items-start justify-between gap-4">
-    <span class="text-xs font-semibold tracking-[0.2em] text-mist">{n}</span>
+    <span class="text-xs font-mono font-semibold tracking-[0.2em] text-mist/70">{n}</span>
     <div class="flex items-center gap-3">
       {
         "comingSoon" in product && product.comingSoon && (
-          <span class="rounded-full border border-green/40 px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wider text-green">
+          <span class="rounded-full border border-green/40 bg-green/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-green shadow-[0_0_12px_rgba(122,217,102,0.2)]">
             {fo.comingSoon}
           </span>
         )
       }
-      {icon && <img src={icon.src} alt="" class="h-12 w-auto" />}
+      {icon && (
+        <div class="h-14 w-14 rounded-2xl bg-white/[0.03] border border-white/10 p-2 flex items-center justify-center transition-transform duration-300 group-hover:scale-110 group-hover:border-green/30">
+          <img src={icon.src} alt="" class="h-10 w-auto object-contain" />
+        </div>
+      )}
     </div>
   </div>
-  <div>
-    <h3 class="text-2xl font-semibold tracking-tight text-white">{product.eyebrow}</h3>
-    <p class="mt-2 max-w-sm text-sm leading-relaxed text-white/70">{product.card}</p>
-    <span class="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-green">
-      Les meira
-      <span aria-hidden="true" class="transition group-hover:translate-x-1">→</span>
-    </span>
+
+  <div class="mt-6">
+    <h3 class="text-2xl font-bold tracking-tight text-white group-hover:text-green transition-colors duration-200">
+      {product.eyebrow}
+    </h3>
+    <p class="mt-2 text-sm leading-relaxed text-white/70">
+      {product.card}
+    </p>
+    <div class="mt-6 flex items-center gap-2 text-sm font-semibold text-green">
+      <span>Kanna loysn</span>
+      <svg class="h-4 w-4 transition-transform duration-200 group-hover:translate-x-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
+      </svg>
+    </div>
   </div>
 </a>

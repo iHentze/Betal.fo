@@ -2,37 +2,85 @@
 import BaseLayout from "../layouts/BaseLayout.astro";
 import ProductCard from "../components/ProductCard.astro";
 import MethodsRow from "../components/MethodsRow.astro";
+import CheckoutSimulator from "../components/CheckoutSimulator.astro";
+import BackofficeSimulator from "../components/BackofficeSimulator.astro";
 import { fo, products } from "../content/fo";
 ---
 
 <BaseLayout>
-  <section class="relative min-h-[calc(100dvh-4.25rem)] overflow-hidden">
-    <div class="absolute inset-0 md:inset-y-0 md:left-auto md:right-0 md:w-[58%]">
+  <!-- Hero Section with high-end FinTech layout and brand tote photo -->
+  <section class="relative min-h-[calc(100dvh-4.25rem)] overflow-hidden flex items-center">
+    <!-- Background glowing ambient lights -->
+    <div class="pointer-events-none absolute -top-40 -left-40 w-96 h-96 rounded-full bg-green/10 blur-[120px]"></div>
+    <div class="pointer-events-none absolute top-1/2 -right-40 w-96 h-96 rounded-full bg-green/5 blur-[140px]"></div>
+
+    <!-- Background photo with stylish overlay -->
+    <div class="absolute inset-0 md:inset-y-0 md:left-auto md:right-0 md:w-[54%]">
       <img
         src="/brand/photo-tote.jpg"
         alt="Betal posi við telefon-ikoninum"
         class="h-full w-full object-cover object-[70%_center]"
       />
+      <!-- Gradient fades for seamless integration -->
+      <div class="absolute inset-0 bg-navy/85 md:bg-transparent md:bg-gradient-to-r md:from-navy md:via-navy/60 md:to-transparent"></div>
+      <div class="absolute inset-0 bg-gradient-to-t from-navy via-transparent to-transparent"></div>
     </div>
-    <div class="absolute inset-0 bg-navy/80 md:hidden"></div>
-    <div class="absolute inset-y-0 left-0 hidden w-[50%] bg-navy md:block slab"></div>
-    <div class="relative mx-auto flex min-h-[calc(100dvh-4.25rem)] max-w-6xl flex-col justify-center px-5 py-20 sm:px-8 md:w-[52%] md:pr-10">
-      <img src="/brand/wordmark-green.svg" alt="betal" class="mb-8 h-16 w-auto sm:h-20" />
-      <p class="text-xs font-semibold uppercase tracking-[0.22em] text-green">{fo.home.eyebrow}</p>
-      <h1 class="mt-5 max-w-xl text-5xl font-semibold tracking-tight text-white sm:text-7xl">
+
+    <div class="absolute inset-y-0 left-0 hidden w-[46%] bg-navy md:block slab"></div>
+
+    <div class="relative mx-auto flex min-h-[calc(100dvh-4.25rem)] max-w-6xl flex-col justify-center px-5 py-20 sm:px-8 md:w-[54%] md:pr-10">
+      <!-- Wordmark -->
+      <div class="mb-8">
+        <img src="/brand/wordmark-green.svg" alt="betal" class="h-14 w-auto sm:h-18 drop-shadow-[0_0_25px_rgba(122,217,102,0.3)]" />
+      </div>
+
+      <!-- Eyebrow badge -->
+      <div class="inline-flex items-center gap-2 rounded-full border border-green/30 bg-green/10 px-3.5 py-1.5 text-xs font-semibold uppercase tracking-[0.2em] text-green w-fit mb-4 glow-pill">
+        <span class="w-2 h-2 rounded-full bg-green animate-ping"></span>
+        <span>{fo.home.eyebrow}</span>
+      </div>
+
+      <h1 class="text-4xl sm:text-6xl lg:text-7xl font-bold tracking-tight text-white leading-[1.08]">
         {fo.home.title}
       </h1>
-      <p class="mt-6 max-w-lg text-lg leading-relaxed text-white/75">{fo.home.lead}</p>
-      <div class="mt-10 flex flex-wrap gap-3">
+
+      <p class="mt-6 max-w-lg text-lg leading-relaxed text-white/80 font-normal">
+        {fo.home.lead}
+      </p>
+
+      <!-- Trust signals / highlights -->
+      <div class="mt-6 flex flex-wrap gap-4 text-xs text-mist font-medium">
+        <span class="flex items-center gap-1.5">
+          <svg class="w-4 h-4 text-green" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+          </svg>
+          Bygt á ePay & Softpay
+        </span>
+        <span class="flex items-center gap-1.5">
+          <svg class="w-4 h-4 text-green" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+          </svg>
+          Lokal føroysk tænasta
+        </span>
+        <span class="flex items-center gap-1.5">
+          <svg class="w-4 h-4 text-green" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+          </svg>
+          Einki bindandi tólaleiga
+        </span>
+      </div>
+
+      <!-- Action buttons -->
+      <div class="mt-9 flex flex-wrap gap-4 items-center">
         <a
           href="#loysnir"
-          class="rounded-full bg-green px-5 py-3 text-sm font-semibold text-navy transition hover:brightness-110"
+          class="rounded-full bg-green px-7 py-3.5 text-sm font-semibold text-navy transition-all duration-200 hover:brightness-110 hover:shadow-[0_0_25px_rgba(122,217,102,0.4)] hover:-translate-y-0.5 active:translate-y-0"
         >
           {fo.home.primary}
         </a>
         <a
           href="/samband/"
-          class="rounded-full border border-white/20 px-5 py-3 text-sm font-semibold text-white transition hover:border-white/50"
+          class="rounded-full border border-white/20 bg-white/5 backdrop-blur-md px-7 py-3.5 text-sm font-semibold text-white transition-all duration-200 hover:bg-white/10 hover:border-white/40 hover:-translate-y-0.5 active:translate-y-0"
         >
           {fo.home.secondary}
         </a>
@@ -40,32 +88,113 @@ import { fo, products } from "../content/fo";
     </div>
   </section>
 
+  <!-- Payment Methods strip -->
   <MethodsRow />
 
-  <section class="bg-green">
-    <div class="mx-auto flex max-w-6xl items-center justify-center px-5 py-14 sm:px-8 sm:py-20">
-      <img src="/brand/wordmark-navy.svg" alt="betal" class="h-14 w-auto sm:h-20" />
+  <!-- Showcase section with Live ePay-style Checkout Simulator & Product Visuals -->
+  <section class="relative mx-auto max-w-6xl px-5 py-16 sm:px-8 sm:py-24">
+    <div class="grid items-center gap-12 lg:grid-cols-2">
+      <div>
+        <div class="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.22em] text-green mb-3">
+          <span>Á alnetinum & nethandil</span>
+        </div>
+        <h2 class="text-3xl sm:text-5xl font-bold tracking-tight text-white leading-tight">
+          Gjaldsvindeyga, ið er bygt til at økja søluna.
+        </h2>
+        <p class="mt-5 text-base sm:text-lg leading-relaxed text-white/75">
+          Við ePay-tøkni fært tú Marknaðarins mest fleksibla gjaldsvindeyga. Skjótt við Apple Pay og Google Pay, fult lagað eftir tínum litum og vørumerki.
+        </p>
+
+        <div class="mt-8 space-y-4">
+          <div class="flex items-start gap-3.5 p-3.5 rounded-2xl bg-white/[0.02] border border-white/5">
+            <div class="mt-0.5 h-6 w-6 rounded-full bg-green/15 text-green flex items-center justify-center font-bold text-xs shrink-0">✓</div>
+            <div>
+              <h4 class="text-sm font-semibold text-white">Lækkað frafall við einum klikki</h4>
+              <p class="text-xs text-white/60 mt-0.5">Wallets ovast í vindeyganum gera keypið liðugt upp á 3 sekund.</p>
+            </div>
+          </div>
+          <div class="flex items-start gap-3.5 p-3.5 rounded-2xl bg-white/[0.02] border border-white/5">
+            <div class="mt-0.5 h-6 w-6 rounded-full bg-green/15 text-green flex items-center justify-center font-bold text-xs shrink-0">✓</div>
+            <div>
+              <h4 class="text-sm font-semibold text-white">Fullur stuðul fyri kortum og 3D Secure</h4>
+              <p class="text-xs text-white/60 mt-0.5">Sjálvvirkandi kortkanning og SCA-trygd uttan óneyðugt stríð fyri viðskiftafólkið.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-8">
+          <a
+            href="/alnetinum/"
+            class="inline-flex items-center gap-2 text-sm font-semibold text-green hover:underline"
+          >
+            <span>Les meira um Betal á alnetinum</span>
+            <span>→</span>
+          </a>
+        </div>
+      </div>
+
+      <div class="relative flex justify-center">
+        <div class="pointer-events-none absolute -inset-4 rounded-3xl bg-green/10 blur-2xl"></div>
+        <CheckoutSimulator />
+      </div>
     </div>
   </section>
 
+  <!-- Big Brand Identity Ribbon -->
+  <section class="relative bg-gradient-to-r from-green via-[#8ae676] to-green overflow-hidden">
+    <div class="pointer-events-none absolute -top-12 -right-12 w-48 h-48 rounded-full bg-white/20 blur-2xl"></div>
+    <div class="mx-auto flex max-w-6xl flex-col sm:flex-row items-center justify-between gap-6 px-5 py-12 sm:px-8 sm:py-16 text-navy">
+      <div>
+        <img src="/brand/wordmark-navy.svg" alt="betal" class="h-10 sm:h-14 w-auto" />
+        <p class="mt-2 text-xs sm:text-sm font-semibold uppercase tracking-widest text-navy/75">
+          Gjaldsloysnir til føroyska vinnu
+        </p>
+      </div>
+      <div class="text-right">
+        <p class="text-lg sm:text-2xl font-bold tracking-tight text-navy">
+          Eitt navn. Fýra loysnir.
+        </p>
+        <p class="text-xs sm:text-sm text-navy/80 mt-0.5">
+          Nethandil • Softpay • Hald • Løn
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Product Grid Section -->
   <section id="loysnir" class="mx-auto max-w-6xl px-5 py-16 sm:px-8 sm:py-24">
-    <p class="text-xs font-semibold uppercase tracking-[0.22em] text-green">{fo.home.productsEyebrow}</p>
-    <h2 class="mt-3 max-w-xl text-3xl font-semibold tracking-tight sm:text-5xl">{fo.home.productsTitle}</h2>
-    <p class="mt-4 max-w-xl text-base text-white/70">{fo.home.contrast}</p>
-    <div class="mt-10 grid gap-4 md:grid-cols-2">
+    <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-6 mb-12">
+      <div>
+        <div class="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.22em] text-green mb-3">
+          <span>{fo.home.productsEyebrow}</span>
+        </div>
+        <h2 class="text-3xl sm:text-5xl font-bold tracking-tight text-white">{fo.home.productsTitle}</h2>
+      </div>
+      <p class="max-w-md text-sm text-white/70">{fo.home.contrast}</p>
+    </div>
+
+    <div class="grid gap-6 md:grid-cols-2">
       {products.map((product, index) => <ProductCard product={product} index={index} />)}
     </div>
   </section>
 
+  <!-- Step-by-Step Onboarding Process (Bento style) -->
   <section class="mx-auto max-w-6xl px-5 pb-20 sm:px-8">
-    <p class="text-xs font-semibold uppercase tracking-[0.22em] text-green">{fo.steps.eyebrow}</p>
-    <h2 class="mt-3 max-w-xl text-3xl font-semibold tracking-tight sm:text-5xl">{fo.steps.title}</h2>
-    <ol class="mt-10 grid gap-4 md:grid-cols-3">
+    <div class="text-center max-w-2xl mx-auto mb-12">
+      <div class="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.22em] text-green mb-3">
+        <span>{fo.steps.eyebrow}</span>
+      </div>
+      <h2 class="text-3xl sm:text-5xl font-bold tracking-tight text-white">{fo.steps.title}</h2>
+    </div>
+
+    <ol class="grid gap-5 md:grid-cols-3">
       {
         fo.steps.items.map((step, index) => (
-          <li class="rounded-2xl border border-white/10 bg-white/[0.03] p-6 sm:p-8">
-            <p class="text-xs font-semibold tracking-[0.2em] text-green">{String(index + 1).padStart(2, "0")}</p>
-            <h3 class="mt-3 text-xl font-semibold text-white">{step.title}</h3>
+          <li class="relative rounded-3xl border border-white/10 bg-gradient-to-b from-white/[0.04] to-white/[0.01] p-7 sm:p-8 transition-all hover:border-green/40 hover:-translate-y-1">
+            <span class="inline-block rounded-2xl bg-green/10 border border-green/30 px-3.5 py-1 font-mono text-xs font-bold tracking-wider text-green">
+              {String(index + 1).padStart(2, "0")}
+            </span>
+            <h3 class="mt-5 text-xl font-bold text-white">{step.title}</h3>
             <p class="mt-3 text-sm leading-relaxed text-white/70">{step.text}</p>
           </li>
         ))
@@ -73,50 +202,93 @@ import { fo, products } from "../content/fo";
     </ol>
   </section>
 
-  <section class="mx-auto max-w-6xl px-5 pb-20 sm:px-8">
-    <div class="grid overflow-hidden rounded-3xl border border-white/10 md:grid-cols-2">
-      <img src="/brand/photo-card.jpg" alt="Betal-kort við skriftmerki" class="h-full min-h-[16rem] w-full object-cover" />
+  <!-- Feature / Photo Showcase Cards -->
+  <section class="mx-auto max-w-6xl px-5 pb-20 sm:px-8 space-y-6">
+    <!-- Card 1: About & Real Card photo -->
+    <div class="grid overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-b from-white/[0.04] to-transparent md:grid-cols-2 items-center">
+      <div class="relative h-full min-h-[20rem] w-full overflow-hidden">
+        <img src="/brand/photo-card.jpg" alt="Betal-kort við skriftmerki" class="h-full w-full object-cover" />
+      </div>
       <div class="px-6 py-10 sm:px-10 sm:py-14">
         <p class="text-xs font-semibold uppercase tracking-[0.22em] text-green">{fo.home.aboutEyebrow}</p>
-        <h2 class="mt-3 max-w-xl text-3xl font-semibold tracking-tight sm:text-4xl">{fo.home.aboutTitle}</h2>
-        <p class="mt-5 max-w-2xl text-base leading-relaxed text-white/75">{fo.home.about}</p>
+        <h2 class="mt-3 max-w-xl text-3xl font-bold tracking-tight text-white sm:text-4xl">{fo.home.aboutTitle}</h2>
+        <p class="mt-5 max-w-xl text-base leading-relaxed text-white/75">{fo.home.about}</p>
         <a
           href="/samband/"
-          class="mt-8 inline-flex rounded-full bg-green px-5 py-3 text-sm font-semibold text-navy transition hover:brightness-110"
+          class="mt-8 inline-flex rounded-full bg-green px-6 py-3.5 text-sm font-semibold text-navy transition hover:brightness-110 shadow-lg shadow-green/20"
         >
           {fo.home.secondary}
         </a>
       </div>
     </div>
-    <div class="mt-4 grid overflow-hidden rounded-3xl border border-white/10 md:grid-cols-2">
+
+    <!-- Card 2: Backoffice & Softpay in Action -->
+    <div class="grid overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-b from-white/[0.04] to-transparent md:grid-cols-2 items-center">
       <div class="order-2 px-6 py-10 sm:px-10 sm:py-14 md:order-1">
         <p class="text-xs font-semibold uppercase tracking-[0.22em] text-green">{products[1].eyebrow}</p>
-        <h2 class="mt-3 max-w-xl text-3xl font-semibold tracking-tight sm:text-4xl">{products[1].title}</h2>
-        <p class="mt-5 max-w-2xl text-base leading-relaxed text-white/75">{products[1].card}</p>
-        <a
-          href={products[1].href}
-          class="mt-8 inline-flex rounded-full border border-white/20 px-5 py-3 text-sm font-semibold text-white transition hover:border-white/50"
-        >
-          Les meira
-        </a>
+        <h2 class="mt-3 max-w-xl text-3xl font-bold tracking-tight text-white sm:text-4xl">{products[1].title}</h2>
+        <p class="mt-5 max-w-xl text-base leading-relaxed text-white/75">
+          Við Softpay sleppur tú undan dýrum leigugjøldum og plássfrekum terminalum á diskinum. Tín iPhone ella Android tekur ímóti kontaktleysum gjaldi við NFC.
+        </p>
+        <div class="mt-8 flex gap-3 items-center">
+          <a
+            href={products[1].href}
+            class="inline-flex rounded-full bg-white/10 border border-white/20 px-6 py-3.5 text-sm font-semibold text-white transition hover:bg-white/15"
+          >
+            Les meira um Softpay
+          </a>
+        </div>
       </div>
-      <img
-        src="/brand/photo-app-icon.jpg"
-        alt="Betal-appin á telefonini"
-        class="order-1 h-full min-h-[16rem] w-full object-cover md:order-2"
-      />
+      <div class="order-1 relative h-full min-h-[20rem] w-full overflow-hidden md:order-2">
+        <img
+          src="/brand/photo-app-icon.jpg"
+          alt="Betal-appin á telefonini"
+          class="h-full w-full object-cover"
+        />
+      </div>
     </div>
   </section>
 
+  <!-- Interactive Backoffice Overview Section -->
+  <section class="mx-auto max-w-6xl px-5 pb-20 sm:px-8">
+    <div class="rounded-3xl border border-white/10 bg-gradient-to-br from-white/[0.04] via-white/[0.01] to-transparent p-8 sm:p-12">
+      <div class="grid gap-10 lg:grid-cols-2 items-center">
+        <div>
+          <div class="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.22em] text-green mb-3">
+            <span>Yvirlit & Fíggjarlig stýring</span>
+          </div>
+          <h2 class="text-3xl sm:text-4xl font-bold tracking-tight text-white">
+            Fullt yvirlit yvir allar inngjaldingar í ePay Backoffice.
+          </h2>
+          <p class="mt-4 text-sm sm:text-base leading-relaxed text-white/75">
+            Fylg við hvørjum staki í gjaldsgongdini í veruleikatíð. Kanna avstemmingar, avgreið afturrindanir við einum klikki, og fylg við søluni á einum greiðum dashboardi.
+          </p>
+          <div class="mt-6 flex flex-wrap gap-2">
+            <span class="text-xs px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-white/80">Realtíðar flog</span>
+            <span class="text-xs px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-white/80">Afturrindanir við 1 klikki</span>
+            <span class="text-xs px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-white/80">API & Webhooks</span>
+          </div>
+        </div>
+        <div class="flex justify-center">
+          <BackofficeSimulator />
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FAQ Section -->
   <section class="mx-auto max-w-6xl px-5 pb-24 sm:px-8">
-    <p class="text-xs font-semibold uppercase tracking-[0.22em] text-green">{fo.faq.eyebrow}</p>
-    <h2 class="mt-3 max-w-xl text-3xl font-semibold tracking-tight sm:text-5xl">{fo.faq.title}</h2>
+    <div class="text-center max-w-2xl mx-auto mb-12">
+      <p class="text-xs font-semibold uppercase tracking-[0.22em] text-green">{fo.faq.eyebrow}</p>
+      <h2 class="mt-3 text-3xl font-bold tracking-tight sm:text-5xl text-white">{fo.faq.title}</h2>
+    </div>
+
     <dl class="mt-10 divide-y divide-white/10 border-y border-white/10">
       {
         fo.faq.items.map((item) => (
-          <div class="grid gap-3 py-6 md:grid-cols-[minmax(0,0.4fr)_1fr] md:gap-10">
-            <dt class="text-lg font-semibold text-white">{item.q}</dt>
-            <dd class="text-sm leading-relaxed text-white/70">{item.a}</dd>
+          <div class="grid gap-3 py-7 md:grid-cols-[minmax(0,0.45fr)_1fr] md:gap-10">
+            <dt class="text-lg font-bold text-white">{item.q}</dt>
+            <dd class="text-sm sm:text-base leading-relaxed text-white/70">{item.a}</dd>
           </div>
         ))
       }

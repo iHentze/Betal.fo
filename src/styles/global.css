@@ -1,12 +1,16 @@
 @import "@fontsource/poppins/300.css";
 @import "@fontsource/poppins/400.css";
+@import "@fontsource/poppins/500.css";
 @import "@fontsource/poppins/600.css";
 @import "@fontsource/poppins/700.css";
 @import "tailwindcss";
 
 @theme {
   --color-navy: #0d0033;
+  --color-navy-dark: #080020;
+  --color-navy-card: #13063f;
   --color-green: #7ad966;
+  --color-green-glow: rgba(122, 217, 102, 0.15);
   --color-mist: #98a8aa;
   --font-sans: "Poppins", ui-sans-serif, system-ui, sans-serif;
 }
@@ -33,6 +37,7 @@ body {
   font-family: var(--font-sans);
   background: var(--color-navy);
   color: #fff;
+  overflow-x: hidden;
 }
 
 ::selection {
@@ -48,7 +53,50 @@ body {
   clip-path: polygon(0 0, 100% 0, 70% 100%, 0 100%);
 }
 
-.watermark {
-  writing-mode: vertical-rl;
-  transform: rotate(180deg);
+/* Modern FinTech Glass & Glow Utilities */
+.glass-panel {
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.glass-panel-hover {
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.glass-panel-hover:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(122, 217, 102, 0.35);
+  transform: translateY(-2px);
+  box-shadow: 0 12px 30px -10px rgba(13, 0, 51, 0.5), 0 0 20px -5px rgba(122, 217, 102, 0.12);
+}
+
+.glow-green {
+  box-shadow: 0 0 35px -5px rgba(122, 217, 102, 0.3);
+}
+
+.glow-pill {
+  box-shadow: 0 0 20px 0 rgba(122, 217, 102, 0.25);
+}
+
+.badge-pulse {
+  animation: pulse-glow 2.5s infinite;
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.75;
+    transform: scale(0.98);
+  }
+}
+
+/* Subtle grid background pattern */
+.bg-grid-pattern {
+  background-image: radial-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px);
+  background-size: 24px 24px;
 }

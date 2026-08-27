@@ -6,18 +6,27 @@ import { site } from "../content/site";
 ---
 
 <BaseLayout title={`Samband — betal`} description={fo.contact.lead}>
-  <section class="relative overflow-hidden">
-    <div class="pointer-events-none absolute inset-y-0 left-0 hidden w-20 bg-green sm:block md:w-28 slab-thin"></div>
-    <div class="relative mx-auto max-w-6xl px-5 py-16 sm:px-8 sm:py-24 sm:pl-32 md:pl-40">
-      <p class="text-xs font-semibold uppercase tracking-[0.22em] text-green">{fo.contact.eyebrow}</p>
-      <h1 class="mt-4 max-w-2xl text-4xl font-semibold tracking-tight sm:text-6xl">{fo.contact.title}</h1>
-      <p class="mt-6 max-w-xl text-lg leading-relaxed text-white/75">{fo.contact.lead}</p>
-      <a href={`mailto:${site.email}`} class="mt-4 inline-block text-sm text-green hover:underline">{site.email}</a>
+  <!-- Glowing subtle lights -->
+  <div class="pointer-events-none absolute -top-40 -left-40 w-96 h-96 rounded-full bg-green/10 blur-[130px]"></div>
+
+  <section class="relative overflow-hidden pt-16 pb-8 sm:pt-24 sm:pb-12">
+    <div class="pointer-events-none absolute inset-y-0 left-0 hidden w-20 bg-green/90 sm:block md:w-28 slab-thin"></div>
+    <div class="relative mx-auto max-w-6xl px-5 sm:px-8 sm:pl-32 md:pl-40">
+      <div class="inline-flex items-center gap-2 rounded-full border border-green/30 bg-green/10 px-3.5 py-1.5 text-xs font-semibold uppercase tracking-[0.2em] text-green w-fit mb-4">
+        <span>{fo.contact.eyebrow}</span>
+      </div>
+      <h1 class="max-w-2xl text-4xl font-bold tracking-tight text-white sm:text-6xl">{fo.contact.title}</h1>
+      <p class="mt-5 max-w-xl text-lg leading-relaxed text-white/75">{fo.contact.lead}</p>
+      
+      <div class="mt-6 flex items-center gap-2 text-sm">
+        <span class="text-white/60">Teldupostur:</span>
+        <a href={`mailto:${site.email}`} class="text-green font-semibold hover:underline">{site.email}</a>
+      </div>
     </div>
   </section>
 
   <section class="mx-auto max-w-6xl px-5 pb-24 sm:px-8 sm:pl-32 md:pl-40">
-    <div class="max-w-2xl">
+    <div class="max-w-2xl rounded-3xl border border-white/10 bg-gradient-to-b from-white/[0.04] to-white/[0.01] p-6 sm:p-10 shadow-xl backdrop-blur-xl">
       <ContactForm />
     </div>
   </section>

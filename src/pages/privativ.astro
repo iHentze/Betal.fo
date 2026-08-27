@@ -4,13 +4,18 @@ import { fo } from "../content/fo";
 ---
 
 <BaseLayout title={`Privatlív — betal`} description={fo.privacy.lead}>
-  <section class="relative overflow-hidden">
-    <div class="pointer-events-none absolute inset-y-0 left-0 hidden w-20 bg-green sm:block md:w-28 slab-thin"></div>
-    <div class="relative mx-auto max-w-6xl px-5 py-16 sm:px-8 sm:py-24 sm:pl-32 md:pl-40">
-      <p class="text-xs font-semibold uppercase tracking-[0.22em] text-green">{fo.privacy.eyebrow}</p>
-      <h1 class="mt-4 max-w-2xl text-4xl font-semibold tracking-tight sm:text-6xl">{fo.privacy.title}</h1>
+  <div class="pointer-events-none absolute -top-40 -left-40 w-96 h-96 rounded-full bg-green/10 blur-[130px]"></div>
+
+  <section class="relative overflow-hidden pt-16 pb-8 sm:pt-24 sm:pb-12">
+    <div class="pointer-events-none absolute inset-y-0 left-0 hidden w-20 bg-green/90 sm:block md:w-28 slab-thin"></div>
+    <div class="relative mx-auto max-w-6xl px-5 sm:px-8 sm:pl-32 md:pl-40">
+      <div class="inline-flex items-center gap-2 rounded-full border border-green/30 bg-green/10 px-3.5 py-1.5 text-xs font-semibold uppercase tracking-[0.2em] text-green w-fit mb-4">
+        <span>{fo.privacy.eyebrow}</span>
+      </div>
+      <h1 class="max-w-2xl text-4xl font-bold tracking-tight sm:text-6xl text-white">{fo.privacy.title}</h1>
       <p class="mt-6 max-w-xl text-lg leading-relaxed text-white/75">{fo.privacy.lead}</p>
-      <div class="mt-10 max-w-2xl space-y-5 text-base leading-relaxed text-white/70">
+      
+      <div class="mt-10 max-w-2xl space-y-6 text-base leading-relaxed text-white/70 rounded-3xl border border-white/10 bg-white/[0.03] p-7 sm:p-10 backdrop-blur-xl">
         {fo.privacy.body.map((paragraph) => <p>{paragraph}</p>)}
       </div>
     </div>
