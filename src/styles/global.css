@@ -44,20 +44,12 @@ body {
   border-radius: 4px;
 }
 
-.slab {
-  clip-path: polygon(0 0, 100% 0, 78% 100%, 0 100%);
-}
-
-.slab-thin {
-  clip-path: polygon(0 0, 100% 0, 70% 100%, 0 100%);
-}
-
 /* ---------------------------------------------------------------- *
  * Scroll reveal
- * Elements marked [data-reveal] start hidden and are released by an
- * IntersectionObserver. The no-js fallback keeps them visible.
+ * Only hide elements once we know scripting is available, so a failed
+ * or blocked bundle can never leave the page blank.
  * ---------------------------------------------------------------- */
-[data-reveal] {
+.js [data-reveal] {
   opacity: 0;
   transform: translateY(18px);
   transition:
@@ -67,7 +59,7 @@ body {
   will-change: opacity, transform;
 }
 
-[data-reveal].is-visible {
+.js [data-reveal].is-visible {
   opacity: 1;
   transform: none;
 }
@@ -216,7 +208,7 @@ body {
     transition-duration: 0.01ms !important;
   }
 
-  [data-reveal] {
+  .js [data-reveal] {
     opacity: 1;
     transform: none;
   }

@@ -35,6 +35,10 @@ const canonical = new URL(Astro.url.pathname, site.url).href;
     <meta property="og:image" content={new URL("/og.jpg", site.url).href} />
     <meta property="og:image:alt" content="betal" />
     <meta name="twitter:card" content="summary_large_image" />
+    <script is:inline>
+      // Reveal animations are opt-in on scripting being available.
+      document.documentElement.classList.add("js");
+    </script>
   </head>
   <body class="min-h-dvh bg-navy text-white antialiased">
     <a
