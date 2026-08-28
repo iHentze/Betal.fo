@@ -1,0 +1,44 @@
+---
+import Wordmark from "./Wordmark.astro";
+import { fo } from "../content/fo";
+---
+
+<section class="grain relative isolate overflow-hidden border-t border-white/8">
+  <div class="aurora left-1/2 top-0 h-[26rem] w-[36rem] -translate-x-1/2 bg-green/12"></div>
+
+  <div class="relative mx-auto max-w-3xl px-5 py-24 text-center sm:px-8 sm:py-32" data-reveal-group="90">
+    <div class="flex justify-center" data-reveal>
+      <Wordmark class="h-10 w-auto text-green/80 sm:h-12" title="betal" />
+    </div>
+
+    <h2
+      class="mt-8 text-[2.25rem] font-bold leading-[1.02] tracking-[-0.035em] text-white sm:text-6xl"
+      data-reveal
+    >
+      Klár at taka ímóti gjaldi?
+    </h2>
+
+    <p class="mx-auto mt-6 max-w-xl text-base leading-relaxed text-white/65 sm:text-lg" data-reveal>
+      Sig okkum, hvat tú selur — so koma vit aftur við eini loysn, ið passar. Eingin bindandi avtala, bert
+      eitt prát á føroyskum.
+    </p>
+
+    <div class="mt-10 flex flex-wrap items-center justify-center gap-3" data-reveal>
+      <a
+        href="/samband/"
+        class="group rounded-full bg-green px-8 py-4 text-sm font-semibold text-navy transition-all duration-300 hover:brightness-[1.08] hover:shadow-[0_0_45px_-8px_rgba(123,216,101,0.75)]"
+      >
+        <span class="flex items-center gap-2">
+          {fo.home.secondary}
+          <span class="transition-transform duration-300 group-hover:translate-x-1" aria-hidden="true">→</span>
+        </span>
+      </a>
+      <a
+        href="/#loysnir"
+        class="rounded-full border border-white/15 bg-white/[0.04] px-8 py-4 text-sm font-semibold text-white backdrop-blur-md transition-all duration-300 hover:border-white/30 hover:bg-white/[0.08]"
+      >
+        Sí allar loysnir
+      </a>
+    </div>
+  </div>
+</section>

@@ -3,20 +3,35 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 import { fo } from "../content/fo";
 ---
 
-<BaseLayout title={`Privatlív — betal`} description={fo.privacy.lead}>
-  <div class="pointer-events-none absolute -top-40 -left-40 w-96 h-96 rounded-full bg-green/10 blur-[130px]"></div>
+<BaseLayout title="Privatlív — betal" description={fo.privacy.lead}>
+  <section class="grain relative isolate overflow-hidden">
+    <div class="aurora -left-40 -top-32 h-[26rem] w-[26rem] bg-green/12"></div>
+    <div class="pointer-events-none absolute inset-y-0 left-0 hidden w-16 bg-green/90 slab-thin sm:block md:w-24"></div>
 
-  <section class="relative overflow-hidden pt-16 pb-8 sm:pt-24 sm:pb-12">
-    <div class="pointer-events-none absolute inset-y-0 left-0 hidden w-20 bg-green/90 sm:block md:w-28 slab-thin"></div>
-    <div class="relative mx-auto max-w-6xl px-5 sm:px-8 sm:pl-32 md:pl-40">
-      <div class="inline-flex items-center gap-2 rounded-full border border-green/30 bg-green/10 px-3.5 py-1.5 text-xs font-semibold uppercase tracking-[0.2em] text-green w-fit mb-4">
-        <span>{fo.privacy.eyebrow}</span>
-      </div>
-      <h1 class="max-w-2xl text-4xl font-bold tracking-tight sm:text-6xl text-white">{fo.privacy.title}</h1>
-      <p class="mt-6 max-w-xl text-lg leading-relaxed text-white/75">{fo.privacy.lead}</p>
-      
-      <div class="mt-10 max-w-2xl space-y-6 text-base leading-relaxed text-white/70 rounded-3xl border border-white/10 bg-white/[0.03] p-7 sm:p-10 backdrop-blur-xl">
-        {fo.privacy.body.map((paragraph) => <p>{paragraph}</p>)}
+    <div class="relative mx-auto max-w-6xl px-5 py-16 sm:px-8 sm:pl-28 sm:py-24 md:pl-36">
+      <div data-reveal-group="90">
+        <span
+          class="inline-flex items-center rounded-full border border-green/25 bg-green/8 px-3.5 py-1.5 text-[11px] font-semibold uppercase tracking-[0.22em] text-green"
+          data-reveal
+        >
+          {fo.privacy.eyebrow}
+        </span>
+
+        <h1
+          class="mt-6 max-w-2xl text-[2.5rem] font-bold leading-[1.02] tracking-[-0.035em] text-white sm:text-5xl"
+          data-reveal
+        >
+          {fo.privacy.title}
+        </h1>
+
+        <p class="mt-5 max-w-xl text-base leading-relaxed text-white/70" data-reveal>{fo.privacy.lead}</p>
+
+        <div
+          class="mt-10 max-w-2xl space-y-5 rounded-[2rem] border border-white/10 bg-white/[0.03] p-7 text-sm leading-relaxed text-white/65 backdrop-blur-xl sm:p-10 sm:text-base"
+          data-reveal
+        >
+          {fo.privacy.body.map((paragraph) => <p>{paragraph}</p>)}
+        </div>
       </div>
     </div>
   </section>

@@ -178,10 +178,16 @@ const { class: className = "", amount = "499,00" } = Astro.props;
   const ACTIVE = "border-green/45 bg-green/[0.06]";
 
   function run(root: HTMLElement) {
-    const form = root.querySelector<HTMLElement>("[data-checkout-form]");
-    const done = root.querySelector<HTMLElement>("[data-checkout-done]");
-    const label = root.querySelector<HTMLElement>("[data-pay-label]");
-    const busy = root.querySelector<HTMLElement>("[data-pay-busy]");
+    const formEl = root.querySelector<HTMLElement>("[data-checkout-form]");
+    const doneEl = root.querySelector<HTMLElement>("[data-checkout-done]");
+    const labelEl = root.querySelector<HTMLElement>("[data-pay-label]");
+    const busyEl = root.querySelector<HTMLElement>("[data-pay-busy]");
+    if (!formEl || !doneEl || !labelEl || !busyEl) return;
+
+    const form: HTMLElement = formEl;
+    const done: HTMLElement = doneEl;
+    const label: HTMLElement = labelEl;
+    const busy: HTMLElement = busyEl;
     const brand = root.querySelector<HTMLElement>("[data-brand='visa']");
     const outs = {
       number: root.querySelector<HTMLElement>("[data-out='number']"),
@@ -193,7 +199,6 @@ const { class: className = "", amount = "499,00" } = Astro.props;
       expiry: root.querySelector<HTMLElement>("[data-field='expiry']"),
       cvc: root.querySelector<HTMLElement>("[data-field='cvc']"),
     };
-    if (!form || !done || !label || !busy) return;
 
     const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
     const focus = (k: keyof typeof fields, on: boolean) => {

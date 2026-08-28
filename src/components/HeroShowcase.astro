@@ -1,0 +1,126 @@
+---
+/**
+ * Hero showcase: the animated payment window with live "payment received"
+ * notifications drifting around it.
+ */
+import AnimatedCheckout from "./AnimatedCheckout.astro";
+
+const notes = [
+  {
+    tag: "AP",
+    title: "Apple Pay",
+    sub: "Nethandil",
+    amount: "+349,00",
+    pos: "-left-6 top-10 sm:-left-16",
+    delay: "0.9s",
+    drift: "float-a",
+  },
+  {
+    tag: "SP",
+    title: "Softpay",
+    sub: "Á staðnum",
+    amount: "+120,00",
+    pos: "-right-4 top-1/2 sm:-right-14",
+    delay: "1.6s",
+    drift: "float-b",
+  },
+  {
+    tag: "GL",
+    title: "Gjaldsleinki",
+    sub: "Fakturi",
+    amount: "+2.450,00",
+    pos: "-left-4 bottom-12 sm:-left-20",
+    delay: "2.3s",
+    drift: "float-c",
+  },
+];
+---
+
+<div class="relative">
+  <AnimatedCheckout />
+
+  {
+    notes.map((note) => (
+      <div
+        class:list={[
+          "pointer-events-none absolute z-20 hidden opacity-0 sm:block",
+          note.pos,
+          note.drift,
+        ]}
+        style={`animation-delay:${note.delay}`}
+        aria-hidden="true"
+      >
+        <div class="flex items-center gap-2.5 rounded-2xl border border-white/12 bg-navy/85 px-3.5 py-2.5 shadow-[0_18px_40px_-18px_rgba(0,0,0,0.9)] backdrop-blur-xl">
+          <span class="grid h-8 w-8 place-items-center rounded-xl bg-green/12 font-mono text-[10px] font-bold text-green">
+            {note.tag}
+          </span>
+          <span class="leading-tight">
+            <span class="block text-[11px] font-semibold whitespace-nowrap text-white">{note.title}</span>
+            <span class="block text-[9px] whitespace-nowrap text-white/45">{note.sub}</span>
+          </span>
+          <span class="ml-1 text-[11px] font-bold whitespace-nowrap text-green">{note.amount}</span>
+        </div>
+      </div>
+    ))
+  }
+</div>
+
+<style>
+  .float-a,
+  .float-b,
+  .float-c {
+    animation-name: note-in;
+    animation-duration: 0.7s;
+    animation-timing-function: var(--ease-spring);
+    animation-fill-mode: forwards;
+  }
+
+  @keyframes note-in {
+    from {
+      opacity: 0;
+      transform: translateY(14px) scale(0.94);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  /* Once settled, drift gently and independently. */
+  .float-a > div {
+    animation: drift 7s ease-in-out 2s infinite;
+  }
+
+  .float-b > div {
+    animation: drift 8.5s ease-in-out 2.6s infinite reverse;
+  }
+
+  .float-c > div {
+    animation: drift 7.8s ease-in-out 3.2s infinite;
+  }
+
+  @keyframes drift {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-9px);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .float-a,
+    .float-b,
+    .float-c {
+      opacity: 1;
+      animation: none;
+    }
+
+    .float-a > div,
+    .float-b > div,
+    .float-c > div {
+      animation: none;
+    }
+  }
+</style>

@@ -97,7 +97,7 @@ import { site } from "../content/site";
   </div>
 </form>
 
-<script define:vars={{ emailTo: site.email, requiredText: fo.contact.required }}>
+<script is:inline define:vars={{ emailTo: site.email, requiredText: fo.contact.required }}>
   const form = document.querySelector("[data-contact-form]");
   const error = document.querySelector("[data-form-error]");
   if (form instanceof HTMLFormElement) {
