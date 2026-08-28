@@ -6,17 +6,201 @@
 @import "tailwindcss";
 
 @theme {
-  --color-navy: #0d0033;
-  --color-navy-dark: #080020;
-  --color-navy-card: #13063f;
-  --color-green: #7ad966;
-  --color-green-glow: rgba(122, 217, 102, 0.15);
+  /* Official Betal brand palette, taken from the supplied logo artwork. */
+  --color-navy: #0e0032;
+  --color-navy-deep: #08001d;
+  --color-navy-soft: #170945;
+  --color-green: #7bd865;
+  --color-green-bright: #93e57f;
   --color-mist: #98a8aa;
+
   --font-sans: "Poppins", ui-sans-serif, system-ui, sans-serif;
+
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 html {
   scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  font-family: var(--font-sans);
+  background: var(--color-navy);
+  color: #fff;
+  overflow-x: hidden;
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background: var(--color-green);
+  color: var(--color-navy);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-green);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+.slab {
+  clip-path: polygon(0 0, 100% 0, 78% 100%, 0 100%);
+}
+
+.slab-thin {
+  clip-path: polygon(0 0, 100% 0, 70% 100%, 0 100%);
+}
+
+/* ---------------------------------------------------------------- *
+ * Scroll reveal
+ * Elements marked [data-reveal] start hidden and are released by an
+ * IntersectionObserver. The no-js fallback keeps them visible.
+ * ---------------------------------------------------------------- */
+[data-reveal] {
+  opacity: 0;
+  transform: translateY(18px);
+  transition:
+    opacity 0.7s var(--ease-out-expo),
+    transform 0.7s var(--ease-out-expo);
+  transition-delay: var(--reveal-delay, 0ms);
+  will-change: opacity, transform;
+}
+
+[data-reveal].is-visible {
+  opacity: 1;
+  transform: none;
+}
+
+/* ---------------------------------------------------------------- *
+ * Ambient background: aurora glows + fine grain for depth
+ * ---------------------------------------------------------------- */
+.aurora {
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(110px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.grain::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.035;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* ---------------------------------------------------------------- *
+ * Cards: cursor-tracked spotlight.
+ * --mx / --my are written by JS as percentages.
+ * ---------------------------------------------------------------- */
+.spotlight {
+  position: relative;
+  isolation: isolate;
+}
+
+.spotlight::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  opacity: 0;
+  transition: opacity 0.35s var(--ease-out-expo);
+  background: radial-gradient(
+    340px circle at var(--mx, 50%) var(--my, 50%),
+    rgba(123, 216, 101, 0.13),
+    transparent 65%
+  );
+  pointer-events: none;
+  z-index: -1;
+}
+
+.spotlight:hover::before,
+.spotlight:focus-within::before {
+  opacity: 1;
+}
+
+/* ---------------------------------------------------------------- *
+ * Marquee
+ * ---------------------------------------------------------------- */
+.marquee {
+  display: flex;
+  width: max-content;
+  animation: marquee 42s linear infinite;
+}
+
+.marquee-mask {
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+}
+
+.marquee-mask:hover .marquee {
+  animation-play-state: paused;
+}
+
+@keyframes marquee {
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+/* ---------------------------------------------------------------- *
+ * Checkout demo motion
+ * ---------------------------------------------------------------- */
+@keyframes sheen {
+  to {
+    transform: translateX(220%);
+  }
+}
+
+@keyframes draw-check {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes pop-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.86);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes caret {
+  0%,
+  49% {
+    opacity: 1;
+  }
+  50%,
+  100% {
+    opacity: 0;
+  }
+}
+
+.caret {
+  animation: caret 1.05s step-end infinite;
+}
+
+/* ---------------------------------------------------------------- *
+ * FAQ accordion
+ * ---------------------------------------------------------------- */
+.faq-item[open] .faq-icon {
+  transform: rotate(45deg);
+}
+
+.faq-item summary::-webkit-details-marker {
+  display: none;
+}
+
+.faq-item summary {
+  list-style: none;
+  cursor: pointer;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -31,72 +215,13 @@ html {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
-}
 
-body {
-  font-family: var(--font-sans);
-  background: var(--color-navy);
-  color: #fff;
-  overflow-x: hidden;
-}
-
-::selection {
-  background: var(--color-green);
-  color: var(--color-navy);
-}
-
-.slab {
-  clip-path: polygon(0 0, 100% 0, 78% 100%, 0 100%);
-}
-
-.slab-thin {
-  clip-path: polygon(0 0, 100% 0, 70% 100%, 0 100%);
-}
-
-/* Modern FinTech Glass & Glow Utilities */
-.glass-panel {
-  background: rgba(255, 255, 255, 0.03);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.glass-panel-hover {
-  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.glass-panel-hover:hover {
-  background: rgba(255, 255, 255, 0.06);
-  border-color: rgba(122, 217, 102, 0.35);
-  transform: translateY(-2px);
-  box-shadow: 0 12px 30px -10px rgba(13, 0, 51, 0.5), 0 0 20px -5px rgba(122, 217, 102, 0.12);
-}
-
-.glow-green {
-  box-shadow: 0 0 35px -5px rgba(122, 217, 102, 0.3);
-}
-
-.glow-pill {
-  box-shadow: 0 0 20px 0 rgba(122, 217, 102, 0.25);
-}
-
-.badge-pulse {
-  animation: pulse-glow 2.5s infinite;
-}
-
-@keyframes pulse-glow {
-  0%, 100% {
+  [data-reveal] {
     opacity: 1;
-    transform: scale(1);
+    transform: none;
   }
-  50% {
-    opacity: 0.75;
-    transform: scale(0.98);
-  }
-}
 
-/* Subtle grid background pattern */
-.bg-grid-pattern {
-  background-image: radial-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px);
-  background-size: 24px 24px;
+  .marquee {
+    animation: none;
+  }
 }

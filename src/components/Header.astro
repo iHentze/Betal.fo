@@ -5,7 +5,7 @@ import { fo, products } from "../content/fo";
 const path = Astro.url.pathname;
 ---
 
-<header class="sticky top-0 z-50 border-b border-white/10 bg-[#0D0033]/85 backdrop-blur-xl transition-all">
+<header class="sticky top-0 z-50 border-b border-white/10 bg-navy/80 backdrop-blur-xl transition-all">
   <div class="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-5 sm:h-[4.5rem] sm:px-8">
     <Logo />
 
@@ -48,7 +48,7 @@ const path = Astro.url.pathname;
     </button>
   </div>
 
-  <div id="mobile-menu" class="hidden border-t border-white/10 bg-[#0D0033]/95 backdrop-blur-2xl lg:hidden" hidden>
+  <div id="mobile-menu" class="hidden border-t border-white/10 bg-navy/95 backdrop-blur-2xl lg:hidden" hidden>
     <nav class="mx-auto flex max-w-6xl flex-col gap-1.5 px-5 py-5" aria-label="Fartelefonvalmynd">
       {
         products.map((product) => (

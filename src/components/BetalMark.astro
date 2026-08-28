@@ -1,0 +1,30 @@
+---
+import { BETAL_PATH_B } from "../content/logo";
+
+interface Props {
+  class?: string;
+  /** Fill of the surrounding disc. Use "none" for a bare glyph. */
+  disc?: string;
+  title?: string;
+}
+
+const { class: className = "h-10 w-10", disc = "none", title } = Astro.props;
+
+// Glyph bbox is 26.80 x 49.15; scaled to 52 units tall and centred in a 100-unit disc.
+const scale = 52 / 49.15;
+const tx = (100 - 26.8 * scale) / 2;
+const ty = (100 - 52) / 2;
+---
+
+<svg
+  viewBox="0 0 100 100"
+  class:list={["block", className]}
+  role={title ? "img" : "presentation"}
+  aria-label={title}
+  aria-hidden={title ? undefined : "true"}
+>
+  {disc !== "none" && <circle cx="50" cy="50" r="50" fill={disc} />}
+  <g transform={`translate(${tx.toFixed(3)} ${ty.toFixed(3)}) scale(${scale.toFixed(5)})`} fill="currentColor">
+    <path d={BETAL_PATH_B}></path>
+  </g>
+</svg>

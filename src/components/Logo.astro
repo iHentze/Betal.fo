@@ -1,13 +1,28 @@
 ---
+import Wordmark from "./Wordmark.astro";
+
 interface Props {
   class?: string;
-  variant?: "green" | "navy";
+  variant?: "green" | "navy" | "white";
 }
 
 const { class: className = "", variant = "green" } = Astro.props;
-const src = variant === "navy" ? "/brand/wordmark-navy.svg" : "/brand/wordmark-green.svg";
+
+const tone = {
+  green: "text-green",
+  navy: "text-navy",
+  white: "text-white",
+}[variant];
 ---
 
-<a href="/" class:list={["inline-flex items-center no-underline", className]} aria-label="betal, heim">
-  <img src={src} alt="" class="h-8 w-auto sm:h-9" />
+<a
+  href="/"
+  class:list={[
+    "group inline-flex items-center rounded-lg no-underline outline-none",
+    "focus-visible:ring-2 focus-visible:ring-green focus-visible:ring-offset-4 focus-visible:ring-offset-navy",
+    className,
+  ]}
+  aria-label="betal, heim"
+>
+  <Wordmark class:list={["h-7 w-auto transition-opacity duration-200 group-hover:opacity-80 sm:h-8", tone]} />
 </a>
