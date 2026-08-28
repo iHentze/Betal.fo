@@ -26,14 +26,22 @@ html {
   /* Also on the root so overscroll never flashes white behind the page. */
   background: var(--color-navy);
   color-scheme: dark;
+  /* Lets height:auto interpolate, which the FAQ expansion relies on. */
+  interpolate-size: allow-keywords;
 }
 
 body {
   font-family: var(--font-sans);
   background: var(--color-navy);
-  color: #fff;
+  /* Just short of pure white: #fff on a saturated navy haloes at large sizes. */
+  color: #f7f8f8;
   overflow-x: hidden;
   text-rendering: optimizeLegibility;
+}
+
+/* Keeps figures from jittering as digits change width. */
+.tnum {
+  font-variant-numeric: tabular-nums;
 }
 
 ::selection {
@@ -78,13 +86,20 @@ body {
   z-index: 0;
 }
 
+/*
+ * stitchTiles keeps the 256px tile seamless; saturate 0 strips the colour
+ * fringing raw feTurbulence produces. Grain matters on a saturated navy —
+ * it dithers away the gradient banding these purples show on 8-bit panels.
+ */
 .grain::after {
   content: "";
   position: absolute;
   inset: 0;
+  border-radius: inherit;
   pointer-events: none;
   opacity: 0.035;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 256px 256px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='256' height='256'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='256' height='256' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 
 /* ---------------------------------------------------------------- *
@@ -112,7 +127,14 @@ body {
   z-index: -1;
 }
 
-.spotlight:hover::before,
+/* pointer:fine excludes stylus and hybrid devices that report hover but
+   cannot track continuously. */
+@media (hover: hover) and (pointer: fine) {
+  .spotlight:hover::before {
+    opacity: 1;
+  }
+}
+
 .spotlight:focus-within::before {
   opacity: 1;
 }
@@ -144,12 +166,6 @@ body {
 /* ---------------------------------------------------------------- *
  * Checkout demo motion
  * ---------------------------------------------------------------- */
-@keyframes sheen {
-  to {
-    transform: translateX(220%);
-  }
-}
-
 @keyframes draw-check {
   to {
     stroke-dashoffset: 0;
@@ -167,23 +183,10 @@ body {
   }
 }
 
-@keyframes caret {
-  0%,
-  49% {
-    opacity: 1;
-  }
-  50%,
-  100% {
-    opacity: 0;
-  }
-}
-
-.caret {
-  animation: caret 1.05s step-end infinite;
-}
-
 /* ---------------------------------------------------------------- *
- * FAQ accordion
+ * FAQ accordion — native <details>, no JS.
+ * ::details-content animates the open/close in browsers that support it
+ * and simply snaps in those that don't.
  * ---------------------------------------------------------------- */
 .faq-item[open] .faq-icon {
   transform: rotate(45deg);
@@ -198,6 +201,23 @@ body {
   cursor: pointer;
 }
 
+.faq-item::details-content {
+  height: 0;
+  overflow: clip;
+  transition:
+    height 260ms var(--ease-out-expo),
+    content-visibility 260ms var(--ease-out-expo) allow-discrete;
+}
+
+.faq-item[open]::details-content {
+  height: auto;
+}
+
+/*
+ * Motion is neutralised rather than removed wholesale. Short colour and
+ * opacity feedback on hover and focus is not the large-scale movement this
+ * preference is about, and stripping it makes the UI feel unresponsive.
+ */
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;
@@ -208,15 +228,20 @@ body {
   *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
+    animation-delay: 0ms !important;
   }
 
   .js [data-reveal] {
     opacity: 1;
     transform: none;
+    transition: none;
   }
 
   .marquee {
     animation: none;
+  }
+
+  .faq-item::details-content {
+    transition: none;
   }
 }

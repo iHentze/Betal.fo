@@ -37,14 +37,51 @@ function initReveal(): void {
 }
 
 function initSpotlight(): void {
-  if (REDUCED.matches || !window.matchMedia("(hover: hover)").matches) return;
+  if (REDUCED.matches) return;
+  if (!window.matchMedia("(hover: hover) and (pointer: fine)").matches) return;
 
   document.querySelectorAll<HTMLElement>(".spotlight").forEach((card) => {
-    card.addEventListener("pointermove", (event) => {
-      const rect = card.getBoundingClientRect();
-      card.style.setProperty("--mx", `${((event.clientX - rect.left) / rect.width) * 100}%`);
-      card.style.setProperty("--my", `${((event.clientY - rect.top) / rect.height) * 100}%`);
-    });
+    let rect: DOMRect | null = null;
+    let x = 50;
+    let y = 50;
+    let queued = false;
+
+    const flush = () => {
+      queued = false;
+      card.style.setProperty("--mx", `${x}%`);
+      card.style.setProperty("--my", `${y}%`);
+    };
+
+    // Cache the rect on enter so pointermove never forces layout, and
+    // coalesce writes to one per frame rather than one per event.
+    card.addEventListener(
+      "pointerenter",
+      () => {
+        rect = card.getBoundingClientRect();
+      },
+      { passive: true },
+    );
+
+    card.addEventListener(
+      "pointermove",
+      (event) => {
+        if (!rect) rect = card.getBoundingClientRect();
+        x = ((event.clientX - rect.left) / rect.width) * 100;
+        y = ((event.clientY - rect.top) / rect.height) * 100;
+        if (queued) return;
+        queued = true;
+        requestAnimationFrame(flush);
+      },
+      { passive: true },
+    );
+
+    card.addEventListener(
+      "pointerleave",
+      () => {
+        rect = null;
+      },
+      { passive: true },
+    );
   });
 }
 
