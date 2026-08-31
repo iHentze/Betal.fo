@@ -1,0 +1,47 @@
+{
+  "name": "betal-app",
+  "main": "./dist/_worker.js/index.js",
+  "compatibility_date": "2026-08-27",
+  "compatibility_flags": ["nodejs_compat"],
+  "assets": {
+    "binding": "ASSETS",
+    "directory": "./dist"
+  },
+  "observability": {
+    "enabled": true
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "betal",
+      "database_id": "00000000-0000-0000-0000-000000000000",
+      "migrations_dir": "migrations"
+    }
+  ],
+  "kv_namespaces": [
+    {
+      "binding": "TOKENS",
+      "id": "00000000000000000000000000000000"
+    }
+  ],
+  "queues": {
+    "producers": [
+      {
+        "binding": "INGEST_QUEUE",
+        "queue": "betal-ingest"
+      }
+    ],
+    "consumers": [
+      {
+        "queue": "betal-ingest",
+        "max_batch_size": 25,
+        "max_batch_timeout": 5,
+        "max_retries": 5,
+        "dead_letter_queue": "betal-ingest-dlq"
+      }
+    ]
+  },
+  "triggers": {
+    "crons": ["*/10 * * * *"]
+  }
+}
