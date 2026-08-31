@@ -1,4 +1,5 @@
 import type { APIRoute } from "astro";
+import { env } from "~/lib/env";
 import { accountingExport } from "~/lib/products";
 import { scopeToMerchant } from "~/lib/auth";
 
@@ -35,7 +36,7 @@ export const GET: APIRoute = async ({ url, locals }) => {
   const toMs = Date.UTC(year, monthIndex + 1, 1);
 
   const format = url.searchParams.get("snid") === "json" ? "json" : "csv";
-  const file = await accountingExport(locals.runtime.env.DB, {
+  const file = await accountingExport(env.DB, {
     merchantId,
     fromMs,
     toMs,

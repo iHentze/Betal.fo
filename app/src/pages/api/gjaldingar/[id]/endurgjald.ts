@@ -1,4 +1,5 @@
 import type { APIRoute } from "astro";
+import { env } from "~/lib/env";
 import { Epay } from "~/lib/epay";
 import { recordAudit, requireCapability, AuthorizationError } from "~/lib/audit";
 import { scopeToMerchant } from "~/lib/auth";
@@ -17,7 +18,6 @@ export const POST: APIRoute = async ({ params, request, locals }) => {
   const actor = locals.actor;
   if (!actor) return new Response("unauthorized", { status: 401 });
 
-  const env = locals.runtime.env;
   const db = env.DB;
   const transactionId = params.id!;
 

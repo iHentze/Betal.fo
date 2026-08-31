@@ -1,4 +1,5 @@
 import type { APIRoute } from "astro";
+import { env } from "~/lib/env";
 import { captureLead } from "~/lib/ops";
 
 export const prerender = false;
@@ -30,7 +31,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
     });
   }
 
-  await captureLead(locals.runtime.env.DB, {
+  await captureLead(env.DB, {
     name,
     email,
     company: payload.company ? String(payload.company) : null,

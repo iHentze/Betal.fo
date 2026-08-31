@@ -1,4 +1,5 @@
 import type { APIRoute } from "astro";
+import { env } from "~/lib/env";
 import { createLoginToken } from "~/lib/auth";
 
 export const prerender = false;
@@ -15,7 +16,7 @@ export const POST: APIRoute = async ({ request, locals, url }) => {
   const email = String(form.get("email") ?? "");
   const next = String(form.get("next") ?? "/");
 
-  const token = await createLoginToken(locals.runtime.env.DB, email);
+  const token = await createLoginToken(env.DB, email);
 
   if (token) {
     const link = new URL(

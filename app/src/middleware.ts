@@ -1,4 +1,5 @@
 import { defineMiddleware } from "astro:middleware";
+import { env } from "~/lib/env";
 import { resolveSession, SESSION_COOKIE } from "~/lib/auth";
 
 /**
@@ -11,14 +12,9 @@ const PUBLIC_PREFIXES = ["/api/hooks/", "/innrita", "/api/auth/"];
 
 export const onRequest = defineMiddleware(async (context, next) => {
   const path = context.url.pathname;
-  const env = context.locals.runtime?.env;
 
-  if (env?.DB) {
-    const sessionId = context.cookies.get(SESSION_COOKIE)?.value;
-    context.locals.actor = await resolveSession(env.DB, sessionId);
-  } else {
-    context.locals.actor = null;
-  }
+  const sessionId = context.cookies.get(SESSION_COOKIE)?.value;
+  context.locals.actor = await resolveSession(env.DB, sessionId);
 
   const isPublic = PUBLIC_PREFIXES.some((prefix) => path.startsWith(prefix));
   if (!isPublic && !context.locals.actor) {

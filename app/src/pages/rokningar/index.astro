@@ -1,4 +1,5 @@
 ---
+import { env } from "~/lib/env";
 import AppLayout from "~/layouts/AppLayout.astro";
 import Amount from "~/components/ui/Amount.astro";
 import StatusBadge from "~/components/ui/StatusBadge.astro";
@@ -10,7 +11,7 @@ import { invoiceStatus } from "~/lib/status";
 export const prerender = false;
 
 const actor = Astro.locals.actor!;
-const db = Astro.locals.runtime.env.DB;
+const db = env.DB;
 const merchantId = scopeToMerchant(actor, Astro.url.searchParams.get("handil"));
 
 const invoices = await db

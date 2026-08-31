@@ -1,4 +1,5 @@
 import type { APIRoute } from "astro";
+import { env } from "~/lib/env";
 import { receiveWebhook, processDelivery } from "~/lib/ingest/handler";
 
 export const prerender = false;
@@ -20,7 +21,6 @@ export const POST: APIRoute = async ({ params, request, locals }) => {
     return new Response("not found", { status: 404 });
   }
 
-  const env = locals.runtime.env;
   const channel =
     new URL(request.url).searchParams.get("channel") === "event"
       ? "event"
@@ -40,7 +40,7 @@ export const POST: APIRoute = async ({ params, request, locals }) => {
   // The response is already committed, so a failure here just leaves the row for the
   // scheduled drain to retry.
   if (outcome.deliveryId && !env.INGEST_QUEUE) {
-    locals.runtime.ctx.waitUntil(
+    locals.cfContext.waitUntil(
       processDelivery({ db: env.DB }, outcome.deliveryId).catch(() => undefined),
     );
   }

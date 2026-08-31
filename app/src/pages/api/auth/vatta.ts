@@ -1,4 +1,5 @@
 import type { APIRoute } from "astro";
+import { env } from "~/lib/env";
 import { consumeLoginToken, sessionCookie } from "~/lib/auth";
 import { recordAudit } from "~/lib/audit";
 
@@ -13,7 +14,7 @@ export const GET: APIRoute = async ({ request, locals, url }) => {
     return new Response(null, { status: 303, headers: { Location: "/innrita" } });
   }
 
-  const sessionId = await consumeLoginToken(locals.runtime.env.DB, token, {
+  const sessionId = await consumeLoginToken(env.DB, token, {
     userAgent: request.headers.get("user-agent"),
     ip: request.headers.get("cf-connecting-ip"),
   });
@@ -25,7 +26,7 @@ export const GET: APIRoute = async ({ request, locals, url }) => {
     });
   }
 
-  await recordAudit(locals.runtime.env.DB, {
+  await recordAudit(env.DB, {
     action: "login",
     detail: { method: "magic_link" },
   });

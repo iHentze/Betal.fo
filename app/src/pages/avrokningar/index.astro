@@ -1,4 +1,5 @@
 ---
+import { env } from "~/lib/env";
 import AppLayout from "~/layouts/AppLayout.astro";
 import Amount from "~/components/ui/Amount.astro";
 import { fo } from "~/content/fo";
@@ -10,7 +11,7 @@ import { sumDecimals } from "~/lib/money";
 export const prerender = false;
 
 const actor = Astro.locals.actor!;
-const db = Astro.locals.runtime.env.DB;
+const db = env.DB;
 const merchantId = scopeToMerchant(actor, Astro.url.searchParams.get("handil"));
 
 const transfers = await listSettlementTransfers(db, merchantId, 50);
