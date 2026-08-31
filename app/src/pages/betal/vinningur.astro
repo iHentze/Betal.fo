@@ -1,0 +1,118 @@
+---
+import AppLayout from "~/layouts/AppLayout.astro";
+import Amount from "~/components/ui/Amount.astro";
+import { fo } from "~/content/fo";
+import { navFor } from "~/lib/nav";
+import { marginForPeriod, totalMargin, acquirerCosts } from "~/lib/billing/margin";
+import { formatBasisPoints } from "~/lib/money";
+
+export const prerender = false;
+
+const actor = Astro.locals.actor!;
+if (actor.kind !== "staff") return Astro.redirect("/");
+
+const db = Astro.locals.runtime.env.DB;
+// Defaults to the month just gone, since that is the one being closed and billed.
+// getUTCMonth() is zero-based, so it already names the previous month; January wraps
+// back to December of the prior year.
+const now = new Date();
+const previousMonth = now.getUTCMonth() === 0 ? 12 : now.getUTCMonth();
+const defaultYear =
+  now.getUTCMonth() === 0 ? now.getUTCFullYear() - 1 : now.getUTCFullYear();
+
+const year = Number(Astro.url.searchParams.get("ar") ?? defaultYear);
+const month = Number(Astro.url.searchParams.get("man") ?? previousMonth);
+
+const rows = await marginForPeriod(db, year, month);
+const totals = totalMargin(rows);
+const acquirers = await acquirerCosts(db);
+
+const nav = navFor(actor);
+---
+
+<AppLayout
+  title={fo.margin.title}
+  crumbs={[{ label: "Betal" }, { label: fo.margin.title }]}
+  nav={nav}
+  context="Betal"
+>
+  <div
+    style="display:flex; gap:2rem; padding:1rem .875rem; border-bottom:1px solid var(--color-line)"
+  >
+    <div>
+      <div style="font-size: var(--text-2xs); color: var(--color-ink-faint)">
+        {fo.margin.revenue}
+      </div>
+      <div style="font-size:1.125rem"><Amount minor={totals.revenueMinor} currency="DKK" /></div>
+    </div>
+    <div>
+      <div style="font-size: var(--text-2xs); color: var(--color-ink-faint)">
+        {fo.margin.cost}
+      </div>
+      <div style="font-size:1.125rem"><Amount minor={totals.costMinor} /></div>
+    </div>
+    <div>
+      <div style="font-size: var(--text-2xs); color: var(--color-ink-faint)">
+        {fo.margin.margin}
+      </div>
+      <div style="font-size:1.125rem; color: var(--color-accent)">
+        <Amount minor={totals.marginMinor} />
+      </div>
+    </div>
+  </div>
+
+  <p
+    style="padding:.5rem .875rem; font-size: var(--text-2xs); color: var(--color-ink-muted)"
+  >
+    {fo.margin.costNote}
+  </p>
+
+  <div class="list-group-header">
+    <span>{fo.nav.merchants}</span>
+    <span class="nav-count">{rows.length}</span>
+  </div>
+  {
+    rows.map((row) => (
+      <div class="list-row">
+        <span class="list-row-primary">{row.merchantName}</span>
+        <span class="list-row-meta">
+          <span class="tnum">{row.billableCount}</span>
+          <Amount minor={row.revenueMinor} />
+          <Amount minor={-row.costMinor} muted />
+          <Amount minor={row.marginMinor} />
+          <span class="tnum" style="width:4rem; text-align:right">
+            {row.marginBasisPoints === null
+              ? "—"
+              : formatBasisPoints(row.marginBasisPoints)}
+          </span>
+        </span>
+      </div>
+    ))
+  }
+
+  <div class="list-group-header" style="margin-top:1rem">
+    <span>{fo.margin.acquirerComparison}</span>
+  </div>
+  <p
+    style="padding:.25rem .875rem .5rem; font-size: var(--text-2xs); color: var(--color-ink-muted)"
+  >
+    Veruligur prísur roknaður úr avroknaðum tølum — ikki úr tilboðnum prísi.
+  </p>
+  {
+    acquirers.map((acquirer) => (
+      <div class="list-row">
+        <span class="list-row-primary">{acquirer.acquirer}</span>
+        <span class="list-row-meta">
+          <span class="tnum">{acquirer.transactionCount}</span>
+          <Amount decimal={acquirer.volume} />
+          <Amount decimal={acquirer.fees} />
+          <span class="tnum" style="width:4rem; text-align:right">
+            {acquirer.effectiveBasisPoints === null
+              ? "—"
+              : formatBasisPoints(acquirer.effectiveBasisPoints)}
+          </span>
+        </span>
+      </div>
+    ))
+  }
+</AppLayout>

@@ -1,0 +1,193 @@
+---
+import AppLayout from "~/layouts/AppLayout.astro";
+import Amount from "~/components/ui/Amount.astro";
+import StatusBadge from "~/components/ui/StatusBadge.astro";
+import Properties from "~/components/ui/Properties.astro";
+import PropertyRow from "~/components/ui/PropertyRow.astro";
+import Modal from "~/components/ui/Modal.astro";
+import { fo } from "~/content/fo";
+import { navFor, formatDateTime } from "~/lib/nav";
+import { scopeToMerchant } from "~/lib/auth";
+import { getTransaction } from "~/lib/db/queries";
+import { operationStatus, settlementStatus } from "~/lib/status";
+import { can } from "~/lib/audit";
+
+export const prerender = false;
+
+const actor = Astro.locals.actor!;
+const db = Astro.locals.runtime.env.DB;
+const merchantId = scopeToMerchant(actor, Astro.url.searchParams.get("handil"));
+
+const { transaction, operations, settlement } = await getTransaction(
+  db,
+  merchantId,
+  Astro.params.id!,
+);
+
+if (!transaction) return Astro.redirect("/gjaldingar");
+
+const row = transaction as Record<string, any>;
+const nav = navFor(actor);
+const mayMoveMoney = can(actor.role, "move_money");
+
+const captured = (row.amount_captured as number) ?? 0;
+const refunded = (row.amount_refunded as number) ?? 0;
+const refundable = Math.max(captured - refunded, 0);
+---
+
+<AppLayout
+  title={row.reference ?? row.id}
+  crumbs={[
+    { label: fo.transactions.title, href: "/gjaldingar" },
+    { label: row.reference ?? row.id },
+  ]}
+  nav={nav}
+  context={actor.kind === "staff" ? "Betal" : ""}
+>
+  <div slot="actions">
+    {
+      mayMoveMoney && refundable > 0 && (
+        <button
+          class="btn btn-danger"
+          type="button"
+          onclick="document.getElementById('refund-dialog').showModal()"
+        >
+          {fo.transactions.refund}
+        </button>
+      )
+    }
+  </div>
+
+  <div style="display:flex; align-items:flex-start; min-height:calc(100dvh - 2.75rem)">
+    <div style="flex:1; min-width:0; padding:1.25rem .875rem">
+      <div style="display:flex; align-items:baseline; gap:.75rem; margin-bottom:.25rem">
+        <span style="font-size:1.5rem" class="tnum">
+          <Amount minor={row.amount} currency={row.currency} />
+        </span>
+        <StatusBadge status={settlementStatus(row as any)} variant="pill" />
+      </div>
+      <p style="color: var(--color-ink-muted); font-size: var(--text-xs)">
+        {formatDateTime(row.created_at_ms)}
+        {row.error_code && ` · ${row.error_code}`}
+      </p>
+
+      <h2 style="font-size: var(--text-sm); margin:1.5rem 0 .5rem; color: var(--color-ink-secondary)">
+        Hendingar
+      </h2>
+      {
+        operations.length === 0 ? (
+          <p style="font-size: var(--text-xs); color: var(--color-ink-muted)">
+            {fo.common.none}
+          </p>
+        ) : (
+          operations.map((operation: any) => (
+            <div class="list-row" style="padding-left:0">
+              <StatusBadge
+                status={operationStatus(operation.type, operation.state)}
+              />
+              <span class="list-row-meta">
+                <span>{formatDateTime(operation.created_at_ms)}</span>
+                <Amount minor={operation.amount} />
+              </span>
+            </div>
+          ))
+        )
+      }
+
+      {
+        settlement.length > 0 && (
+          <>
+            <h2 style="font-size: var(--text-sm); margin:1.5rem 0 .5rem; color: var(--color-ink-secondary)">
+              {fo.settlements.title}
+            </h2>
+            <p style="font-size: var(--text-xs); color: var(--color-ink-muted); margin-bottom:.5rem">
+              {fo.settlements.explainer}
+            </p>
+            {settlement.map((line: any) => (
+              <div class="list-row" style="padding-left:0">
+                <span>{line.acquirer}</span>
+                <span class="list-row-meta">
+                  <span>{line.posting_date}</span>
+                  <Amount decimal={line.net_amount} currency={line.currency} />
+                </span>
+              </div>
+            ))}
+          </>
+        )
+      }
+    </div>
+
+    <Properties title={fo.common.status}>
+      <PropertyRow label={fo.common.reference}>{row.reference ?? "—"}</PropertyRow>
+      <PropertyRow label={fo.transactions.authorized} numeric>
+        <Amount minor={row.amount_authorized ?? row.amount} />
+      </PropertyRow>
+      <PropertyRow label={fo.transactions.captured} numeric>
+        <Amount minor={captured} />
+      </PropertyRow>
+      <PropertyRow label={fo.transactions.refunded} numeric>
+        <Amount minor={refunded} />
+      </PropertyRow>
+      {
+        row.surcharge > 0 && (
+          <PropertyRow label={fo.transactions.surcharge} numeric>
+            <Amount minor={row.surcharge} />
+          </PropertyRow>
+        )
+      }
+      <PropertyRow label={fo.transactions.method}>
+        {row.payment_method_type ?? "—"}
+      </PropertyRow>
+      <PropertyRow label={fo.transactions.scheme}>
+        {row.card_scheme ?? row.payment_method_sub_type ?? "—"}
+      </PropertyRow>
+      <PropertyRow label={fo.transactions.card} numeric>
+        {row.payment_method_display ?? "—"}
+      </PropertyRow>
+      <PropertyRow label={fo.transactions.issuer}>{row.card_issuer ?? "—"}</PropertyRow>
+      <PropertyRow label={fo.transactions.acquirer}>{row.acquirer ?? "—"}</PropertyRow>
+      <PropertyRow label={fo.transactions.sca}>
+        {row.sca_verification ?? "—"}
+      </PropertyRow>
+      <PropertyRow label="ID" mono>{row.id}</PropertyRow>
+    </Properties>
+  </div>
+
+  {
+    mayMoveMoney && refundable > 0 && (
+      <Modal
+        id="refund-dialog"
+        title={fo.transactions.refundConfirm}
+        danger
+        confirmLabel={fo.transactions.refund}
+      >
+        <form method="POST" action={`/api/gjaldingar/${row.id}/endurgjald`} id="refund-form">
+          <label style="display:block; font-size: var(--text-xs); color: var(--color-ink-muted); margin-bottom:.25rem">
+            {fo.common.amount}
+          </label>
+          <input
+            class="input tnum"
+            type="number"
+            name="amount"
+            step="1"
+            min="1"
+            max={refundable}
+            value={refundable}
+            required
+          />
+          <p style="font-size: var(--text-2xs); color: var(--color-ink-muted); margin-top:.375rem">
+            Í oyrum. Mest <Amount minor={refundable} currency={row.currency} />
+          </p>
+        </form>
+      </Modal>
+    )
+  }
+
+  <script is:inline>
+    document.getElementById("refund-dialog")?.addEventListener("close", (event) => {
+      if (event.target.returnValue === "confirm") {
+        document.getElementById("refund-form")?.submit();
+      }
+    });
+  </script>
+</AppLayout>

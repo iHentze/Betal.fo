@@ -1,35 +1,77 @@
 ---
 import AppLayout from "~/layouts/AppLayout.astro";
+import Amount from "~/components/ui/Amount.astro";
+import Banner from "~/components/ui/Banner.astro";
 import { fo } from "~/content/fo";
+import { navFor } from "~/lib/nav";
+import { scopeToMerchant } from "~/lib/auth";
+import { transactionTotals, pausedWebhooks } from "~/lib/db/queries";
 
 export const prerender = false;
 
-// The root redirects into whichever surface the signed-in user belongs to. Until auth
-// lands this simply points at the two entry points.
-const nav = [
-  {
-    items: [
-      { label: fo.nav.overview, href: "/" },
-      { label: fo.nav.transactions, href: "/gjaldingar" },
-      { label: fo.nav.settlements, href: "/avrokningar" },
-      { label: fo.nav.invoices, href: "/rokningar" },
-    ],
-  },
-  {
-    label: "Betal",
-    items: [
-      { label: fo.nav.merchants, href: "/betal/handlar" },
-      { label: fo.nav.periods, href: "/betal/tidarskeid" },
-      { label: fo.nav.margin, href: "/betal/vinningur" },
-    ],
-  },
-];
+const actor = Astro.locals.actor!;
+const db = Astro.locals.runtime.env.DB;
+const nav = navFor(actor);
+
+// Staff have no single merchant to summarise, so they start at the operating tools.
+if (actor.kind === "staff") return Astro.redirect("/betal/handlar");
+
+const merchantId = scopeToMerchant(actor, null);
+
+const now = new Date();
+const monthStart = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1);
+const dayStart = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
+
+const [today, month] = await Promise.all([
+  transactionTotals(db, { merchantId, state: "SUCCESS", from: dayStart }),
+  transactionTotals(db, { merchantId, state: "SUCCESS", from: monthStart }),
+]);
+
+const paused = (await pausedWebhooks(db)).filter((w) => w.merchant_id === merchantId);
 ---
 
-<AppLayout title={fo.nav.overview} crumbs={[{ label: fo.nav.overview }]} nav={nav} context="">
-  <div style="padding: 2rem .875rem">
-    <p style="color: var(--color-ink-muted); font-size: var(--text-sm)">
-      {fo.common.loading}
-    </p>
+<AppLayout
+  title={fo.nav.overview}
+  crumbs={[{ label: fo.nav.overview }]}
+  nav={nav}
+  context=""
+>
+  {
+    paused.length > 0 && (
+      <Fragment slot="banner">
+        <Banner
+          tone="paused"
+          title={fo.webhooks.paused}
+          detail={fo.webhooks.pausedExplainer}
+        />
+      </Fragment>
+    )
+  }
+
+  <div style="display:flex; gap:2.5rem; padding:1.5rem .875rem">
+    <div>
+      <div style="font-size: var(--text-2xs); color: var(--color-ink-faint)">Í dag</div>
+      <div style="font-size:1.5rem">
+        <Amount minor={today.gross} currency="DKK" />
+      </div>
+      <div style="font-size: var(--text-xs); color: var(--color-ink-muted)">
+        {fo.transactions.count(today.count)}
+      </div>
+    </div>
+    <div>
+      <div style="font-size: var(--text-2xs); color: var(--color-ink-faint)">
+        Hendan mánaðin
+      </div>
+      <div style="font-size:1.5rem">
+        <Amount minor={month.gross} currency="DKK" />
+      </div>
+      <div style="font-size: var(--text-xs); color: var(--color-ink-muted)">
+        {fo.transactions.count(month.count)}
+      </div>
+    </div>
+  </div>
+
+  <div style="padding:0 .875rem">
+    <a class="btn" href="/gjaldingar">{fo.transactions.title} →</a>
   </div>
 </AppLayout>

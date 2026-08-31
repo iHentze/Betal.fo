@@ -1,0 +1,86 @@
+---
+import AppLayout from "~/layouts/AppLayout.astro";
+import Amount from "~/components/ui/Amount.astro";
+import StatusBadge from "~/components/ui/StatusBadge.astro";
+import Banner from "~/components/ui/Banner.astro";
+import { fo } from "~/content/fo";
+import { navFor } from "~/lib/nav";
+import { periodStatus } from "~/lib/status";
+
+export const prerender = false;
+
+const actor = Astro.locals.actor!;
+if (actor.kind !== "staff") return Astro.redirect("/");
+
+const db = Astro.locals.runtime.env.DB;
+
+const periods = await db
+  .prepare(
+    `SELECT p.*, m.name AS merchant_name,
+            (SELECT COUNT(*) FROM period_discrepancy d
+              WHERE d.billing_period_id = p.id AND d.resolved_at IS NULL)
+              AS open_discrepancies
+       FROM billing_period p
+       JOIN merchant m ON m.id = p.merchant_id
+      ORDER BY p.year DESC, p.month DESC, m.name
+      LIMIT 100`,
+  )
+  .all<Record<string, any>>();
+
+const blocked = periods.results.filter((p) => p.open_discrepancies > 0);
+const nav = navFor(actor);
+---
+
+<AppLayout
+  title={fo.periods.title}
+  crumbs={[{ label: "Betal" }, { label: fo.periods.title }]}
+  nav={nav}
+  context="Betal"
+>
+  {
+    blocked.length > 0 && (
+      <Fragment slot="banner">
+        <Banner
+          tone="discrepancy"
+          title={fo.periods.discrepancyFound(
+            blocked.reduce((sum, p) => sum + Number(p.open_discrepancies), 0),
+          )}
+          detail={fo.periods.blocked}
+        />
+      </Fragment>
+    )
+  }
+
+  {
+    periods.results.map((period) => (
+      <a class="list-row" href={`/betal/tidarskeid/${period.id}`}>
+        <StatusBadge status={periodStatus(period.state)} iconOnly />
+        <span class="list-row-primary">
+          {period.merchant_name}
+          <span style="color: var(--color-ink-muted); margin-left:.5rem" class="tnum">
+            {period.year}-{String(period.month).padStart(2, "0")}
+          </span>
+        </span>
+        <span class="list-row-meta">
+          {period.open_discrepancies > 0 && (
+            <span style="color: var(--color-state-discrepancy)">
+              {period.open_discrepancies} {fo.periods.discrepancyFound(0).split(" ")[1]}
+            </span>
+          )}
+          <span class="tnum" title={fo.periods.inMirror}>
+            {period.mirror_count ?? "—"}
+          </span>
+          <span class="tnum" title={fo.periods.inEpay}>
+            {period.epay_count ?? "—"}
+          </span>
+          {period.gross_minor !== null && <Amount minor={period.gross_minor} />}
+          <StatusBadge status={periodStatus(period.state)} />
+        </span>
+      </a>
+    ))
+  }
+
+  <div class="list-footer">
+    {periods.results.length} {fo.periods.title.toLowerCase()}
+  </div>
+</AppLayout>

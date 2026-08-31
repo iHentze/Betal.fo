@@ -1,0 +1,163 @@
+---
+import AppLayout from "~/layouts/AppLayout.astro";
+import Amount from "~/components/ui/Amount.astro";
+import StatusBadge from "~/components/ui/StatusBadge.astro";
+import Banner from "~/components/ui/Banner.astro";
+import { fo } from "~/content/fo";
+import { navFor, formatDateTime, groupByDay } from "~/lib/nav";
+import { scopeToMerchant } from "~/lib/auth";
+import { listTransactions, transactionTotals, pausedWebhooks } from "~/lib/db/queries";
+import { settlementStatus } from "~/lib/status";
+
+export const prerender = false;
+
+const actor = Astro.locals.actor!;
+const db = Astro.locals.runtime.env.DB;
+const params = Astro.url.searchParams;
+
+const merchantId = scopeToMerchant(actor, params.get("handil"));
+
+const filters = {
+  merchantId,
+  state: params.get("stoda") ?? undefined,
+  search: params.get("leita") ?? undefined,
+  from: params.get("fra") ? Date.parse(params.get("fra")!) : undefined,
+  to: params.get("til") ? Date.parse(params.get("til")!) : undefined,
+};
+
+const cursor = params.get("cursor") ?? undefined;
+const page = await listTransactions(db, filters, 50, cursor);
+const totals = await transactionTotals(db, filters);
+const groups = groupByDay(page.rows);
+
+// A paused webhook stops this merchant's data silently — no error surfaces anywhere,
+// the events simply stop — so it is raised above the list rather than left in settings.
+const paused = (await pausedWebhooks(db)).filter((w) => w.merchant_id === merchantId);
+
+const nav = navFor(actor);
+const filtered = Boolean(filters.state || filters.search || filters.from);
+
+function withParam(key: string, value: string | null): string {
+  const next = new URLSearchParams(params);
+  if (value === null) next.delete(key);
+  else next.set(key, value);
+  next.delete("cursor");
+  return `?${next.toString()}`;
+}
+---
+
+<AppLayout
+  title={fo.transactions.title}
+  crumbs={[{ label: fo.transactions.title }]}
+  nav={nav}
+  context={actor.kind === "staff" ? "Betal" : ""}
+>
+  <form slot="actions" method="GET" style="display:flex; gap:.25rem">
+    <input
+      class="input"
+      type="search"
+      name="leita"
+      value={params.get("leita") ?? ""}
+      placeholder={fo.common.search}
+      style="width:12rem; font-size: var(--text-xs)"
+    />
+  </form>
+
+  {
+    paused.length > 0 && (
+      <Fragment slot="banner">
+        <Banner
+          tone="paused"
+          title={fo.webhooks.paused}
+          detail={fo.webhooks.pausedExplainer}
+          href="/stillingar"
+          actionLabel={fo.nav.settings}
+        />
+      </Fragment>
+    )
+  }
+
+  <div
+    style="display:flex; gap:.375rem; padding:.5rem .875rem; border-bottom:1px solid var(--color-line); flex-wrap:wrap"
+  >
+    {
+      [
+        { label: fo.common.all, value: null },
+        { label: "Góðkent", value: "SUCCESS" },
+        { label: "Miseydnað", value: "FAILED" },
+        { label: "Bíðar", value: "PENDING" },
+      ].map((option) => (
+        <a
+          class="btn"
+          href={withParam("stoda", option.value)}
+          style={
+            (params.get("stoda") ?? null) === option.value
+              ? "background: var(--color-surface-3)"
+              : undefined
+          }
+        >
+          {option.label}
+        </a>
+      ))
+    }
+    {
+      filtered && (
+        <a class="btn" href="/gjaldingar" style="margin-left:auto">
+          {fo.common.clear}
+        </a>
+      )
+    }
+  </div>
+
+  {
+    page.rows.length === 0 ? (
+      <p style="padding:2rem .875rem; color: var(--color-ink-muted)">
+        {filtered ? fo.transactions.emptyFiltered : fo.transactions.empty}
+      </p>
+    ) : (
+      groups.map((group) => (
+        <section>
+          <div class="list-group-header">
+            <span>{group.label}</span>
+            <span class="nav-count">{group.rows.length}</span>
+          </div>
+          {group.rows.map((row) => (
+            <a class="list-row" href={`/gjaldingar/${row.id}`}>
+              <StatusBadge status={settlementStatus(row)} iconOnly />
+              <span class="list-row-primary">
+                {row.reference ?? row.id}
+              </span>
+              <span class="list-row-meta">
+                {row.card_scheme && <span>{row.card_scheme}</span>}
+                {row.payment_method_display && (
+                  <span class="tnum">{row.payment_method_display.slice(-4)}</span>
+                )}
+                <span>{formatDateTime(row.created_at_ms)}</span>
+                <Amount minor={row.amount} currency={row.currency} />
+              </span>
+            </a>
+          ))}
+        </section>
+      ))
+    )
+  }
+
+  <div class="list-footer">
+    {fo.transactions.count(totals.count)}
+    {" · "}
+    <Amount minor={totals.gross} currency="DKK" />
+    {totals.refunded > 0 && (
+      <>
+        {" · "}
+        {fo.transactions.refunded} <Amount minor={totals.refunded} muted />
+      </>
+    )}
+    {
+      page.nextCursor && (
+        <a href={`?${new URLSearchParams({ ...Object.fromEntries(params), cursor: page.nextCursor })}`} style="margin-left:.75rem">
+          Næstu 50 →
+        </a>
+      )
+    }
+  </div>
+</AppLayout>

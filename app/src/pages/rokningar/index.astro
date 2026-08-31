@@ -1,0 +1,69 @@
+---
+import AppLayout from "~/layouts/AppLayout.astro";
+import Amount from "~/components/ui/Amount.astro";
+import StatusBadge from "~/components/ui/StatusBadge.astro";
+import { fo } from "~/content/fo";
+import { navFor, formatDate } from "~/lib/nav";
+import { scopeToMerchant } from "~/lib/auth";
+import { invoiceStatus } from "~/lib/status";
+
+export const prerender = false;
+
+const actor = Astro.locals.actor!;
+const db = Astro.locals.runtime.env.DB;
+const merchantId = scopeToMerchant(actor, Astro.url.searchParams.get("handil"));
+
+const invoices = await db
+  .prepare(
+    `SELECT id, number, kind, state, currency, net_minor, vat_minor, gross_minor,
+            issued_at, due_at, paid_at
+       FROM invoice
+      WHERE merchant_id = ?1 AND number IS NOT NULL
+      ORDER BY issued_at DESC
+      LIMIT 100`,
+  )
+  .bind(merchantId)
+  .all<Record<string, any>>();
+
+const nav = navFor(actor);
+---
+
+<AppLayout
+  title={fo.invoices.title}
+  crumbs={[{ label: fo.invoices.title }]}
+  nav={nav}
+  context={actor.kind === "staff" ? "Betal" : ""}
+>
+  {
+    invoices.results.length === 0 ? (
+      <p style="padding:2rem .875rem; color: var(--color-ink-muted)">
+        {fo.common.noResults}
+      </p>
+    ) : (
+      invoices.results.map((invoice) => (
+        <a class="list-row" href={`/rokningar/${invoice.id}`}>
+          <StatusBadge status={invoiceStatus(invoice.state)} iconOnly />
+          <span class="list-row-primary tnum">
+            {invoice.number}
+            {invoice.kind === "credit_note" && (
+              <span style="color: var(--color-ink-muted); margin-left:.5rem">
+                {fo.invoices.creditNote}
+              </span>
+            )}
+          </span>
+          <span class="list-row-meta">
+            <span>{formatDate(invoice.issued_at)}</span>
+            <span style="color: var(--color-ink-faint)">
+              {fo.invoices.due} {formatDate(invoice.due_at)}
+            </span>
+            <Amount minor={invoice.gross_minor} currency={invoice.currency} />
+          </span>
+        </a>
+      ))
+    )
+  }
+
+  <div class="list-footer">
+    {invoices.results.length} {fo.invoices.title.toLowerCase()}
+  </div>
+</AppLayout>

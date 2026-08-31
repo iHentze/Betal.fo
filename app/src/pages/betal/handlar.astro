@@ -1,0 +1,77 @@
+---
+import AppLayout from "~/layouts/AppLayout.astro";
+import StatusBadge from "~/components/ui/StatusBadge.astro";
+import { fo } from "~/content/fo";
+import { navFor, formatDate } from "~/lib/nav";
+import { webhookStatus } from "~/lib/status";
+
+export const prerender = false;
+
+const actor = Astro.locals.actor!;
+if (actor.kind !== "staff") return Astro.redirect("/");
+
+const db = Astro.locals.runtime.env.DB;
+
+const merchants = await db
+  .prepare(
+    `SELECT m.*,
+            (SELECT COUNT(*) FROM point_of_sale p WHERE p.merchant_id = m.id)
+              AS pos_count,
+            (SELECT MIN(w.paused_at) FROM webhook_endpoint w
+              WHERE w.merchant_id = m.id AND w.paused_at IS NOT NULL)
+              AS webhook_paused_at
+       FROM merchant m
+      WHERE m.archived_at IS NULL
+      ORDER BY m.name`,
+  )
+  .all<Record<string, any>>();
+
+const nav = navFor(actor);
+---
+
+<AppLayout
+  title={fo.merchants.title}
+  crumbs={[{ label: "Betal" }, { label: fo.merchants.title }]}
+  nav={nav}
+  context="Betal"
+>
+  <a slot="actions" class="btn btn-primary" href="/betal/handlar/nyggjur">
+    Nýggjur handil
+  </a>
+
+  {
+    merchants.results.length === 0 ? (
+      <p style="padding:2rem .875rem; color: var(--color-ink-muted)">
+        {fo.common.noResults}
+      </p>
+    ) : (
+      merchants.results.map((merchant) => (
+        <a class="list-row" href={`/gjaldingar?handil=${merchant.id}`}>
+          <span class="list-row-primary">{merchant.name}</span>
+          <span class="list-row-meta">
+            {merchant.v_tal && (
+              <span class="tnum" title={fo.merchants.vTal}>
+                {merchant.v_tal}
+              </span>
+            )}
+            <span>{merchant.acquirer ?? "—"}</span>
+            <span class="tnum">
+              {merchant.pos_count} {fo.merchants.pointsOfSale.toLowerCase()}
+            </span>
+            <span style="color: var(--color-ink-faint)">
+              {merchant.environment}
+            </span>
+            {/* A paused webhook silently stops this merchant's data, so it belongs on
+                the overview rather than buried in their settings. */}
+            <StatusBadge status={webhookStatus(merchant.webhook_paused_at)} />
+            <span>{formatDate(merchant.created_at)}</span>
+          </span>
+        </a>
+      ))
+    )
+  }
+
+  <div class="list-footer">
+    {merchants.results.length} {fo.merchants.title.toLowerCase()}
+  </div>
+</AppLayout>
