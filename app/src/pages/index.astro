@@ -1,41 +1,90 @@
 ---
-import { env } from "~/lib/env";
 import AppLayout from "~/layouts/AppLayout.astro";
 import Amount from "~/components/ui/Amount.astro";
 import Banner from "~/components/ui/Banner.astro";
+import StatusBadge from "~/components/ui/StatusBadge.astro";
+import { env } from "~/lib/env";
 import { fo } from "~/content/fo";
-import { navFor } from "~/lib/nav";
-import { scopeToMerchant } from "~/lib/auth";
-import { transactionTotals, pausedWebhooks } from "~/lib/db/queries";
+import { navFor, formatDateTime, formatDate } from "~/lib/nav";
+import { merchantScopeOrNull } from "~/lib/auth";
+import { transactionTotals, pausedWebhooks, listTransactions } from "~/lib/db/queries";
+import { settlementStatus, invoiceStatus } from "~/lib/status";
 
 export const prerender = false;
 
 const actor = Astro.locals.actor!;
 const db = env.DB;
-const nav = navFor(actor);
 
 // Staff have no single merchant to summarise, so they start at the operating tools.
-if (actor.kind === "staff") return Astro.redirect("/betal/handlar");
+if (actor.kind === "staff" && !Astro.url.searchParams.get("handil")) {
+  return Astro.redirect("/betal/handlar");
+}
 
-const merchantId = scopeToMerchant(actor, null);
+const merchantId = merchantScopeOrNull(actor, Astro.url.searchParams.get("handil"));
+if (!merchantId) return Astro.redirect("/betal/handlar");
 
 const now = new Date();
-const monthStart = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1);
 const dayStart = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
+const monthStart = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1);
 
-const [today, month] = await Promise.all([
-  transactionTotals(db, { merchantId, state: "SUCCESS", from: dayStart }),
-  transactionTotals(db, { merchantId, state: "SUCCESS", from: monthStart }),
-]);
+// Fourteen days of takings for the sparkline.
+const spanStart = dayStart - 13 * 86_400_000;
 
-const paused = (await pausedWebhooks(db)).filter((w) => w.merchant_id === merchantId);
+const [today, month, recent, dailyRows, transfers, invoices, allPaused, failedToday] =
+  await Promise.all([
+    transactionTotals(db, { merchantId, state: "SUCCESS", from: dayStart }),
+    transactionTotals(db, { merchantId, state: "SUCCESS", from: monthStart }),
+    listTransactions(db, { merchantId }, 6),
+    db
+      .prepare(
+        `SELECT CAST((created_at_ms - ?2) / 86400000 AS INTEGER) AS bucket,
+                COALESCE(SUM(amount), 0) AS total
+           FROM txn
+          WHERE merchant_id = ?1 AND state = 'SUCCESS' AND created_at_ms >= ?2
+          GROUP BY bucket ORDER BY bucket`,
+      )
+      .bind(merchantId, spanStart)
+      .all<{ bucket: number; total: number }>(),
+    db
+      .prepare(
+        `SELECT id, posting_date, net_amount, currency, acquirer
+           FROM settlement_transfer WHERE merchant_id = ?1
+          ORDER BY posting_date DESC LIMIT 3`,
+      )
+      .bind(merchantId)
+      .all<Record<string, any>>(),
+    db
+      .prepare(
+        `SELECT id, number, state, gross_minor, currency, due_at
+           FROM invoice
+          WHERE merchant_id = ?1 AND state IN ('issued','overdue')
+          ORDER BY due_at LIMIT 3`,
+      )
+      .bind(merchantId)
+      .all<Record<string, any>>(),
+    pausedWebhooks(db),
+    transactionTotals(db, { merchantId, state: "FAILED", from: dayStart }),
+  ]);
+
+const paused = allPaused.filter((w) => w.merchant_id === merchantId);
+const nav = navFor(actor, merchantId);
+
+// Fill the missing days so the chart shows quiet days rather than skipping them.
+const byBucket = new Map(dailyRows.results.map((r) => [r.bucket, r.total]));
+const days = Array.from({ length: 14 }, (_, i) => byBucket.get(i) ?? 0);
+const peak = Math.max(...days, 1);
+
+const outstanding = invoices.results.reduce(
+  (sum, i) => sum + Number(i.gross_minor),
+  0,
+);
 ---
 
 <AppLayout
   title={fo.nav.overview}
   crumbs={[{ label: fo.nav.overview }]}
   nav={nav}
-  context=""
+  context={actor.kind === "staff" ? "Betal" : ""}
 >
   {
     paused.length > 0 && (
@@ -44,35 +93,149 @@ const paused = (await pausedWebhooks(db)).filter((w) => w.merchant_id === mercha
           tone="paused"
           title={fo.webhooks.paused}
           detail={fo.webhooks.pausedExplainer}
+          href={`/stillingar?handil=${merchantId}`}
+          actionLabel={fo.nav.settings}
         />
       </Fragment>
     )
   }
 
-  <div style="display:flex; gap:2.5rem; padding:1.5rem .875rem">
-    <div>
-      <div style="font-size: var(--text-2xs); color: var(--color-ink-faint)">Í dag</div>
-      <div style="font-size:1.5rem">
-        <Amount minor={today.gross} currency="DKK" />
+  <div class="cards">
+    <!-- The day, with two weeks of context behind it. -->
+    <section class="card">
+      <div class="card-head">
+        <span class="card-title">Í dag</span>
+        <a class="card-link" href={`/gjaldingar?handil=${merchantId}`}>
+          {fo.transactions.title} →
+        </a>
       </div>
-      <div style="font-size: var(--text-xs); color: var(--color-ink-muted)">
-        {fo.transactions.count(today.count)}
+      <div class="card-body">
+        <div class="card-figure">
+          <Amount minor={today.gross} currency="DKK" />
+        </div>
+        <div class="card-note">
+          {fo.transactions.count(today.count)}
+          {failedToday.count > 0 && ` · ${failedToday.count} miseydnað`}
+        </div>
+        <div class="spark" aria-hidden="true">
+          {
+            days.map((value, index) => (
+              <div
+                class:list={["spark-bar", index === days.length - 1 && "is-last"]}
+                style={`height: ${Math.max((value / peak) * 100, 3)}%`}
+                title={`${value / 100}`}
+              />
+            ))
+          }
+        </div>
+        <div class="card-note">Seinastu 14 dagar</div>
       </div>
-    </div>
-    <div>
-      <div style="font-size: var(--text-2xs); color: var(--color-ink-faint)">
-        Hendan mánaðin
-      </div>
-      <div style="font-size:1.5rem">
-        <Amount minor={month.gross} currency="DKK" />
-      </div>
-      <div style="font-size: var(--text-xs); color: var(--color-ink-muted)">
-        {fo.transactions.count(month.count)}
-      </div>
-    </div>
-  </div>
+    </section>
 
-  <div style="padding:0 .875rem">
-    <a class="btn" href="/gjaldingar">{fo.transactions.title} →</a>
+    <section class="card">
+      <div class="card-head">
+        <span class="card-title">Hendan mánaðin</span>
+      </div>
+      <div class="card-body">
+        <div class="card-figure">
+          <Amount minor={month.gross} currency="DKK" />
+        </div>
+        <div class="card-note">{fo.transactions.count(month.count)}</div>
+      </div>
+    </section>
+
+    <!-- What actually reached the bank, which is not the same as what was sold. -->
+    <section class="card">
+      <div class="card-head">
+        <span class="card-title">{fo.settlements.title}</span>
+        <a class="card-link" href={`/avrokningar?handil=${merchantId}`}>Alt →</a>
+      </div>
+      {
+        transfers.results.length === 0 ? (
+          <div class="card-body">
+            <div class="card-note">Ongar avrokningar enn.</div>
+          </div>
+        ) : (
+          transfers.results.map((transfer) => (
+            <a class="card-row" href={`/avrokningar?handil=${merchantId}`}>
+              <span>{formatDate(transfer.posting_date)}</span>
+              <span style="color: var(--color-ink-faint)">{transfer.acquirer}</span>
+              <span class="card-row-amount">
+                <Amount decimal={transfer.net_amount} currency={transfer.currency} />
+              </span>
+            </a>
+          ))
+        )
+      }
+    </section>
+
+    <section class="card">
+      <div class="card-head">
+        <span class="card-title">{fo.transactions.title}</span>
+        <a class="card-link" href={`/gjaldingar?handil=${merchantId}`}>Alt →</a>
+      </div>
+      {
+        recent.rows.length === 0 ? (
+          <div class="card-body">
+            <div class="card-note">{fo.transactions.empty}</div>
+          </div>
+        ) : (
+          recent.rows.map((txn) => (
+            <a class="card-row" href={`/gjaldingar/${txn.id}?handil=${merchantId}`}>
+              <StatusBadge status={settlementStatus(txn)} iconOnly />
+              <span class="truncate-cell">{txn.reference ?? txn.id}</span>
+              <span class="card-row-amount">
+                <span style="color: var(--color-ink-faint); margin-right:.5rem">
+                  {formatDateTime(txn.created_at_ms)}
+                </span>
+                <Amount minor={txn.amount} />
+              </span>
+            </a>
+          ))
+        )
+      }
+    </section>
+
+    {
+      invoices.results.length > 0 && (
+        <section class="card">
+          <div class="card-head">
+            <span class="card-title">Ógoldnar rokningar</span>
+            <a class="card-link" href={`/rokningar?handil=${merchantId}`}>Alt →</a>
+          </div>
+          <div class="card-body">
+            <div class="card-figure" style="font-size:1.25rem">
+              <Amount minor={outstanding} currency="DKK" />
+            </div>
+          </div>
+          {invoices.results.map((invoice) => (
+            <a class="card-row" href={`/rokningar/${invoice.id}?handil=${merchantId}`}>
+              <StatusBadge status={invoiceStatus(invoice.state)} iconOnly />
+              <span class="tnum">{invoice.number}</span>
+              <span class="card-row-amount">
+                <span style="color: var(--color-ink-faint); margin-right:.5rem">
+                  {formatDate(invoice.due_at)}
+                </span>
+                <Amount minor={invoice.gross_minor} />
+              </span>
+            </a>
+          ))}
+        </section>
+      )
+    }
+
+    <section class="card">
+      <div class="card-head">
+        <span class="card-title">Skjót leið</span>
+      </div>
+      <div class="card-body" style="display:flex; gap:.5rem; flex-wrap:wrap">
+        <a class="btn" href={`/gjaldsleinki?handil=${merchantId}`}>
+          {fo.nav.links}
+        </a>
+        <a class="btn" href={`/api/utflutningur?handil=${merchantId}&man=${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, "0")}`}>
+          Bókhaldsútflutningur
+        </a>
+      </div>
+    </section>
   </div>
 </AppLayout>

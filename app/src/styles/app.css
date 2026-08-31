@@ -91,7 +91,8 @@
   /* Density. Linear's list rows sit around 28px; the shell sidebar is ~230px. */
   --spacing-row: 1.75rem;
   --spacing-sidebar: 14.5rem;
-  --spacing-panel: 15rem;
+  /* Wide enough that a masked card number and an acquirer name fit on one line. */
+  --spacing-panel: 16.5rem;
 
   --radius-control: 0.375rem;
   --radius-panel: 0.5rem;
@@ -527,6 +528,238 @@
     margin-bottom: 0.25rem;
   }
 
+  /* ---- Overview cards --------------------------------------------------- */
+
+  /*
+   * A grid of small cards, each answering one question and linking to the screen
+   * that answers it fully. An overview built from a couple of bare numbers gives a
+   * merchant nothing to act on; this gives them the day, the money owed, and
+   * anything that needs attention.
+   */
+  .cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(19rem, 1fr));
+    gap: 0.75rem;
+    padding: 1rem 0.875rem 2rem;
+    align-items: start;
+  }
+
+  .card {
+    background: var(--color-surface-1);
+    border: 1px solid var(--color-line);
+    border-radius: var(--radius-panel);
+    overflow: hidden;
+  }
+
+  .card-head {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+    padding: 0.75rem 0.875rem 0.5rem;
+  }
+
+  .card-title {
+    font-size: var(--text-xs);
+    color: var(--color-ink-secondary);
+    font-weight: 500;
+  }
+
+  .card-link {
+    margin-left: auto;
+    font-size: var(--text-2xs);
+    color: var(--color-ink-muted);
+    text-decoration: none;
+  }
+
+  .card-link:hover {
+    color: var(--color-ink);
+  }
+
+  .card-body {
+    padding: 0 0.875rem 0.875rem;
+  }
+
+  .card-figure {
+    font-size: 1.625rem;
+    line-height: 1.15;
+    color: var(--color-ink);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .card-note {
+    font-size: var(--text-2xs);
+    color: var(--color-ink-muted);
+    margin-top: 0.125rem;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Compact rows inside a card, tighter than the main table. */
+  .card-row {
+    display: flex;
+    align-items: baseline;
+    gap: 0.625rem;
+    padding: 0.3125rem 0.875rem;
+    font-size: var(--text-xs);
+    color: var(--color-ink-secondary);
+    text-decoration: none;
+    border-top: 1px solid color-mix(in oklch, var(--color-line) 50%, transparent);
+  }
+
+  a.card-row:hover {
+    background: var(--color-surface-2);
+  }
+
+  .card-row-amount {
+    margin-left: auto;
+    color: var(--color-ink);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
+  /* A minimal bar chart, drawn with divs rather than a charting dependency. */
+  .spark {
+    display: flex;
+    align-items: flex-end;
+    gap: 2px;
+    height: 2.75rem;
+    margin-top: 0.625rem;
+  }
+
+  .spark-bar {
+    flex: 1;
+    min-height: 2px;
+    border-radius: 1px;
+    background: color-mix(in oklch, var(--color-accent) 45%, transparent);
+  }
+
+  .spark-bar.is-last {
+    background: var(--color-accent);
+  }
+
+  /* ---- Detail views ---------------------------------------------------- */
+
+  /*
+   * On a payment screen the amount is the headline, not the record id. Stripe, Whop
+   * and Wise all lead with it and everything else reads as supporting detail.
+   */
+  .detail-eyebrow {
+    font-size: var(--text-2xs);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--color-ink-faint);
+    margin-bottom: 0.375rem;
+  }
+
+  .detail-amount {
+    font-size: 2rem;
+    line-height: 1.1;
+    color: var(--color-ink);
+    font-variant-numeric: tabular-nums;
+    font-weight: 500;
+  }
+
+  .detail-head {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+  }
+
+  .section-title {
+    font-size: var(--text-sm);
+    font-weight: 500;
+    color: var(--color-ink-secondary);
+    margin: 1.75rem 0 0.625rem;
+  }
+
+  /*
+   * The money breakdown: what was charged, what the acquirer took, what arrives.
+   * This is the number merchants actually want and the reason the settlement data
+   * is worth mirroring at all.
+   */
+  .breakdown {
+    border: 1px solid var(--color-line);
+    border-radius: var(--radius-panel);
+    overflow: hidden;
+    max-width: 30rem;
+  }
+
+  .breakdown-row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.5rem 0.75rem;
+    font-size: var(--text-xs);
+    border-bottom: 1px solid var(--color-line);
+  }
+
+  .breakdown-row:last-child {
+    border-bottom: 0;
+  }
+
+  .breakdown-row.is-total {
+    background: var(--color-surface-1);
+    font-size: var(--text-sm);
+    color: var(--color-ink);
+  }
+
+  .breakdown-label {
+    color: var(--color-ink-muted);
+  }
+
+  .breakdown-row.is-total .breakdown-label {
+    color: var(--color-ink-secondary);
+  }
+
+  /* A real timeline, with a connector, rather than a list of rows. */
+  .timeline {
+    position: relative;
+    padding-left: 1.125rem;
+  }
+
+  .timeline::before {
+    content: "";
+    position: absolute;
+    left: 0.25rem;
+    top: 0.4rem;
+    bottom: 0.6rem;
+    width: 1px;
+    background: var(--color-line-strong);
+  }
+
+  .timeline-item {
+    position: relative;
+    display: flex;
+    align-items: baseline;
+    gap: 0.75rem;
+    padding: 0.3125rem 0;
+    font-size: var(--text-xs);
+  }
+
+  .timeline-item::before {
+    content: "";
+    position: absolute;
+    left: -1.125rem;
+    top: 0.6rem;
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 50%;
+    background: var(--dot, var(--color-ink-faint));
+    outline: 3px solid var(--color-surface-0);
+  }
+
+  .timeline-label {
+    color: var(--color-ink);
+  }
+
+  .timeline-meta {
+    margin-left: auto;
+    color: var(--color-ink-muted);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
   /* ---- Status --------------------------------------------------------- */
 
   .status {
@@ -576,14 +809,16 @@
 
   .property-label {
     color: var(--color-ink-muted);
-    width: 5.5rem;
+    width: 5rem;
     flex-shrink: 0;
   }
 
   .property-value {
     color: var(--color-ink);
     min-width: 0;
-    overflow-wrap: anywhere;
+    /* Break only where there is nowhere else to go. `anywhere` was splitting card
+       numbers mid-digit, which reads as corruption rather than wrapping. */
+    overflow-wrap: break-word;
   }
 
   /* ---- Controls ------------------------------------------------------- */

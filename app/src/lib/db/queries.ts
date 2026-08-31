@@ -216,13 +216,16 @@ export async function getTransaction(
   transaction: Record<string, unknown> | null;
   operations: Record<string, unknown>[];
   settlement: Record<string, unknown>[];
+  adjustments: Array<{ type: string; amount: string; description: string | null }>;
 }> {
   const transaction = await db
     .prepare(`SELECT * FROM txn WHERE merchant_id = ?1 AND id = ?2`)
     .bind(merchantId, transactionId)
     .first<Record<string, unknown>>();
 
-  if (!transaction) return { transaction: null, operations: [], settlement: [] };
+  if (!transaction) {
+    return { transaction: null, operations: [], settlement: [], adjustments: [] };
+  }
 
   const operations = await db
     .prepare(
@@ -243,10 +246,26 @@ export async function getTransaction(
     .bind(transactionId)
     .all<Record<string, unknown>>();
 
+  // The acquirer, interchange and scheme fees charged against this one payment.
+  // Shown inline on the transaction so the gap between what was charged and what
+  // will arrive is answered where the question is asked, rather than only on the
+  // settlements screen.
+  const adjustments = await db
+    .prepare(
+      `SELECT a.type, a.amount, a.description
+         FROM settlement_adjustment a
+         JOIN settlement_transaction st ON st.id = a.settlement_transaction_id
+        WHERE st.transaction_id = ?1
+        ORDER BY a.type`,
+    )
+    .bind(transactionId)
+    .all<{ type: string; amount: string; description: string | null }>();
+
   return {
     transaction,
     operations: operations.results,
     settlement: settlement.results,
+    adjustments: adjustments.results,
   };
 }
 
