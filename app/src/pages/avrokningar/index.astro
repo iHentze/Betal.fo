@@ -1,12 +1,12 @@
 ---
-import { env } from "~/lib/env";
 import AppLayout from "~/layouts/AppLayout.astro";
 import Amount from "~/components/ui/Amount.astro";
+import { env } from "~/lib/env";
 import { fo } from "~/content/fo";
 import { navFor, formatDate } from "~/lib/nav";
 import { scopeToMerchant } from "~/lib/auth";
 import { listSettlementTransfers, settlementFeeBreakdown } from "~/lib/db/queries";
-import { sumDecimals } from "~/lib/money";
+import { sumDecimals, decimalToMinor } from "~/lib/money";
 
 export const prerender = false;
 
@@ -17,13 +17,33 @@ const merchantId = scopeToMerchant(actor, Astro.url.searchParams.get("handil"));
 const transfers = await listSettlementTransfers(db, merchantId, 50);
 
 // The fee breakdown is the point of this screen: it answers "why is the money in my
-// bank less than what I sold?", which is the question merchants ask constantly and
-// almost no gateway dashboard answers.
-const breakdowns = await Promise.all(
-  transfers.map(async (transfer) => ({
-    transfer,
-    fees: await settlementFeeBreakdown(db, transfer.id as string),
-  })),
+// bank less than what I sold?", which merchants ask constantly and almost no gateway
+// dashboard answers.
+const rows = await Promise.all(
+  transfers.map(async (transfer) => {
+    const fees = await settlementFeeBreakdown(db, transfer.id as string);
+    const totalFees = fees.length > 0 ? sumDecimals(fees.map((f) => f.total)) : "0.00";
+    const netMinor = decimalToMinor(transfer.net_amount as string);
+    const feesMinor = decimalToMinor(totalFees);
+    return {
+      transfer,
+      fees,
+      totalFees,
+      netMinor,
+      feesMinor,
+      // What the sales were worth before the acquirer took its cut.
+      grossMinor: netMinor - feesMinor,
+    };
+  }),
+);
+
+const totals = rows.reduce(
+  (acc, row) => ({
+    net: acc.net + row.netMinor,
+    fees: acc.fees + row.feesMinor,
+    gross: acc.gross + row.grossMinor,
+  }),
+  { net: 0, fees: 0, gross: 0 },
 );
 
 const feeLabels: Record<string, string> = {
@@ -35,6 +55,7 @@ const feeLabels: Record<string, string> = {
   FEE: fo.settlements.fee,
 };
 
+const COLUMNS = "minmax(7rem, 1fr) 7rem 5rem 8.5rem 8rem 9rem";
 const nav = navFor(actor);
 ---
 
@@ -44,72 +65,118 @@ const nav = navFor(actor);
   nav={nav}
   context={actor.kind === "staff" ? "Betal" : ""}
 >
+  <div class="page-header">
+    <div>
+      <div class="stat-label">Útgoldið tilsamans</div>
+      <div class="stat-value"><Amount minor={totals.net} currency="DKK" /></div>
+      <div class="stat-sub">{rows.length} avrokningar</div>
+    </div>
+    <div>
+      <div class="stat-label">Sølan var</div>
+      <div class="stat-value" style="font-size:1.125rem">
+        <Amount minor={totals.gross} />
+      </div>
+    </div>
+    <div>
+      <div class="stat-label">{fo.settlements.fees}</div>
+      <div class="stat-value" style="font-size:1.125rem">
+        <Amount minor={totals.fees} />
+      </div>
+      <div class="stat-sub">
+        {totals.gross > 0
+          ? `${((Math.abs(totals.fees) / totals.gross) * 100).toFixed(2).replace(".", ",")} %`
+          : "—"}
+      </div>
+    </div>
+  </div>
+
   <p
-    style="padding:.75rem .875rem; font-size: var(--text-xs); color: var(--color-ink-muted); border-bottom:1px solid var(--color-line)"
+    style="padding:.625rem .875rem; font-size: var(--text-xs); color: var(--color-ink-muted); border-bottom:1px solid var(--color-line)"
   >
     {fo.settlements.explainer}
   </p>
 
   {
-    breakdowns.length === 0 ? (
-      <p style="padding:2rem .875rem; color: var(--color-ink-muted)">
-        {fo.settlements.empty}
-      </p>
+    rows.length === 0 ? (
+      <div class="empty">
+        <div class="empty-title">{fo.settlements.empty}</div>
+        Avrokningar koma, tá innloysarin hevur útgoldið.
+      </div>
     ) : (
-      breakdowns.map(({ transfer, fees }) => {
-        const totalFees =
-          fees.length > 0 ? sumDecimals(fees.map((f) => f.total)) : "0.00";
-        return (
-          <section style="border-bottom:1px solid var(--color-line)">
-            <div class="list-row" style="min-height:2.5rem">
-              <span class="list-row-primary">
-                {formatDate(transfer.posting_date as string)}
-                <span style="color: var(--color-ink-muted); margin-left:.5rem">
-                  {transfer.acquirer as string}
-                </span>
+      <div class="table" style={`--cols: ${COLUMNS}`}>
+        <div class="group-header">
+          <span class="group-title">{fo.settlements.posted}</span>
+          <span class="group-count">{fo.transactions.acquirer}</span>
+          <span class="group-count cell-num">{fo.settlements.transactionCount}</span>
+          <span class="group-count cell-num">Sølan</span>
+          <span class="group-count cell-num">{fo.settlements.fees}</span>
+          <span class="group-count cell-num">{fo.settlements.netAmount}</span>
+        </div>
+
+        {rows.map((row) => (
+          <details>
+            <summary class="trow" style="cursor:pointer; list-style:none">
+              <span class="cell-primary">
+                {formatDate(row.transfer.posting_date as string)}
               </span>
-              <span class="list-row-meta">
-                <span>
-                  {String(transfer.transaction_count ?? 0)}{" "}
-                  {fo.settlements.transactionCount.toLowerCase()}
-                </span>
+              <span class="cell-quiet">{row.transfer.acquirer as string}</span>
+              <span class="cell-quiet cell-num">
+                {String(row.transfer.transaction_count ?? 0)}
+              </span>
+              <span class="cell-num" style="color: var(--color-ink-secondary)">
+                <Amount minor={row.grossMinor} />
+              </span>
+              <span class="cell-num">
+                <Amount minor={row.feesMinor} />
+              </span>
+              <span class="cell-amount">
                 <Amount
-                  decimal={transfer.net_amount as string}
-                  currency={transfer.currency as string}
+                  minor={row.netMinor}
+                  currency={row.transfer.currency as string}
                 />
               </span>
-            </div>
+            </summary>
 
-            {fees.length > 0 && (
-              <div style="padding:.25rem .875rem .75rem 2rem">
-                <div
-                  style="font-size: var(--text-2xs); color: var(--color-ink-faint); margin-bottom:.25rem"
-                >
+            {row.fees.length > 0 && (
+              <div
+                style="padding:.5rem .875rem .875rem 1.5rem; background: var(--color-surface-1); border-bottom:1px solid var(--color-line)"
+              >
+                <div class="stat-label" style="margin-bottom:.375rem">
                   {fo.settlements.breakdown}
                 </div>
-                {fees.map((fee) => (
-                  <div class="property-row" style="max-width:22rem">
-                    <span class="property-label" style="width:10rem">
+                {row.fees.map((fee) => (
+                  <div
+                    style="display:grid; grid-template-columns: 12rem 8rem 5rem; gap:.875rem; padding:.1875rem 0; font-size: var(--text-xs)"
+                  >
+                    <span style="color: var(--color-ink-muted)">
                       {feeLabels[fee.type] ?? fee.type}
                     </span>
-                    <span class="property-value">
+                    <span class="cell-num">
                       <Amount decimal={fee.total} />
+                    </span>
+                    <span class="cell-num" style="color: var(--color-ink-faint)">
+                      {row.grossMinor > 0
+                        ? `${((Math.abs(decimalToMinor(fee.total)) / row.grossMinor) * 100).toFixed(2).replace(".", ",")} %`
+                        : ""}
                     </span>
                   </div>
                 ))}
-                <div class="property-row" style="max-width:22rem; border-top:1px solid var(--color-line); margin-top:.25rem; padding-top:.25rem">
-                  <span class="property-label" style="width:10rem">
+                <div
+                  style="display:grid; grid-template-columns: 12rem 8rem 5rem; gap:.875rem; padding:.375rem 0 0; margin-top:.25rem; border-top:1px solid var(--color-line); font-size: var(--text-xs)"
+                >
+                  <span style="color: var(--color-ink-secondary)">
                     {fo.settlements.fees}
                   </span>
-                  <span class="property-value">
-                    <Amount decimal={totalFees} />
+                  <span class="cell-num" style="color: var(--color-ink)">
+                    <Amount decimal={row.totalFees} />
                   </span>
+                  <span />
                 </div>
               </div>
             )}
-          </section>
-        );
-      })
+          </details>
+        ))}
+      </div>
     )
   }
 </AppLayout>

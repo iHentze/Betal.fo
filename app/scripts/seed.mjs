@@ -180,13 +180,21 @@ for (let d = 0; d < 31; d += 1) {
     // A coffee shop: 25 to 320 kroner.
     const amount = (25 + Math.floor(rand() * 295)) * 100;
     const failed = rand() < 0.05;
+    const scheme = pick(schemes);
+    // Card prefixes by scheme, with varying last four, so the list looks like real
+    // trade rather than one card used two hundred times.
+    const prefix =
+      scheme === "Visa" ? "45710000" : scheme === "Mastercard" ? "51701600" : "50190005";
+    const tail = String(1000 + Math.floor(rand() * 8999));
+
     transactions.push({
       id: `TX${String(transactions.length + 1).padStart(5, "0")}`,
       amount,
       at,
       state: failed ? "FAILED" : "SUCCESS",
-      scheme: pick(schemes),
+      scheme,
       issuer: pick(issuers),
+      pan: `${prefix}XXXX${tail}`,
       reference: `${pick(references)}-${day}${i}`,
       errorCode: failed ? pick(["INSUFFICIENT_FUNDS", "DO_NOT_HONOR"]) : null,
     });
@@ -211,7 +219,7 @@ for (const tx of transactions) {
   ) VALUES (
     ${q(tx.id)}, ${q(MERCHANT_ID)}, ${q(POS_ID)}, ${q(randomUUID())},
     ${q(tx.state)}, 'PAYMENT', ${q(tx.errorCode)}, ${tx.amount}, 0, 'DKK',
-    ${q(randomUUID())}, 'CARD', ${q(tx.scheme)}, '45710000XXXX0003', 'NORMAL', 'VOID',
+    ${q(randomUUID())}, 'CARD', ${q(tx.scheme)}, ${q(tx.pan)}, 'NORMAL', 'VOID',
     ${q(tx.reference)}, 'clearhaus', '5814', ${tx.amount}, ${captured},
     ${tx.refunded ?? 0}, 0, ${captured - (tx.refunded ?? 0)},
     ${q(tx.scheme)}, ${q(tx.issuer)}, 'FO', 'debit', '3DS', 'FRICTIONLESS', 'FO',

@@ -1,8 +1,8 @@
 ---
-import { env } from "~/lib/env";
 import AppLayout from "~/layouts/AppLayout.astro";
 import Amount from "~/components/ui/Amount.astro";
 import StatusBadge from "~/components/ui/StatusBadge.astro";
+import { env } from "~/lib/env";
 import { fo } from "~/content/fo";
 import { navFor, formatDate } from "~/lib/nav";
 import { scopeToMerchant } from "~/lib/auth";
@@ -26,6 +26,15 @@ const invoices = await db
   .bind(merchantId)
   .all<Record<string, any>>();
 
+const outstanding = invoices.results
+  .filter((i) => i.state === "issued" || i.state === "overdue")
+  .reduce((sum, i) => sum + Number(i.gross_minor), 0);
+
+const paid = invoices.results
+  .filter((i) => i.state === "paid")
+  .reduce((sum, i) => sum + Number(i.gross_minor), 0);
+
+const COLUMNS = "0.6rem 9rem minmax(0, 1fr) 7rem 7rem 8rem 9rem";
 const nav = navFor(actor);
 ---
 
@@ -35,36 +44,58 @@ const nav = navFor(actor);
   nav={nav}
   context={actor.kind === "staff" ? "Betal" : ""}
 >
+  <div class="page-header">
+    <div>
+      <div class="stat-label">Ógoldið</div>
+      <div class="stat-value"><Amount minor={outstanding} currency="DKK" /></div>
+      <div class="stat-sub">{invoices.results.length} rokningar</div>
+    </div>
+    <div>
+      <div class="stat-label">Goldið</div>
+      <div class="stat-value" style="font-size:1.125rem">
+        <Amount minor={paid} />
+      </div>
+    </div>
+  </div>
+
   {
     invoices.results.length === 0 ? (
-      <p style="padding:2rem .875rem; color: var(--color-ink-muted)">
-        {fo.common.noResults}
-      </p>
+      <div class="empty">
+        <div class="empty-title">{fo.common.noResults}</div>
+        Rokningar koma, tá fyrsta tíðarskeiðið er avstemt.
+      </div>
     ) : (
-      invoices.results.map((invoice) => (
-        <a class="list-row" href={`/rokningar/${invoice.id}`}>
-          <StatusBadge status={invoiceStatus(invoice.state)} iconOnly />
-          <span class="list-row-primary tnum">
-            {invoice.number}
-            {invoice.kind === "credit_note" && (
-              <span style="color: var(--color-ink-muted); margin-left:.5rem">
-                {fo.invoices.creditNote}
-              </span>
-            )}
-          </span>
-          <span class="list-row-meta">
-            <span>{formatDate(invoice.issued_at)}</span>
-            <span style="color: var(--color-ink-faint)">
-              {fo.invoices.due} {formatDate(invoice.due_at)}
+      <div class="table" style={`--cols: ${COLUMNS}`}>
+        <div class="group-header">
+          <span />
+          <span class="group-title">{fo.invoices.number}</span>
+          <span class="group-count">{fo.common.status}</span>
+          <span class="group-count">{fo.invoices.issued}</span>
+          <span class="group-count">{fo.invoices.due}</span>
+          <span class="group-count cell-num">{fo.invoices.net}</span>
+          <span class="group-count cell-num">{fo.invoices.gross}</span>
+        </div>
+
+        {invoices.results.map((invoice) => (
+          <a class="trow" href={`/rokningar/${invoice.id}`}>
+            <StatusBadge status={invoiceStatus(invoice.state)} iconOnly />
+            <span class="cell-primary tnum">{invoice.number}</span>
+            <span class="cell-quiet">
+              {invoice.kind === "credit_note"
+                ? fo.invoices.creditNote
+                : invoiceStatus(invoice.state).label}
             </span>
-            <Amount minor={invoice.gross_minor} currency={invoice.currency} />
-          </span>
-        </a>
-      ))
+            <span class="cell-quiet">{formatDate(invoice.issued_at)}</span>
+            <span class="cell-quiet">{formatDate(invoice.due_at)}</span>
+            <span class="cell-num" style="color: var(--color-ink-secondary)">
+              <Amount minor={invoice.net_minor} />
+            </span>
+            <span class="cell-amount">
+              <Amount minor={invoice.gross_minor} currency={invoice.currency} />
+            </span>
+          </a>
+        ))}
+      </div>
     )
   }
-
-  <div class="list-footer">
-    {invoices.results.length} {fo.invoices.title.toLowerCase()}
-  </div>
 </AppLayout>

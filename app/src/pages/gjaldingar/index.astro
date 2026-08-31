@@ -1,11 +1,11 @@
 ---
-import { env } from "~/lib/env";
 import AppLayout from "~/layouts/AppLayout.astro";
 import Amount from "~/components/ui/Amount.astro";
 import StatusBadge from "~/components/ui/StatusBadge.astro";
 import Banner from "~/components/ui/Banner.astro";
+import { env } from "~/lib/env";
 import { fo } from "~/content/fo";
-import { navFor, formatDateTime, groupByDay } from "~/lib/nav";
+import { navFor, groupByDay, sumAmounts } from "~/lib/nav";
 import { scopeToMerchant } from "~/lib/auth";
 import { listTransactions, transactionTotals, pausedWebhooks } from "~/lib/db/queries";
 import { settlementStatus } from "~/lib/status";
@@ -27,24 +27,63 @@ const filters = {
 };
 
 const cursor = params.get("cursor") ?? undefined;
-const page = await listTransactions(db, filters, 50, cursor);
-const totals = await transactionTotals(db, filters);
+const [page, totals, allPaused] = await Promise.all([
+  listTransactions(db, filters, 100, cursor),
+  transactionTotals(db, filters),
+  pausedWebhooks(db),
+]);
+
 const groups = groupByDay(page.rows);
-
-// A paused webhook stops this merchant's data silently — no error surfaces anywhere,
-// the events simply stop — so it is raised above the list rather than left in settings.
-const paused = (await pausedWebhooks(db)).filter((w) => w.merchant_id === merchantId);
-
+const paused = allPaused.filter((w) => w.merchant_id === merchantId);
 const nav = navFor(actor);
 const filtered = Boolean(filters.state || filters.search || filters.from);
+
+// Every field sits in the same column on every row. Without this the metadata is a
+// right-aligned cluster and a "Mastercard" row knocks the one above it out of line.
+//
+// The status is spelled out rather than left as a bare dot: "did I actually get paid"
+// is the question this list exists to answer, and a colour alone does not answer it.
+const COLUMNS =
+  "0.6rem minmax(8rem, 1fr) 10rem minmax(0, 6rem) 6rem 3.25rem 8.5rem";
+
+/**
+ * Show the status word only when something needs attention.
+ *
+ * Nearly every row in a healthy month is captured, so spelling that out 190 times is
+ * a column of identical words that the eye has to wade through. Leaving the normal
+ * case blank means a refund or a decline is the only thing written there, and it
+ * stops you. The dot still marks every row.
+ */
+function exceptionLabel(row: Parameters<typeof settlementStatus>[0]) {
+  const status = settlementStatus(row);
+  return status.tone === "success" && status.label === "Tikið" ? null : status;
+}
+
+/** Last four digits. The full masked PAN is too long to scan and mostly identical. */
+function cardTail(display: string | null): string {
+  if (!display) return "—";
+  return `•••• ${display.slice(-4)}`;
+}
 
 function withParam(key: string, value: string | null): string {
   const next = new URLSearchParams(params);
   if (value === null) next.delete(key);
   else next.set(key, value);
   next.delete("cursor");
-  return `?${next.toString()}`;
+  const query = next.toString();
+  return query ? `?${query}` : "/gjaldingar";
 }
+
+const stateFilters = [
+  { label: fo.common.all, value: null },
+  { label: "Góðkent", value: "SUCCESS" },
+  { label: "Miseydnað", value: "FAILED" },
+  { label: "Bíðar", value: "PENDING" },
+];
+
+const nextHref = page.nextCursor
+  ? `?${new URLSearchParams({ ...Object.fromEntries(params), cursor: page.nextCursor })}`
+  : null;
 ---
 
 <AppLayout
@@ -54,13 +93,14 @@ function withParam(key: string, value: string | null): string {
   context={actor.kind === "staff" ? "Betal" : ""}
 >
   <form slot="actions" method="GET" style="display:flex; gap:.25rem">
+    {params.get("stoda") && <input type="hidden" name="stoda" value={params.get("stoda")} />}
     <input
       class="input"
       type="search"
       name="leita"
       value={params.get("leita") ?? ""}
-      placeholder={fo.common.search}
-      style="width:12rem; font-size: var(--text-xs)"
+      placeholder={`${fo.common.search} tilvísing…`}
+      style="width:13rem; font-size: var(--text-xs)"
     />
   </form>
 
@@ -78,24 +118,40 @@ function withParam(key: string, value: string | null): string {
     )
   }
 
-  <div
-    style="display:flex; gap:.375rem; padding:.5rem .875rem; border-bottom:1px solid var(--color-line); flex-wrap:wrap"
-  >
+  <!-- The figures the page is about, before any individual row. -->
+  <div class="page-header">
+    <div>
+      <div class="stat-label">{filtered ? "Í úrvalinum" : "Tilsamans"}</div>
+      <div class="stat-value">
+        <Amount minor={totals.gross} currency="DKK" />
+      </div>
+      <div class="stat-sub">{fo.transactions.count(totals.count)}</div>
+    </div>
+    <div>
+      <div class="stat-label">{fo.transactions.captured}</div>
+      <div class="stat-value" style="font-size:1.125rem">
+        <Amount minor={totals.captured} />
+      </div>
+    </div>
     {
-      [
-        { label: fo.common.all, value: null },
-        { label: "Góðkent", value: "SUCCESS" },
-        { label: "Miseydnað", value: "FAILED" },
-        { label: "Bíðar", value: "PENDING" },
-      ].map((option) => (
+      totals.refunded > 0 && (
+        <div>
+          <div class="stat-label">{fo.transactions.refunded}</div>
+          <div class="stat-value" style="font-size:1.125rem">
+            <Amount minor={-totals.refunded} />
+          </div>
+        </div>
+      )
+    }
+  </div>
+
+  <div class="filter-bar">
+    {
+      stateFilters.map((option) => (
         <a
-          class="btn"
+          class="chip"
           href={withParam("stoda", option.value)}
-          style={
-            (params.get("stoda") ?? null) === option.value
-              ? "background: var(--color-surface-3)"
-              : undefined
-          }
+          aria-pressed={(params.get("stoda") ?? null) === option.value}
         >
           {option.label}
         </a>
@@ -103,8 +159,8 @@ function withParam(key: string, value: string | null): string {
     }
     {
       filtered && (
-        <a class="btn" href="/gjaldingar" style="margin-left:auto">
-          {fo.common.clear}
+        <a class="chip" href="/gjaldingar" style="margin-left:auto">
+          {fo.common.clear} ✕
         </a>
       )
     }
@@ -112,53 +168,73 @@ function withParam(key: string, value: string | null): string {
 
   {
     page.rows.length === 0 ? (
-      <p style="padding:2rem .875rem; color: var(--color-ink-muted)">
-        {filtered ? fo.transactions.emptyFiltered : fo.transactions.empty}
-      </p>
+      <div class="empty">
+        <div class="empty-title">
+          {filtered ? fo.transactions.emptyFiltered : fo.transactions.empty}
+        </div>
+        {filtered && (
+          <a class="chip" href="/gjaldingar" style="margin-top:.5rem">
+            {fo.common.clear}
+          </a>
+        )}
+      </div>
     ) : (
-      groups.map((group) => (
-        <section>
-          <div class="list-group-header">
-            <span>{group.label}</span>
-            <span class="nav-count">{group.rows.length}</span>
-          </div>
-          {group.rows.map((row) => (
-            <a class="list-row" href={`/gjaldingar/${row.id}`}>
-              <StatusBadge status={settlementStatus(row)} iconOnly />
-              <span class="list-row-primary">
-                {row.reference ?? row.id}
+      <div class="table" style={`--cols: ${COLUMNS}`}>
+        {groups.map((group) => (
+          <>
+            {/* The day's takings, aligned with the amount column below it. */}
+            <div class="group-header">
+              <span />
+              <span class="group-title">{group.label}</span>
+              <span />
+              <span />
+              <span />
+              <span class="group-count cell-num">{group.rows.length}</span>
+              {/* Sums what is on screen, so it means the same as the header total.
+                  Summing only successes would show a column of 0,00 whenever the
+                  list is filtered to declines. */}
+              <span class="cell-num" style="color: var(--color-ink-secondary)">
+                <Amount minor={sumAmounts(group.rows, false)} />
               </span>
-              <span class="list-row-meta">
-                {row.card_scheme && <span>{row.card_scheme}</span>}
-                {row.payment_method_display && (
-                  <span class="tnum">{row.payment_method_display.slice(-4)}</span>
-                )}
-                <span>{formatDateTime(row.created_at_ms)}</span>
-                <Amount minor={row.amount} currency={row.currency} />
-              </span>
-            </a>
-          ))}
-        </section>
-      ))
+            </div>
+
+            {group.rows.map((row) => (
+              <a class="trow" href={`/gjaldingar/${row.id}`}>
+                <StatusBadge status={settlementStatus(row)} iconOnly />
+                <span class="cell-primary">{row.reference ?? row.id}</span>
+                <span class="cell-quiet">
+                  {exceptionLabel(row) && (
+                    <StatusBadge status={exceptionLabel(row)!} variant="pill" />
+                  )}
+                </span>
+                <span class="cell-quiet">{cardTail(row.payment_method_display)}</span>
+                <span class="cell-quiet">
+                  {row.card_scheme ?? row.payment_method_type ?? "—"}
+                </span>
+                {/* Time only — the group header owns the date. */}
+                <span class="cell-quiet cell-num">
+                  {new Date(row.created_at_ms).toISOString().slice(11, 16)}
+                </span>
+                <span class="cell-amount">
+                  <Amount minor={row.amount} currency={row.currency} />
+                </span>
+              </a>
+            ))}
+          </>
+        ))}
+      </div>
     )
   }
 
-  <div class="list-footer">
-    {fo.transactions.count(totals.count)}
-    {" · "}
-    <Amount minor={totals.gross} currency="DKK" />
-    {totals.refunded > 0 && (
-      <>
-        {" · "}
-        {fo.transactions.refunded} <Amount minor={totals.refunded} muted />
-      </>
+  <div class="list-footer" style="display:flex; align-items:center; gap:1rem">
+    <span>
+      {fo.transactions.count(totals.count)}
+      {page.rows.length < totals.count && ` · vísir ${page.rows.length}`}
+    </span>
+    {nextHref && (
+      <a href={nextHref} style="margin-left:auto">
+        Næstu 100 →
+      </a>
     )}
-    {
-      page.nextCursor && (
-        <a href={`?${new URLSearchParams({ ...Object.fromEntries(params), cursor: page.nextCursor })}`} style="margin-left:.75rem">
-          Næstu 50 →
-        </a>
-      )
-    }
   </div>
 </AppLayout>

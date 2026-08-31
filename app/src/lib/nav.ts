@@ -12,12 +12,12 @@ import type { NavSection } from "~/layouts/AppLayout.astro";
 export function navFor(actor: Actor): NavSection[] {
   const merchant: NavSection = {
     items: [
-      { label: fo.nav.overview, href: "/" },
-      { label: fo.nav.transactions, href: "/gjaldingar" },
-      { label: fo.nav.settlements, href: "/avrokningar" },
-      { label: fo.nav.links, href: "/gjaldsleinki" },
-      { label: fo.nav.invoices, href: "/rokningar" },
-      { label: fo.nav.settings, href: "/stillingar" },
+      { label: fo.nav.overview, href: "/", icon: "overview" },
+      { label: fo.nav.transactions, href: "/gjaldingar", icon: "transactions" },
+      { label: fo.nav.settlements, href: "/avrokningar", icon: "settlements" },
+      { label: fo.nav.links, href: "/gjaldsleinki", icon: "links" },
+      { label: fo.nav.invoices, href: "/rokningar", icon: "invoices" },
+      { label: fo.nav.settings, href: "/stillingar", icon: "settings" },
     ],
   };
 
@@ -28,14 +28,28 @@ export function navFor(actor: Actor): NavSection[] {
     {
       label: "Betal",
       items: [
-        { label: fo.nav.merchants, href: "/betal/handlar" },
-        { label: fo.nav.periods, href: "/betal/tidarskeid" },
-        { label: fo.nav.margin, href: "/betal/vinningur" },
-        { label: fo.nav.leads, href: "/betal/ahugadir" },
-        { label: fo.nav.support, href: "/betal/studul" },
+        { label: fo.nav.merchants, href: "/betal/handlar", icon: "merchants" },
+        { label: fo.nav.periods, href: "/betal/tidarskeid", icon: "periods" },
+        { label: fo.nav.margin, href: "/betal/vinningur", icon: "margin" },
+        { label: fo.nav.leads, href: "/betal/ahugadir", icon: "leads" },
+        { label: fo.nav.support, href: "/betal/studul", icon: "support" },
       ],
     },
   ];
+}
+
+/** Sums a group of rows, so a day header can carry the day's takings. */
+export function sumAmounts<T extends { amount: number; state?: string }>(
+  rows: T[],
+  onlySuccessful = true,
+): number {
+  return rows.reduce(
+    (total, row) =>
+      onlySuccessful && row.state && row.state !== "SUCCESS"
+        ? total
+        : total + row.amount,
+    0,
+  );
 }
 
 /** Formats a timestamp for a dense list row: short, and stable across locales. */

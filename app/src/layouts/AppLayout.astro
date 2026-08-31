@@ -2,6 +2,7 @@
 import "~/styles/app.css";
 import { fo } from "~/content/fo";
 import CommandPalette from "~/components/ui/CommandPalette.astro";
+import NavIcon from "~/components/ui/NavIcon.astro";
 
 /**
  * The application shell.
@@ -19,6 +20,7 @@ export interface NavItem {
   label: string;
   href: string;
   count?: number;
+  icon?: string;
 }
 
 export interface NavSection {
@@ -60,12 +62,22 @@ const commands = nav.flatMap((section) =>
   <body>
     <div class="shell">
       <nav class="sidebar" aria-label={fo.nav.overview}>
-        <div
-          style="display:flex; align-items:center; gap:.5rem; padding:.375rem .5rem .5rem"
-        >
-          <span class="brand" style="font-size: var(--text-base)">{fo.brand}</span>
-          <span style="font-size: var(--text-2xs); color: var(--color-ink-faint)">
-            {context}
+        <div class="sidebar-brand">
+          <span class="sidebar-mark" aria-hidden="true">b</span>
+          <span style="min-width:0">
+            <span class="brand" style="display:block; font-size: var(--text-sm); line-height:1.2">
+              {fo.brand}
+            </span>
+            {
+              context && (
+                <span
+                  class="truncate-cell"
+                  style="display:block; font-size: var(--text-2xs); color: var(--color-ink-faint)"
+                >
+                  {context}
+                </span>
+              )
+            }
           </span>
         </div>
 
@@ -83,7 +95,8 @@ const commands = nav.flatMap((section) =>
                       : undefined
                   }
                 >
-                  <span>{item.label}</span>
+                  {item.icon && <NavIcon name={item.icon} />}
+                  <span class="truncate-cell">{item.label}</span>
                   {item.count !== undefined && (
                     <span class="nav-count">{item.count}</span>
                   )}
@@ -93,7 +106,7 @@ const commands = nav.flatMap((section) =>
           ))
         }
 
-        <div style="margin-top:auto; padding:.5rem; font-size: var(--text-2xs); color: var(--color-ink-faint)">
+        <div style="margin-top:auto; padding:.625rem .5rem; font-size: var(--text-2xs); color: var(--color-ink-faint)">
           <kbd>⌘K</kbd> fyri skipanir
         </div>
       </nav>

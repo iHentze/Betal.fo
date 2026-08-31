@@ -1,0 +1,32 @@
+---
+/**
+ * Sidebar icons.
+ *
+ * Line icons on a 16px grid, drawn inline so there is no icon-font request and no
+ * dependency. They exist so the sidebar can be scanned by shape rather than read
+ * word by word every time.
+ */
+interface Props {
+  name: string;
+}
+
+const { name } = Astro.props;
+
+const paths: Record<string, string> = {
+  overview: "M3 9.5 8 4l5 5.5M4.5 8.5V13h7V8.5",
+  transactions: "M2.5 5.5h11M2.5 5.5 5 3M13.5 10.5h-11M13.5 10.5 11 13",
+  settlements: "M2.5 12.5h11M4.5 10V6M8 10V4M11.5 10V7.5",
+  links: "M6.5 9.5a2.5 2.5 0 0 0 3.5 0l2-2a2.5 2.5 0 0 0-3.5-3.5l-.5.5M9.5 6.5a2.5 2.5 0 0 0-3.5 0l-2 2a2.5 2.5 0 0 0 3.5 3.5l.5-.5",
+  invoices: "M4 2.5h8v11l-2-1.5-2 1.5-2-1.5-2 1.5zM6 6h4M6 8.5h4",
+  settings: "M8 10a2 2 0 1 0 0-4 2 2 0 0 0 0 4zM8 1.5v1.5M8 13v1.5M14.5 8H13M3 8H1.5M12.6 3.4l-1 1M4.4 11.6l-1 1M12.6 12.6l-1-1M4.4 4.4l-1-1",
+  merchants: "M2.5 6.5h11v7h-11zM2.5 6.5 4 2.5h8l1.5 4M6.5 13.5v-4h3v4",
+  periods: "M2.5 4.5h11v9h-11zM2.5 7h11M5.5 2.5v3M10.5 2.5v3",
+  margin: "M2.5 12.5 6 8l3 2.5 4.5-6M13.5 4.5h-3M13.5 4.5v3",
+  leads: "M8 8a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5zM3 13.5a5 5 0 0 1 10 0",
+  support: "M8 14a6 6 0 1 0 0-12 6 6 0 0 0 0 12zM6.5 6.5a1.5 1.5 0 1 1 2 1.4V9M8 11.2v.1",
+};
+
+const d = paths[name] ?? paths.overview!;
+---
+
+<svg class="nav-icon" viewBox="0 0 16 16" aria-hidden="true"><path d={d} /></svg>
