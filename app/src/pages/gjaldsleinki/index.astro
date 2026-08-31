@@ -1,0 +1,123 @@
+---
+import AppLayout from "~/layouts/AppLayout.astro";
+import Amount from "~/components/ui/Amount.astro";
+import Settings from "~/components/ui/Settings.astro";
+import SettingsRow from "~/components/ui/SettingsRow.astro";
+import { fo } from "~/content/fo";
+import { navFor, formatDateTime } from "~/lib/nav";
+import { scopeToMerchant } from "~/lib/auth";
+import { exportSummary } from "~/lib/products";
+import { can } from "~/lib/audit";
+
+export const prerender = false;
+
+const actor = Astro.locals.actor!;
+const db = Astro.locals.runtime.env.DB;
+const merchantId = scopeToMerchant(actor, Astro.url.searchParams.get("handil"));
+
+const links = await db
+  .prepare(
+    `SELECT subject_id, amount_minor, currency, detail, at_ms, subject_type
+       FROM audit_log
+      WHERE merchant_id = ?1 AND action = 'create_payment_link'
+      ORDER BY at_ms DESC LIMIT 50`,
+  )
+  .bind(merchantId)
+  .all<Record<string, any>>();
+
+const now = new Date();
+const monthStart = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1);
+const summary = await exportSummary(db, {
+  merchantId,
+  fromMs: monthStart,
+  toMs: Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1),
+});
+
+const nav = navFor(actor);
+const mayCreate = can(actor.role, "move_money");
+const exportMonth = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, "0")}`;
+---
+
+<AppLayout
+  title={fo.nav.links}
+  crumbs={[{ label: fo.nav.links }]}
+  nav={nav}
+  context={actor.kind === "staff" ? "Betal" : ""}
+>
+  <div style="max-width:44rem; padding:1.25rem .875rem">
+    {
+      mayCreate && (
+        <Settings
+          title={fo.nav.links}
+          description="Send eitt leinki, tá kundin ikki stendur við kassan."
+        >
+          <form method="POST" action="/api/gjaldsleinki" style="padding:.75rem .875rem">
+            <div style="display:flex; gap:.5rem; align-items:flex-end">
+              <label style="flex:1">
+                <span style="display:block; font-size: var(--text-xs); color: var(--color-ink-muted)">
+                  {fo.common.amount} (oyru)
+                </span>
+                <input class="input tnum" type="number" name="amount" min="1" required />
+              </label>
+              <label style="flex:1">
+                <span style="display:block; font-size: var(--text-xs); color: var(--color-ink-muted)">
+                  {fo.common.reference}
+                </span>
+                <input class="input" type="text" name="reference" />
+              </label>
+              <button class="btn btn-primary" type="submit">Ger leinki</button>
+            </div>
+          </form>
+
+          <SettingsRow
+            title="QR-kodu til prent"
+            description="Ein kodu ið kann brúkast aftur og aftur — til marknað, borð ella drikkipeningar."
+          >
+            <form method="POST" action="/api/gjaldsleinki?slag=multi">
+              <input type="hidden" name="amount" value="0" />
+              <button class="btn" type="submit">Ger QR</button>
+            </form>
+          </SettingsRow>
+        </Settings>
+      )
+    }
+
+    <Settings
+      title="Bókhald"
+      description="Tak gjaldingarnar út, so grannskoðarin kann lesa tær."
+    >
+      <SettingsRow
+        title={`Hendan mánaðin — ${summary.count} gjaldingar`}
+        description={`${summary.label} tilsamans. Avgjøldini hjá innloysaranum eru við, so nettoið er tað sum veruliga kom inn.`}
+      >
+        <a class="btn" href={`/api/utflutningur?man=${exportMonth}`}>Tak niður</a>
+      </SettingsRow>
+    </Settings>
+
+    {
+      links.results.length > 0 && (
+        <>
+          <h2 style="font-size: var(--text-sm); margin:1.5rem 0 .5rem">
+            Seinast gjørd
+          </h2>
+          {links.results.map((link) => (
+            <div class="list-row" style="padding-left:0">
+              <span class="list-row-primary">
+                {link.subject_type === "multi_link" ? "QR" : "Leinki"}
+                <span
+                  style="font-family: var(--font-mono); font-size: var(--text-2xs); color: var(--color-ink-muted); margin-left:.5rem"
+                >
+                  {link.subject_id}
+                </span>
+              </span>
+              <span class="list-row-meta">
+                <span>{formatDateTime(link.at_ms)}</span>
+                <Amount minor={link.amount_minor ?? 0} currency={link.currency} />
+              </span>
+            </div>
+          ))}
+        </>
+      )
+    }
+  </div>
+</AppLayout>

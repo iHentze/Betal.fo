@@ -13,6 +13,7 @@ import type {
   InitializeSessionRequest,
   ListOperationsQuery,
   ListTransactionsQuery,
+  MultiLink,
   Operation,
   OperationResponse,
   PaginatedResponse,
@@ -369,6 +370,44 @@ export class EpayMerchantClient {
 
   async cancelPaymentLink(linkId: string): Promise<void> {
     await this.http.request<void>(await this.auth(), `/payment-links/${linkId}`, {
+      method: "DELETE",
+    });
+  }
+
+  /**
+   * Creates a reusable link that mints a fresh payment session on every scan.
+   *
+   * Unlike a payment link, this is a template rather than one payment — which is what
+   * makes it work as a printed QR code on a market stall or a tip jar. Note that
+   * configuration omitted here is resolved from the point of sale *when the link is
+   * used*, so changing point-of-sale settings later changes the behaviour of a QR code
+   * that has already been printed.
+   */
+  async createMultiLink(
+    request: Record<string, unknown>,
+    idempotencyKey?: string,
+  ): Promise<MultiLink> {
+    const response = await this.http.request<MultiLink>(
+      await this.auth(),
+      "/multi-links",
+      { method: "POST", body: request, idempotencyKey },
+    );
+    return response.data;
+  }
+
+  async listMultiLinks(
+    query: Record<string, unknown> = {},
+  ): Promise<PaginatedResponse<MultiLink>> {
+    const response = await this.http.request<PaginatedResponse<MultiLink>>(
+      await this.auth(),
+      "/multi-links",
+      { query },
+    );
+    return response.data;
+  }
+
+  async deactivateMultiLink(multiLinkId: string): Promise<void> {
+    await this.http.request<void>(await this.auth(), `/multi-links/${multiLinkId}`, {
       method: "DELETE",
     });
   }
