@@ -134,7 +134,9 @@ export interface ExportOptions {
 function csvCell(value: unknown): string {
   if (value === null || value === undefined) return "";
   const text = String(value);
-  return /[",;\n]/.test(text) ? `"${text.replaceAll('"', '""')}"` : text;
+  // Only the semicolon delimiter, a quote or a newline need escaping. Commas do not,
+  // and quoting on them would wrap every single amount in this file.
+  return /[";\n\r]/.test(text) ? `"${text.replaceAll('"', '""')}"` : text;
 }
 
 /**

@@ -238,6 +238,18 @@ describe("accounting export", () => {
     expect(file.body).toContain('"ordur;1"');
   });
 
+  it("leaves amounts unquoted, since the delimiter is a semicolon", async () => {
+    // Quoting on the comma would wrap every amount in the file for no reason.
+    insertTransaction(db, "T1", august, { amount: 123_456 });
+    const file = await accountingExport(db, {
+      merchantId: "m1",
+      fromMs: Date.UTC(2026, 7, 1),
+      toMs: Date.UTC(2026, 8, 1),
+    });
+    expect(file.body).toContain(";1234,56;");
+    expect(file.body).not.toContain('"1234,56"');
+  });
+
   it("offers JSON for systems that can consume it", async () => {
     insertTransaction(db, "T1", august);
     const file = await accountingExport(db, {
