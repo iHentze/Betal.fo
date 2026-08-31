@@ -44,8 +44,20 @@ test/               230 tests, run against real SQLite via node:sqlite
 ```bash
 npm install
 npm run db:migrate:local
-npm run dev
+npm run seed          # a month of realistic Faroese trade
+npm run dev           # http://localhost:4321
 ```
+
+The seed prints two session tokens. Sign in by setting a cookie in the browser
+console — email delivery is not wired up yet, so this stands in for the magic link:
+
+```js
+document.cookie = 'betal_session=dev-merchant-session-token; path=/'  // merchant
+document.cookie = 'betal_session=dev-staff-session-token; path=/'     // Betal staff
+```
+
+The seeded month is **August 2026**, so screens that default to "the month just
+closed" need `?ar=2026&man=8` if the system clock is not September 2026.
 
 Tests run the real migrations against an in-memory SQLite database, so the SQL is
 genuinely exercised rather than mocked:

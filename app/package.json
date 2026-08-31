@@ -11,6 +11,7 @@
     "test": "NODE_OPTIONS=--experimental-sqlite vitest run",
     "test:watch": "NODE_OPTIONS=--experimental-sqlite vitest",
     "typecheck": "astro check --minimumSeverity error",
+    "seed": "node scripts/seed.mjs > .seed.sql && wrangler d1 execute betal --local --file=.seed.sql",
     "db:migrate:local": "wrangler d1 migrations apply betal --local",
     "db:migrate": "wrangler d1 migrations apply betal --remote"
   },
