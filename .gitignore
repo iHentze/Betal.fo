@@ -5,6 +5,9 @@ dist/
 .env
 .env.*
 !.env.example
+# Wrangler's local secrets. The example file is committed; the real one is not.
+.dev.vars
+!.dev.vars.example
 .DS_Store
 
 # Generated seed data for local development

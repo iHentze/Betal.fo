@@ -66,6 +66,43 @@ genuinely exercised rather than mocked:
 npm test
 ```
 
+## Connecting ePay
+
+One credential turns on everything that talks to ePay: **the partner key**. It is a
+different tier from a merchant API key — a merchant key gets `403` on partner routes —
+and ePay provisions it when the partnership is established. There is no endpoint to
+create or rotate one.
+
+Locally:
+
+```bash
+cp .dev.vars.example .dev.vars   # then paste the key; the file is gitignored
+```
+
+Deployed:
+
+```bash
+npx wrangler secret put EPAY_PARTNER_KEY
+```
+
+The key itself is only ever used to mint short-lived per-merchant access tokens
+(`POST /partner/accounts/{id}/access-token`). Everything else — transactions,
+refunds, settlements, links — authenticates with the token, not the key, so the key
+stays in one place and never scopes to a single merchant.
+
+Until it is set, `epayConfigured()` returns false and the routes that need ePay refuse
+early with a message instead of failing deep inside the HTTP client. What that gates:
+
+| Needs the key | Works without it |
+|---|---|
+| Creating merchants and points of sale | Every list and detail view |
+| Payment links and QR codes | Settlement and fee reporting |
+| Refunds, captures, voids | Rating, invoicing, margin |
+| Period reconciliation against ePay | The accounting export |
+| Registering webhooks | Freezing and rating a period |
+
+The read side keeps working because it is served from our own mirror, not from ePay.
+
 ## Deploy
 
 Two Workers share one D1 database. Ingest is deployed separately so webhook projection
