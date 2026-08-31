@@ -1,0 +1,32 @@
+---
+import "~/styles/app.css";
+import { fo } from "~/content/fo";
+
+export const prerender = false;
+---
+
+<!doctype html>
+<html lang="fo">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{fo.errors.notFound} · {fo.brand}</title>
+    <meta name="robots" content="noindex" />
+  </head>
+  <body>
+    <main style="display:grid; place-items:center; min-height:100dvh; padding:1rem">
+      <div style="text-align:center">
+        <div class="brand" style="font-size:1.25rem; margin-bottom:1rem">
+          {fo.brand}
+        </div>
+        <h1 style="font-size: var(--text-base); margin-bottom:.5rem">
+          {fo.errors.notFound}
+        </h1>
+        <p style="font-size: var(--text-sm); color: var(--color-ink-muted); margin-bottom:1rem">
+          Síðan er ikki her, ella tú hevur ikki atgongd til hana.
+        </p>
+        <a class="btn" href="/">Aftur á forsíðuna</a>
+      </div>
+    </main>
+  </body>
+</html>

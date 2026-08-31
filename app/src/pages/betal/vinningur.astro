@@ -29,6 +29,24 @@ const totals = totalMargin(rows);
 const acquirers = await acquirerCosts(db);
 
 const nav = navFor(actor);
+
+const shiftMonth = (delta: number) => {
+  const index = month - 1 + delta;
+  const shiftedYear = year + Math.floor(index / 12);
+  const shiftedMonth = ((index % 12) + 12) % 12 + 1;
+  return `?ar=${shiftedYear}&man=${shiftedMonth}`;
+};
+
+const monthLabel = `${year}-${String(month).padStart(2, "0")}`;
+
+// Which months actually have a closed period, so an empty screen can point at one
+// rather than leaving someone wondering whether the figures are broken.
+const available = await db
+  .prepare(
+    `SELECT DISTINCT year, month FROM billing_period
+      ORDER BY year DESC, month DESC LIMIT 12`,
+  )
+  .all<{ year: number; month: number }>();
 ---
 
 <AppLayout
@@ -37,6 +55,14 @@ const nav = navFor(actor);
   nav={nav}
   context="Betal"
 >
+  <div slot="actions" style="display:flex; align-items:center; gap:.375rem">
+    <a class="btn" href={shiftMonth(-1)} aria-label="Fyrra mánað">←</a>
+    <span class="tnum" style="font-size: var(--text-xs); min-width:4.5rem; text-align:center">
+      {monthLabel}
+    </span>
+    <a class="btn" href={shiftMonth(1)} aria-label="Næsta mánað">→</a>
+  </div>
+
   <div
     style="display:flex; gap:2rem; padding:1rem .875rem; border-bottom:1px solid var(--color-line)"
   >
@@ -72,6 +98,26 @@ const nav = navFor(actor);
     <span>{fo.nav.merchants}</span>
     <span class="nav-count">{rows.length}</span>
   </div>
+  {
+    rows.length === 0 && (
+      <p style="padding:1rem .875rem; font-size: var(--text-xs); color: var(--color-ink-muted)">
+        Einki tíðarskeið fyri {monthLabel}.
+        {available.results.length > 0 && (
+          <>
+            {" "}Royn:{" "}
+            {available.results.map((option, index) => (
+              <>
+                {index > 0 && ", "}
+                <a href={`?ar=${option.year}&man=${option.month}`} class="tnum">
+                  {option.year}-{String(option.month).padStart(2, "0")}
+                </a>
+              </>
+            ))}
+          </>
+        )}
+      </p>
+    )
+  }
   {
     rows.map((row) => (
       <div class="list-row">

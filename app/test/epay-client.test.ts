@@ -37,7 +37,7 @@ const noSleep = async () => {};
 
 describe("EpayHttpClient", () => {
   it("sends the bearer credential and parses the body", async () => {
-    const fetchMock = vi.fn(async () => jsonResponse(200, { account: { id: "a1" } }));
+    const fetchMock = vi.fn(async (_input: string, _init?: RequestInit) => jsonResponse(200, { account: { id: "a1" } }));
     const client = new EpayHttpClient({ fetch: fetchMock, sleep: noSleep });
 
     const result = await client.request<{ account: { id: string } }>(
@@ -54,7 +54,7 @@ describe("EpayHttpClient", () => {
   });
 
   it("omits empty query params and repeats array params", async () => {
-    const fetchMock = vi.fn(async () => jsonResponse(200, {}));
+    const fetchMock = vi.fn(async (_input: string, _init?: RequestInit) => jsonResponse(200, {}));
     const client = new EpayHttpClient({ fetch: fetchMock, sleep: noSleep });
 
     await client.request("Bearer k", "/transactions/operations", {
@@ -74,7 +74,7 @@ describe("EpayHttpClient", () => {
   });
 
   it("attaches the Idempotency-Key and reports a replay", async () => {
-    const fetchMock = vi.fn(async () =>
+    const fetchMock = vi.fn(async (_input: string, _init?: RequestInit) =>
       jsonResponse(200, { success: true }, { "idempotent-replayed": "true" }),
     );
     const client = new EpayHttpClient({ fetch: fetchMock, sleep: noSleep });
@@ -113,7 +113,7 @@ describe("EpayHttpClient", () => {
   });
 
   it("retries 5xx and gives up with the last error", async () => {
-    const fetchMock = vi.fn(async () => jsonResponse(500, { errorCode: "SERVER_ERROR" }));
+    const fetchMock = vi.fn(async (_input: string, _init?: RequestInit) => jsonResponse(500, { errorCode: "SERVER_ERROR" }));
     const client = new EpayHttpClient({ fetch: fetchMock, sleep: noSleep });
 
     await expect(
@@ -123,7 +123,7 @@ describe("EpayHttpClient", () => {
   });
 
   it("does not retry a 4xx that would just fail again", async () => {
-    const fetchMock = vi.fn(async () =>
+    const fetchMock = vi.fn(async (_input: string, _init?: RequestInit) =>
       jsonResponse(403, { errorCode: "UNAUTHORIZED", message: "Not allowed" }),
     );
     const client = new EpayHttpClient({ fetch: fetchMock, sleep: noSleep });
@@ -135,7 +135,7 @@ describe("EpayHttpClient", () => {
   });
 
   it("surfaces 422 field errors", async () => {
-    const fetchMock = vi.fn(async () =>
+    const fetchMock = vi.fn(async (_input: string, _init?: RequestInit) =>
       jsonResponse(422, {
         errorCode: "VALIDATION_ERROR",
         message: "Input validation errors",
@@ -153,7 +153,7 @@ describe("EpayHttpClient", () => {
   });
 
   it("treats an empty 200 body as success", async () => {
-    const fetchMock = vi.fn(async () => new Response("", { status: 200 }));
+    const fetchMock = vi.fn(async (_input: string, _init?: RequestInit) => new Response("", { status: 200 }));
     const client = new EpayHttpClient({ fetch: fetchMock, sleep: noSleep });
 
     const result = await client.request("Bearer k", "/partner/accounts/a1/activate", {
@@ -205,7 +205,7 @@ describe("AccessTokenCache", () => {
   it("mints once and serves the cached token afterwards", async () => {
     const store = memoryStore();
     let now = 0;
-    const mint = vi.fn(async () => ({
+    const mint = vi.fn(async (_accountId: string, _environment: string) => ({
       accessToken: "jwt-1",
       expiresAt: new Date(now + 8 * hour).toISOString(),
     }));
@@ -234,7 +234,7 @@ describe("AccessTokenCache", () => {
     const store = memoryStore();
     let now = 0;
     let issued = 0;
-    const mint = vi.fn(async () => {
+    const mint = vi.fn(async (_accountId: string, _environment: string) => {
       issued += 1;
       return {
         accessToken: `jwt-${issued}`,
@@ -253,7 +253,7 @@ describe("AccessTokenCache", () => {
   it("re-mints when the cached entry is corrupt", async () => {
     const store = memoryStore();
     store.map.set(cacheKey("acct-1", "live"), "not json");
-    const mint = vi.fn(async () => ({
+    const mint = vi.fn(async (_accountId: string, _environment: string) => ({
       accessToken: "jwt-fresh",
       expiresAt: new Date(Date.now() + 8 * hour).toISOString(),
     }));
@@ -317,7 +317,7 @@ describe("EpayMerchantClient", () => {
     ];
 
     let call = 0;
-    const fetchMock = vi.fn(async () => jsonResponse(200, pages[call++]));
+    const fetchMock = vi.fn(async (_input: string, _init?: RequestInit) => jsonResponse(200, pages[call++]));
     const http = new EpayHttpClient({ fetch: fetchMock, sleep: noSleep });
     const client = new EpayMerchantClient(http, async () => "Bearer token");
 
@@ -335,7 +335,7 @@ describe("EpayMerchantClient", () => {
   });
 
   it("resumes from a persisted cursor", async () => {
-    const fetchMock = vi.fn(async () =>
+    const fetchMock = vi.fn(async (_input: string, _init?: RequestInit) =>
       jsonResponse(200, {
         currentOffset: "SAVED",
         nextOffset: null,
@@ -355,7 +355,7 @@ describe("EpayMerchantClient", () => {
   });
 
   it("sends an idempotency key on every money operation", async () => {
-    const fetchMock = vi.fn(async () =>
+    const fetchMock = vi.fn(async (_input: string, _init?: RequestInit) =>
       jsonResponse(200, { operationId: "op1", success: true, state: "SUCCESS" }),
     );
     const http = new EpayHttpClient({ fetch: fetchMock, sleep: noSleep });
@@ -371,7 +371,7 @@ describe("EpayMerchantClient", () => {
   });
 
   it("surfaces a failed operation that ePay returned with HTTP 200", async () => {
-    const fetchMock = vi.fn(async () =>
+    const fetchMock = vi.fn(async (_input: string, _init?: RequestInit) =>
       jsonResponse(200, {
         operationId: "op1",
         success: false,
@@ -391,7 +391,7 @@ describe("EpayMerchantClient", () => {
   });
 
   it("resolves the token lazily on each call so refreshes are picked up", async () => {
-    const fetchMock = vi.fn(async () => jsonResponse(200, {}));
+    const fetchMock = vi.fn(async (_input: string, _init?: RequestInit) => jsonResponse(200, {}));
     const http = new EpayHttpClient({ fetch: fetchMock, sleep: noSleep });
     let issued = 0;
     const client = new EpayMerchantClient(http, async () => `Bearer jwt-${++issued}`);

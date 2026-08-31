@@ -10,13 +10,13 @@ import type { Epay } from "~/lib/epay";
 import { freshDatabase, type TestDatabase } from "./helpers/sqlite";
 
 function fakeEpay(overrides: Record<string, unknown> = {}) {
-  const createAccount = vi.fn(async () => ({
+  const createAccount = vi.fn(async (_request: Record<string, unknown>) => ({
     id: "acct-new",
     status: "created",
     name: "Handil",
   }));
   const activateAccount = vi.fn(async () => undefined);
-  const createPointOfSale = vi.fn(async () => ({
+  const createPointOfSale = vi.fn(async (_request: Record<string, unknown>) => ({
     pointOfSale: {
       id: "pos-new",
       name: "Betal",
@@ -26,7 +26,7 @@ function fakeEpay(overrides: Record<string, unknown> = {}) {
     },
     hostedConfiguration: { scaMode: "NORMAL" },
   }));
-  const createWebhook = vi.fn(async () => ({ id: "wh-new" }));
+  const createWebhook = vi.fn(async (_request: Record<string, unknown>) => ({ id: "wh-new" }));
 
   const epay = {
     partner: { createAccount, activateAccount },

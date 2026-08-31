@@ -131,7 +131,7 @@ describe("backfillTransactions", () => {
 
   function clientReturning(pages: Array<{ items: Transaction[]; next: string | null }>) {
     let call = 0;
-    const listTransactionsMock = vi.fn(async () => {
+    const listTransactionsMock = vi.fn(async (_query: Record<string, unknown>) => {
       const page = pages[call++]!;
       return {
         currentOffset: "",

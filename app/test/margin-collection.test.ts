@@ -296,7 +296,7 @@ describe("automatic collection", () => {
   });
 
   function client() {
-    const mitAuthorization = vi.fn(async () => ({
+    const mitAuthorization = vi.fn(async (_request: Record<string, unknown>, _key: string) => ({
       transaction: { id: "TX-1" } as never,
     }));
     return {

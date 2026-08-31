@@ -1,0 +1,172 @@
+---
+import AppLayout from "~/layouts/AppLayout.astro";
+import Settings from "~/components/ui/Settings.astro";
+import SettingsRow from "~/components/ui/SettingsRow.astro";
+import StatusBadge from "~/components/ui/StatusBadge.astro";
+import Banner from "~/components/ui/Banner.astro";
+import { env } from "~/lib/env";
+import { fo } from "~/content/fo";
+import { navFor, formatDate } from "~/lib/nav";
+import { scopeToMerchant } from "~/lib/auth";
+import { webhookStatus } from "~/lib/status";
+
+export const prerender = false;
+
+const actor = Astro.locals.actor!;
+const db = env.DB;
+const merchantId = scopeToMerchant(actor, Astro.url.searchParams.get("handil"));
+
+const merchant = await db
+  .prepare(`SELECT * FROM merchant WHERE id = ?1`)
+  .bind(merchantId)
+  .first<Record<string, any>>();
+
+if (!merchant) return Astro.redirect("/");
+
+const [pointsOfSale, webhooks, users] = await Promise.all([
+  db
+    .prepare(
+      `SELECT id, name, descriptor, domain, created_at FROM point_of_sale
+        WHERE merchant_id = ?1 ORDER BY created_at`,
+    )
+    .bind(merchantId)
+    .all<Record<string, any>>(),
+  db
+    .prepare(
+      `SELECT url, events, paused_at, pause_reason, last_checked_ms
+         FROM webhook_endpoint WHERE merchant_id = ?1`,
+    )
+    .bind(merchantId)
+    .all<Record<string, any>>(),
+  db
+    .prepare(
+      `SELECT email, name, role, last_login_at, disabled_at FROM app_user
+        WHERE merchant_id = ?1 ORDER BY email`,
+    )
+    .bind(merchantId)
+    .all<Record<string, any>>(),
+]);
+
+const paused = webhooks.results.filter((w) => w.paused_at);
+const nav = navFor(actor);
+
+const roleLabels: Record<string, string> = {
+  owner: "Eigari",
+  admin: "Umsitari",
+  operator: "Starvsfólk",
+  viewer: "Lesari",
+};
+---
+
+<AppLayout
+  title={fo.nav.settings}
+  crumbs={[{ label: fo.nav.settings }]}
+  nav={nav}
+  context={actor.kind === "staff" ? "Betal" : ""}
+>
+  {
+    paused.length > 0 && (
+      <Fragment slot="banner">
+        <Banner
+          tone="paused"
+          title={fo.webhooks.paused}
+          detail={fo.webhooks.pausedExplainer}
+        />
+      </Fragment>
+    )
+  }
+
+  <div style="max-width:44rem; padding:1.25rem .875rem">
+    <Settings title="Handilin">
+      <SettingsRow title="Navn">
+        <span>{merchant.legal_name ?? merchant.name}</span>
+      </SettingsRow>
+      <SettingsRow title={fo.merchants.vTal} description="Skrásett hjá TAKS í Vinnuskránni">
+        <span class="tnum">{merchant.v_tal ?? "—"}</span>
+      </SettingsRow>
+      <SettingsRow title="Adressa">
+        <span>
+          {[merchant.address_line_one, merchant.postal_code, merchant.city]
+            .filter(Boolean)
+            .join(", ") || "—"}
+        </span>
+      </SettingsRow>
+      <SettingsRow title="Rokningarteldupostur">
+        <span>{merchant.invoice_email ?? "—"}</span>
+      </SettingsRow>
+      <SettingsRow title={fo.transactions.acquirer} description="Hvør innloysir gjøldini">
+        <span>{merchant.acquirer ?? "—"}</span>
+      </SettingsRow>
+    </Settings>
+
+    <Settings
+      title="Hendingar"
+      description="Um hesar steðga, verða dátur ikki dagførdar."
+    >
+      {
+        webhooks.results.length === 0 ? (
+          <SettingsRow title="Ongar hendingar skrásettar">
+            <span style="color: var(--color-ink-muted)">—</span>
+          </SettingsRow>
+        ) : (
+          webhooks.results.map((webhook) => (
+            <SettingsRow
+              title={webhook.url}
+              description={
+                webhook.paused_at
+                  ? `${fo.webhooks.pausedExplainer} (${webhook.pause_reason})`
+                  : `Seinast kannað ${
+                      webhook.last_checked_ms
+                        ? formatDate(new Date(webhook.last_checked_ms).toISOString())
+                        : "—"
+                    }`
+              }
+            >
+              <StatusBadge status={webhookStatus(webhook.paused_at)} variant="pill" />
+            </SettingsRow>
+          ))
+        )
+      }
+    </Settings>
+
+    <Settings title={fo.merchants.pointsOfSale}>
+      {
+        pointsOfSale.results.map((pos) => (
+          <SettingsRow
+            title={pos.name}
+            description={`${pos.domain ?? "—"} · ${
+              pos.descriptor ?? "eingin lýsing"
+            }`}
+          >
+            <span
+              style="font-family: var(--font-mono); font-size: var(--text-2xs); color: var(--color-ink-muted)"
+            >
+              {pos.id}
+            </span>
+          </SettingsRow>
+        ))
+      }
+    </Settings>
+
+    <Settings title="Brúkarar" description="Hvør hevur atgongd til henda handilin.">
+      {
+        users.results.map((user) => (
+          <SettingsRow
+            title={user.name ? `${user.name} · ${user.email}` : user.email}
+            description={
+              user.disabled_at
+                ? "Óvirkin"
+                : user.last_login_at
+                  ? `Seinast innritað ${formatDate(user.last_login_at)}`
+                  : "Hevur ikki innritað enn"
+            }
+          >
+            <span style="color: var(--color-ink-muted)">
+              {roleLabels[user.role] ?? user.role}
+            </span>
+          </SettingsRow>
+        ))
+      }
+    </Settings>
+  </div>
+</AppLayout>

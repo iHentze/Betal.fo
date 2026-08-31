@@ -76,7 +76,7 @@ function insertMirrored(
 
 function clientReturning(pages: Array<{ items: Transaction[]; next: string | null }>) {
   let call = 0;
-  const listTransactions = vi.fn(async () => {
+  const listTransactions = vi.fn(async (_query: Record<string, unknown>) => {
     const page = pages[Math.min(call++, pages.length - 1)]!;
     return {
       currentOffset: "",

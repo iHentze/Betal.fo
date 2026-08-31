@@ -41,7 +41,7 @@ describe("payment links", () => {
   });
 
   it("creates a link and audits it", async () => {
-    const createPaymentLinkMock = vi.fn(async () => ({
+    const createPaymentLinkMock = vi.fn(async (_request: Record<string, unknown>, _key?: string) => ({
       id: "LNK1",
       sessionId: "s1",
       url: "https://payments.epay.eu/link/LNK1",
@@ -71,7 +71,7 @@ describe("payment links", () => {
   });
 
   it("keys idempotency on the merchant reference so a double submit makes one link", async () => {
-    const createPaymentLinkMock = vi.fn(async () => ({
+    const createPaymentLinkMock = vi.fn(async (_request: Record<string, unknown>, _key?: string) => ({
       id: "LNK1",
       sessionId: "s1",
       url: "https://payments.epay.eu/link/LNK1",
@@ -90,7 +90,7 @@ describe("payment links", () => {
   });
 
   it("truncates the statement text to what ePay accepts", async () => {
-    const createPaymentLinkMock = vi.fn(async () => ({
+    const createPaymentLinkMock = vi.fn(async (_request: Record<string, unknown>, _key?: string) => ({
       id: "L",
       sessionId: "s",
       url: "https://x",
@@ -110,7 +110,7 @@ describe("payment links", () => {
   });
 
   it("creates a reusable QR that lets the payer choose the amount", async () => {
-    const createMultiLinkMock = vi.fn(async () => ({
+    const createMultiLinkMock = vi.fn(async (_request: Record<string, unknown>) => ({
       id: "ML1",
       url: "https://payments.epay.eu/ml/ML1",
       qrUrl: "https://payments.epay.eu/multi-links/ML1/qr.png",
