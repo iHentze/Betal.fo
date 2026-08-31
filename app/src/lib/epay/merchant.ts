@@ -377,6 +377,42 @@ export class EpayMerchantClient {
   // Subscriptions and billing
   // -------------------------------------------------------------------------
 
+  /**
+   * Charges a stored subscription for an arbitrary amount.
+   *
+   * This is the primitive for variable recurring billing. A billing plan carries a
+   * fixed amount, so it cannot express a monthly invoice whose total changes with
+   * volume; MIT takes the amount per charge instead.
+   *
+   * Processing is asynchronous — ePay states MIT "cannot run in real time" and some
+   * methods take days — so the outcome arrives on the notification webhook, not in
+   * this response.
+   */
+  async mitAuthorization(
+    request: {
+      subscriptionId: string;
+      amount: number;
+      notificationUrl: string;
+      currency?: string | null;
+      reference?: string;
+      instantCapture?: string;
+      textOnStatement?: string;
+    },
+    idempotencyKey: string,
+  ): Promise<{ transaction: Transaction }> {
+    const response = await this.http.request<{ transaction: Transaction }>(
+      await this.auth(),
+      "/mit",
+      {
+        method: "POST",
+        body: request,
+        idempotencyKey,
+        timeoutMs: TIMEOUTS.session,
+      },
+    );
+    return response.data;
+  }
+
   async listSubscriptions(
     query: Record<string, unknown> = {},
   ): Promise<PaginatedResponse<{ subscription: Subscription }>> {

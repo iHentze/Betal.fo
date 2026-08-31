@@ -21,9 +21,13 @@ ALTER TABLE merchant ADD COLUMN country_code TEXT NOT NULL DEFAULT 'FO';
 ALTER TABLE merchant ADD COLUMN invoice_email TEXT;
 ALTER TABLE merchant ADD COLUMN invoice_attention TEXT;
 ALTER TABLE merchant ADD COLUMN phone TEXT;
--- How this merchant pays us: 'auto' collects by card through ePay's own billing
--- engine, 'manual' issues an invoice they settle by bank transfer.
+-- How this merchant pays us: 'auto' charges a stored card through ePay with Betal
+-- acting as its own merchant, 'manual' issues an invoice settled by bank transfer.
 ALTER TABLE merchant ADD COLUMN collection_method TEXT NOT NULL DEFAULT 'manual';
+-- The ePay subscription holding this merchant's card-on-file consent, against which
+-- each month's invoice is charged. Unscheduled rather than a billing agreement,
+-- because agreements carry a fixed amount and an invoice total varies with volume.
+ALTER TABLE merchant ADD COLUMN billing_subscription_id TEXT;
 ALTER TABLE merchant ADD COLUMN payment_terms_days INTEGER NOT NULL DEFAULT 14;
 -- Which acquirer this merchant was placed with. Routing is a manual backoffice step
 -- at ePay because the processor field is deprecated with no API replacement.
