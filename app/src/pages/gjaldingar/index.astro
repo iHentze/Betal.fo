@@ -6,7 +6,7 @@ import Banner from "~/components/ui/Banner.astro";
 import { env } from "~/lib/env";
 import { fo } from "~/content/fo";
 import { navFor, groupByDay, sumAmounts } from "~/lib/nav";
-import { scopeToMerchant } from "~/lib/auth";
+import { merchantScopeOrNull } from "~/lib/auth";
 import { listTransactions, transactionTotals, pausedWebhooks } from "~/lib/db/queries";
 import { settlementStatus } from "~/lib/status";
 
@@ -16,7 +16,10 @@ const actor = Astro.locals.actor!;
 const db = env.DB;
 const params = Astro.url.searchParams;
 
-const merchantId = scopeToMerchant(actor, params.get("handil"));
+const merchantId = merchantScopeOrNull(actor, params.get("handil"));
+// Staff reach these screens from their own sidebar before choosing a merchant,
+// which is a navigation state rather than an error.
+if (!merchantId) return Astro.redirect("/betal/handlar");
 
 const filters = {
   merchantId,
@@ -35,7 +38,7 @@ const [page, totals, allPaused] = await Promise.all([
 
 const groups = groupByDay(page.rows);
 const paused = allPaused.filter((w) => w.merchant_id === merchantId);
-const nav = navFor(actor);
+const nav = navFor(actor, merchantId);
 const filtered = Boolean(filters.state || filters.search || filters.from);
 
 // Every field sits in the same column on every row. Without this the metadata is a

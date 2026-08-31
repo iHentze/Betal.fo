@@ -4,7 +4,7 @@ import Amount from "~/components/ui/Amount.astro";
 import { env } from "~/lib/env";
 import { fo } from "~/content/fo";
 import { navFor, formatDate } from "~/lib/nav";
-import { scopeToMerchant } from "~/lib/auth";
+import { merchantScopeOrNull } from "~/lib/auth";
 import { listSettlementTransfers, settlementFeeBreakdown } from "~/lib/db/queries";
 import { sumDecimals, decimalToMinor } from "~/lib/money";
 
@@ -12,7 +12,10 @@ export const prerender = false;
 
 const actor = Astro.locals.actor!;
 const db = env.DB;
-const merchantId = scopeToMerchant(actor, Astro.url.searchParams.get("handil"));
+const merchantId = merchantScopeOrNull(actor, Astro.url.searchParams.get("handil"));
+// Staff reach these screens from their own sidebar before choosing a merchant,
+// which is a navigation state rather than an error.
+if (!merchantId) return Astro.redirect("/betal/handlar");
 
 const transfers = await listSettlementTransfers(db, merchantId, 50);
 
@@ -56,7 +59,7 @@ const feeLabels: Record<string, string> = {
 };
 
 const COLUMNS = "minmax(7rem, 1fr) 7rem 5rem 8.5rem 8rem 9rem";
-const nav = navFor(actor);
+const nav = navFor(actor, merchantId);
 ---
 
 <AppLayout

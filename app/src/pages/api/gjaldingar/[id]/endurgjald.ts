@@ -1,5 +1,5 @@
 import type { APIRoute } from "astro";
-import { env } from "~/lib/env";
+import { env, epayConfigured } from "~/lib/env";
 import { Epay } from "~/lib/epay";
 import { recordAudit, requireCapability, AuthorizationError } from "~/lib/audit";
 import { scopeToMerchant } from "~/lib/auth";
@@ -68,6 +68,13 @@ export const POST: APIRoute = async ({ params, request, locals }) => {
     (transaction.amount_captured ?? 0) - (transaction.amount_refunded ?? 0);
   if (amount > refundable) {
     return new Response("amount exceeds refundable balance", { status: 400 });
+  }
+
+  if (!epayConfigured()) {
+    return new Response(null, {
+      status: 303,
+      headers: { Location: `/gjaldingar/${transactionId}?feilur=epay` },
+    });
   }
 
   const merchant = await db

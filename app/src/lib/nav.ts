@@ -9,33 +9,47 @@ import type { NavSection } from "~/layouts/AppLayout.astro";
  * The same list feeds the command palette, so anything reachable by clicking is
  * reachable by typing.
  */
-export function navFor(actor: Actor): NavSection[] {
+/**
+ * Navigation, filtered by who is looking.
+ *
+ * Staff see the Betal tools plus, once they have picked a merchant, that merchant's
+ * own screens with the selection carried through the links. Before they have picked
+ * one those screens have nothing to show, so they are left out rather than offered
+ * and then failing.
+ */
+export function navFor(
+  actor: Actor,
+  selectedMerchantId?: string | null,
+): NavSection[] {
+  const scope = actor.kind === "staff" && selectedMerchantId
+    ? `?handil=${selectedMerchantId}`
+    : "";
+
   const merchant: NavSection = {
+    label: actor.kind === "staff" ? "Handilin" : undefined,
     items: [
-      { label: fo.nav.overview, href: "/", icon: "overview" },
-      { label: fo.nav.transactions, href: "/gjaldingar", icon: "transactions" },
-      { label: fo.nav.settlements, href: "/avrokningar", icon: "settlements" },
-      { label: fo.nav.links, href: "/gjaldsleinki", icon: "links" },
-      { label: fo.nav.invoices, href: "/rokningar", icon: "invoices" },
-      { label: fo.nav.settings, href: "/stillingar", icon: "settings" },
+      { label: fo.nav.overview, href: `/${scope}`, icon: "overview" },
+      { label: fo.nav.transactions, href: `/gjaldingar${scope}`, icon: "transactions" },
+      { label: fo.nav.settlements, href: `/avrokningar${scope}`, icon: "settlements" },
+      { label: fo.nav.links, href: `/gjaldsleinki${scope}`, icon: "links" },
+      { label: fo.nav.invoices, href: `/rokningar${scope}`, icon: "invoices" },
+      { label: fo.nav.settings, href: `/stillingar${scope}`, icon: "settings" },
+    ],
+  };
+
+  const betal: NavSection = {
+    label: "Betal",
+    items: [
+      { label: fo.nav.merchants, href: "/betal/handlar", icon: "merchants" },
+      { label: fo.nav.periods, href: "/betal/tidarskeid", icon: "periods" },
+      { label: fo.nav.margin, href: "/betal/vinningur", icon: "margin" },
+      { label: fo.nav.leads, href: "/betal/ahugadir", icon: "leads" },
+      { label: fo.nav.support, href: "/betal/studul", icon: "support" },
     ],
   };
 
   if (actor.kind !== "staff") return [merchant];
-
-  return [
-    merchant,
-    {
-      label: "Betal",
-      items: [
-        { label: fo.nav.merchants, href: "/betal/handlar", icon: "merchants" },
-        { label: fo.nav.periods, href: "/betal/tidarskeid", icon: "periods" },
-        { label: fo.nav.margin, href: "/betal/vinningur", icon: "margin" },
-        { label: fo.nav.leads, href: "/betal/ahugadir", icon: "leads" },
-        { label: fo.nav.support, href: "/betal/studul", icon: "support" },
-      ],
-    },
-  ];
+  return selectedMerchantId ? [betal, merchant] : [betal];
 }
 
 /** Sums a group of rows, so a day header can carry the day's takings. */

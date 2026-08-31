@@ -7,14 +7,17 @@ import Banner from "~/components/ui/Banner.astro";
 import { env } from "~/lib/env";
 import { fo } from "~/content/fo";
 import { navFor, formatDate } from "~/lib/nav";
-import { scopeToMerchant } from "~/lib/auth";
+import { merchantScopeOrNull } from "~/lib/auth";
 import { webhookStatus } from "~/lib/status";
 
 export const prerender = false;
 
 const actor = Astro.locals.actor!;
 const db = env.DB;
-const merchantId = scopeToMerchant(actor, Astro.url.searchParams.get("handil"));
+const merchantId = merchantScopeOrNull(actor, Astro.url.searchParams.get("handil"));
+// Staff reach these screens from their own sidebar before choosing a merchant,
+// which is a navigation state rather than an error.
+if (!merchantId) return Astro.redirect("/betal/handlar");
 
 const merchant = await db
   .prepare(`SELECT * FROM merchant WHERE id = ?1`)
@@ -48,7 +51,7 @@ const [pointsOfSale, webhooks, users] = await Promise.all([
 ]);
 
 const paused = webhooks.results.filter((w) => w.paused_at);
-const nav = navFor(actor);
+const nav = navFor(actor, merchantId);
 
 const roleLabels: Record<string, string> = {
   owner: "Eigari",

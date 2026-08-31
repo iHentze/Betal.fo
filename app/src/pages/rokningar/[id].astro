@@ -5,7 +5,7 @@ import Amount from "~/components/ui/Amount.astro";
 import StatusBadge from "~/components/ui/StatusBadge.astro";
 import { fo } from "~/content/fo";
 import { navFor, formatDate } from "~/lib/nav";
-import { scopeToMerchant } from "~/lib/auth";
+import { merchantScopeOrNull } from "~/lib/auth";
 import { renderInvoice, lineEvidence } from "~/lib/billing/invoice";
 import { invoiceStatus } from "~/lib/status";
 import { formatBasisPoints } from "~/lib/money";
@@ -14,7 +14,10 @@ export const prerender = false;
 
 const actor = Astro.locals.actor!;
 const db = env.DB;
-const merchantId = scopeToMerchant(actor, Astro.url.searchParams.get("handil"));
+const merchantId = merchantScopeOrNull(actor, Astro.url.searchParams.get("handil"));
+// Staff reach these screens from their own sidebar before choosing a merchant,
+// which is a navigation state rather than an error.
+if (!merchantId) return Astro.redirect("/betal/handlar");
 
 const rendered = await renderInvoice(db, Astro.params.id!);
 if (rendered.invoice.merchant_id !== merchantId) return Astro.redirect("/rokningar");
@@ -36,7 +39,7 @@ const evidence = await Promise.all(
   })),
 );
 
-const nav = navFor(actor);
+const nav = navFor(actor, merchantId);
 const invoice = rendered.invoice;
 ---
 

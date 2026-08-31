@@ -1,5 +1,5 @@
 import type { APIRoute } from "astro";
-import { env } from "~/lib/env";
+import { env, epayConfigured, EPAY_NOT_CONFIGURED } from "~/lib/env";
 import { Epay } from "~/lib/epay";
 import { AuthorizationError, requireCapability } from "~/lib/audit";
 import {
@@ -83,6 +83,8 @@ export const POST: APIRoute = async ({ params, request, locals }) => {
           .first<{ epay_account_id: string; environment: string }>();
 
         if (!merchant) return back("Handilin finst ikki");
+        // Reconciliation re-walks ePay, so it cannot run without a key.
+        if (!epayConfigured()) return back(EPAY_NOT_CONFIGURED);
 
         const epay = new Epay({
           partnerKey: env.EPAY_PARTNER_KEY,

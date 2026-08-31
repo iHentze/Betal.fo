@@ -1,12 +1,13 @@
 ---
-import { env } from "~/lib/env";
+import { env, epayConfigured } from "~/lib/env";
 import AppLayout from "~/layouts/AppLayout.astro";
 import Amount from "~/components/ui/Amount.astro";
 import Settings from "~/components/ui/Settings.astro";
 import SettingsRow from "~/components/ui/SettingsRow.astro";
+import Banner from "~/components/ui/Banner.astro";
 import { fo } from "~/content/fo";
 import { navFor, formatDateTime } from "~/lib/nav";
-import { scopeToMerchant } from "~/lib/auth";
+import { merchantScopeOrNull } from "~/lib/auth";
 import { exportSummary } from "~/lib/products";
 import { can } from "~/lib/audit";
 
@@ -14,7 +15,10 @@ export const prerender = false;
 
 const actor = Astro.locals.actor!;
 const db = env.DB;
-const merchantId = scopeToMerchant(actor, Astro.url.searchParams.get("handil"));
+const merchantId = merchantScopeOrNull(actor, Astro.url.searchParams.get("handil"));
+// Staff reach these screens from their own sidebar before choosing a merchant,
+// which is a navigation state rather than an error.
+if (!merchantId) return Astro.redirect("/betal/handlar");
 
 const links = await db
   .prepare(
@@ -34,9 +38,18 @@ const summary = await exportSummary(db, {
   toMs: Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1),
 });
 
-const nav = navFor(actor);
-const mayCreate = can(actor.role, "move_money");
+const nav = navFor(actor, merchantId);
 const exportMonth = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, "0")}`;
+
+// Creating a link calls ePay, so without a key the form can only fail. Offering it
+// anyway and then showing an error is worse than not offering it.
+const epayReady = epayConfigured();
+const mayCreate = can(actor.role, "move_money") && epayReady;
+
+const params = Astro.url.searchParams;
+const message = params.get("boð");
+const createdLink = params.get("leinki");
+const createdQr = params.get("qr");
 ---
 
 <AppLayout
@@ -45,7 +58,49 @@ const exportMonth = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).pad
   nav={nav}
   context={actor.kind === "staff" ? "Betal" : ""}
 >
+  {
+    !epayReady && (
+      <Fragment slot="banner">
+        <Banner
+          tone="pending"
+          title="ePay er ikki knýtt at enn"
+          detail="Gjaldsleinki og QR krevja ein ePay-lykil. Útflutningur virkar kortini."
+        />
+      </Fragment>
+    )
+  }
+
   <div style="max-width:44rem; padding:1.25rem .875rem">
+    {
+      message && (
+        <p
+          style="margin-bottom:1rem; padding:.5rem .75rem; border-radius: var(--radius-control); font-size: var(--text-xs); color: var(--color-state-failed); background: color-mix(in oklch, var(--color-state-failed) 14%, transparent)"
+        >
+          {message}
+        </p>
+      )
+    }
+
+    {
+      (createdLink || createdQr) && (
+        <div
+          style="margin-bottom:1rem; padding:.75rem; border-radius: var(--radius-panel); background: color-mix(in oklch, var(--color-accent) 12%, transparent); border:1px solid color-mix(in oklch, var(--color-accent) 30%, transparent)"
+        >
+          <div class="stat-label" style="color: var(--color-accent)">
+            {createdQr ? "QR-kodan er klár" : "Leinkið er klárt"}
+          </div>
+          <a
+            href={createdLink ?? createdQr!}
+            target="_blank"
+            rel="noreferrer"
+            style="font-size: var(--text-xs); word-break:break-all"
+          >
+            {createdLink ?? createdQr}
+          </a>
+        </div>
+      )
+    }
+
     {
       mayCreate && (
         <Settings

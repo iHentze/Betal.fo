@@ -1,5 +1,5 @@
 import type { APIRoute } from "astro";
-import { env } from "~/lib/env";
+import { env, epayConfigured, EPAY_NOT_CONFIGURED } from "~/lib/env";
 import { Epay } from "~/lib/epay";
 import { createMultiLink, createPaymentLink } from "~/lib/products";
 import { scopeToMerchant } from "~/lib/auth";
@@ -32,13 +32,25 @@ export const POST: APIRoute = async ({ request, locals, url }) => {
     throw error;
   }
 
+  const back = (message: string) =>
+    new Response(null, {
+      status: 303,
+      headers: {
+        Location: `/gjaldsleinki?handil=${merchantId}&boð=${encodeURIComponent(message)}`,
+      },
+    });
+
+  // Every call below goes to ePay, so without a key this can only fail. Saying so is
+  // more useful than a 403 surfacing from inside the HTTP client.
+  if (!epayConfigured()) return back(EPAY_NOT_CONFIGURED);
+
   const form = await request.formData();
   const amount = Number.parseInt(String(form.get("amount") ?? "0"), 10);
   const reference = String(form.get("reference") ?? "").trim() || undefined;
   const isMulti = url.searchParams.get("slag") === "multi";
 
   if (!Number.isInteger(amount) || amount < 0 || (!isMulti && amount < 1)) {
-    return new Response("bad amount", { status: 400 });
+    return back("Upphæddin er ógildug");
   }
 
   const merchant = await db
@@ -56,7 +68,7 @@ export const POST: APIRoute = async ({ request, locals, url }) => {
     }>();
 
   if (!merchant?.point_of_sale_id) {
-    return new Response("merchant has no point of sale", { status: 409 });
+    return back("Handilin hevur einki sølustað enn");
   }
 
   const epay = new Epay({ partnerKey: env.EPAY_PARTNER_KEY, tokens: env.TOKENS });
@@ -65,35 +77,46 @@ export const POST: APIRoute = async ({ request, locals, url }) => {
     merchant.environment === "live" ? "live" : "test",
   );
 
-  if (isMulti) {
-    const link = await createMultiLink(db, client, {
+  // ePay can refuse for reasons we cannot predict — an unapproved domain, a gated
+  // feature like dynamicAmount, an expired agreement. The operator needs the reason,
+  // not a stack trace.
+  try {
+    if (isMulti) {
+      const link = await createMultiLink(db, client, {
+        merchantId,
+        pointOfSaleId: merchant.point_of_sale_id,
+        amountMinor: amount,
+        label: reference ?? "Betal",
+        // Letting the payer set the amount is what makes a printed code work as a tip
+        // jar or a market stall. ePay gates this per account, so it may be rejected.
+        dynamicAmount: amount === 0,
+        actorEmail: actor.email,
+      });
+
+      return new Response(null, {
+        status: 303,
+        headers: {
+          Location: `/gjaldsleinki?handil=${merchantId}&qr=${encodeURIComponent(link.qrUrl)}`,
+        },
+      });
+    }
+
+    const link = await createPaymentLink(db, client, {
       merchantId,
       pointOfSaleId: merchant.point_of_sale_id,
       amountMinor: amount,
-      label: reference ?? "Betal",
-      // Letting the payer set the amount is what makes a printed code work as a tip
-      // jar or a market stall. ePay gates this per account, so it may be rejected.
-      dynamicAmount: amount === 0,
+      reference,
+      description: reference,
       actorEmail: actor.email,
     });
 
     return new Response(null, {
       status: 303,
-      headers: { Location: `/gjaldsleinki?qr=${encodeURIComponent(link.qrUrl)}` },
+      headers: {
+        Location: `/gjaldsleinki?handil=${merchantId}&leinki=${encodeURIComponent(link.url)}`,
+      },
     });
+  } catch (error) {
+    return back(error instanceof Error ? error.message : String(error));
   }
-
-  const link = await createPaymentLink(db, client, {
-    merchantId,
-    pointOfSaleId: merchant.point_of_sale_id,
-    amountMinor: amount,
-    reference,
-    description: reference,
-    actorEmail: actor.email,
-  });
-
-  return new Response(null, {
-    status: 303,
-    headers: { Location: `/gjaldsleinki?leinki=${encodeURIComponent(link.url)}` },
-  });
 };

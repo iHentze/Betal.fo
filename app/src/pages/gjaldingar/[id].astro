@@ -8,7 +8,7 @@ import PropertyRow from "~/components/ui/PropertyRow.astro";
 import Modal from "~/components/ui/Modal.astro";
 import { fo } from "~/content/fo";
 import { navFor, formatDateTime } from "~/lib/nav";
-import { scopeToMerchant } from "~/lib/auth";
+import { merchantScopeOrNull } from "~/lib/auth";
 import { getTransaction } from "~/lib/db/queries";
 import { operationStatus, settlementStatus } from "~/lib/status";
 import { can } from "~/lib/audit";
@@ -17,7 +17,10 @@ export const prerender = false;
 
 const actor = Astro.locals.actor!;
 const db = env.DB;
-const merchantId = scopeToMerchant(actor, Astro.url.searchParams.get("handil"));
+const merchantId = merchantScopeOrNull(actor, Astro.url.searchParams.get("handil"));
+// Staff reach these screens from their own sidebar before choosing a merchant,
+// which is a navigation state rather than an error.
+if (!merchantId) return Astro.redirect("/betal/handlar");
 
 const { transaction, operations, settlement } = await getTransaction(
   db,
@@ -28,7 +31,7 @@ const { transaction, operations, settlement } = await getTransaction(
 if (!transaction) return Astro.redirect("/gjaldingar");
 
 const row = transaction as Record<string, any>;
-const nav = navFor(actor);
+const nav = navFor(actor, merchantId);
 const mayMoveMoney = can(actor.role, "move_money");
 
 const captured = (row.amount_captured as number) ?? 0;

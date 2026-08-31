@@ -1,5 +1,5 @@
 import type { APIRoute } from "astro";
-import { env } from "~/lib/env";
+import { env, epayConfigured, EPAY_NOT_CONFIGURED } from "~/lib/env";
 import { Epay } from "~/lib/epay";
 import { createMerchant } from "~/lib/provisioning";
 import { AuthorizationError, requireCapability } from "~/lib/audit";
@@ -43,6 +43,8 @@ export const POST: APIRoute = async ({ request, locals }) => {
     });
 
   if (!name || !email || !domain) return fail("Útfyll navn, teldupost og økisnavn");
+  // Provisioning is entirely ePay calls; without a key none of it can start.
+  if (!epayConfigured()) return fail(EPAY_NOT_CONFIGURED);
 
   const epay = new Epay({ partnerKey: env.EPAY_PARTNER_KEY, tokens: env.TOKENS });
 

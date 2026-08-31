@@ -190,6 +190,25 @@ export function scopeToMerchant(actor: Actor, requested?: string | null): string
   return actor.merchantId;
 }
 
+/**
+ * The same rule, but returning null instead of throwing.
+ *
+ * Pages use this. Staff can reach a merchant-scoped screen without having chosen a
+ * merchant yet — it is right there in their sidebar — and that is a navigation state
+ * to redirect out of, not an exception to render a stack trace for. API routes keep
+ * using the throwing form, where a missing scope really is a bad request.
+ */
+export function merchantScopeOrNull(
+  actor: Actor,
+  requested?: string | null,
+): string | null {
+  try {
+    return scopeToMerchant(actor, requested);
+  } catch {
+    return null;
+  }
+}
+
 export function sessionCookie(sessionId: string, secure = true): string {
   const parts = [
     `${SESSION_COOKIE}=${sessionId}`,
