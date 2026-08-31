@@ -1,0 +1,36 @@
+---
+import { toneColor, type StatusTone } from "~/lib/status";
+
+/**
+ * A full-width notice.
+ *
+ * Used for the two operational states that break the business quietly: a webhook ePay
+ * has paused, which stops a merchant's data with no error anywhere, and a period whose
+ * reconciliation did not balance, which blocks invoicing. Both need to be visible
+ * without anyone going looking.
+ */
+interface Props {
+  tone: StatusTone;
+  title: string;
+  detail?: string | undefined;
+  href?: string | undefined;
+  actionLabel?: string | undefined;
+}
+
+const { tone, title, detail, href, actionLabel } = Astro.props;
+---
+
+<div class="banner" style={`--status-color: ${toneColor[tone]}`} role="status">
+  <span class="status-dot" aria-hidden="true"></span>
+  <span>
+    <strong style="font-weight:500">{title}</strong>
+    {detail && <span style="opacity:.85"> — {detail}</span>}
+  </span>
+  {
+    href && (
+      <a href={href} style="margin-left:auto; text-decoration:underline">
+        {actionLabel ?? "Sí meira"}
+      </a>
+    )
+  }
+</div>

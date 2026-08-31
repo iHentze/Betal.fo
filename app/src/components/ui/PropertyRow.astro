@@ -1,0 +1,21 @@
+---
+interface Props {
+  label: string;
+  /** Renders as tabular text, for ids, amounts and timestamps. */
+  numeric?: boolean;
+  /** Long opaque values such as a PAR or transaction id. */
+  mono?: boolean;
+}
+
+const { label, numeric = false, mono = false } = Astro.props;
+---
+
+<div class="property-row">
+  <span class="property-label">{label}</span>
+  <span
+    class:list={["property-value", numeric && "tnum"]}
+    style={mono ? "font-family: var(--font-mono); font-size: var(--text-2xs)" : undefined}
+  >
+    <slot />
+  </span>
+</div>

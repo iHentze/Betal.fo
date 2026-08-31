@@ -1,0 +1,55 @@
+---
+import { formatMinor, formatDecimal } from "~/lib/money";
+
+/**
+ * Renders money. Always tabular, always right-aligned.
+ *
+ * Takes either integer minor units (transactions) or a decimal string (settlements),
+ * because ePay uses both and they must never be converted through a float. Both render
+ * identically to the reader.
+ */
+interface Props {
+  /** Integer minor units. */
+  minor?: number;
+  /** Decimal string, e.g. "99.01". Used for settlement amounts. */
+  decimal?: string;
+  currency?: string | undefined;
+  signed?: boolean;
+  /** Dim the value, for secondary amounts like a partial capture. */
+  muted?: boolean;
+  class?: string;
+}
+
+const {
+  minor,
+  decimal,
+  currency,
+  signed = false,
+  muted = false,
+  class: className = "",
+} = Astro.props;
+
+let rendered = "—";
+if (typeof decimal === "string") {
+  rendered = formatDecimal(decimal, { currency, signed });
+} else if (typeof minor === "number") {
+  rendered = formatMinor(minor, { currency, signed });
+}
+
+// Negative amounts are the ones people scan for on a settlement screen.
+const isNegative = rendered.startsWith("−");
+---
+
+<span
+  class:list={["amount", "tnum", className]}
+  style={
+    muted
+      ? "color: var(--color-ink-muted)"
+      : isNegative
+        ? "color: var(--color-state-failed)"
+        : undefined
+  }
+  data-numeric
+>
+  {rendered}
+</span>

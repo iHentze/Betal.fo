@@ -1,0 +1,27 @@
+---
+/**
+ * The right-hand properties panel from Linear's detail view.
+ *
+ * Rows are label-and-value pairs rather than form fields: the panel is for reading at
+ * a glance, and anything editable opens a picker rather than sitting in an input. It
+ * collapses below the main content on mobile.
+ */
+interface Props {
+  title?: string | undefined;
+}
+
+const { title } = Astro.props;
+---
+
+<aside class="properties">
+  {
+    title && (
+      <div
+        style="font-size: var(--text-xs); color: var(--color-ink-muted); padding-bottom: .375rem"
+      >
+        {title}
+      </div>
+    )
+  }
+  <slot />
+</aside>

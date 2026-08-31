@@ -1,0 +1,35 @@
+---
+import AppLayout from "~/layouts/AppLayout.astro";
+import { fo } from "~/content/fo";
+
+export const prerender = false;
+
+// The root redirects into whichever surface the signed-in user belongs to. Until auth
+// lands this simply points at the two entry points.
+const nav = [
+  {
+    items: [
+      { label: fo.nav.overview, href: "/" },
+      { label: fo.nav.transactions, href: "/gjaldingar" },
+      { label: fo.nav.settlements, href: "/avrokningar" },
+      { label: fo.nav.invoices, href: "/rokningar" },
+    ],
+  },
+  {
+    label: "Betal",
+    items: [
+      { label: fo.nav.merchants, href: "/betal/handlar" },
+      { label: fo.nav.periods, href: "/betal/tidarskeid" },
+      { label: fo.nav.margin, href: "/betal/vinningur" },
+    ],
+  },
+];
+---
+
+<AppLayout title={fo.nav.overview} crumbs={[{ label: fo.nav.overview }]} nav={nav} context="">
+  <div style="padding: 2rem .875rem">
+    <p style="color: var(--color-ink-muted); font-size: var(--text-sm)">
+      {fo.common.loading}
+    </p>
+  </div>
+</AppLayout>
