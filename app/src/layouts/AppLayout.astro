@@ -3,6 +3,8 @@ import "~/styles/app.css";
 import { fo } from "~/content/fo";
 import CommandPalette from "~/components/ui/CommandPalette.astro";
 import NavIcon from "~/components/ui/NavIcon.astro";
+import Wordmark from "~/components/ui/Wordmark.astro";
+import Badge from "~/components/ui/Badge.astro";
 
 /**
  * The application shell.
@@ -62,12 +64,10 @@ const commands = nav.flatMap((section) =>
   <body>
     <div class="shell">
       <nav class="sidebar" aria-label={fo.nav.overview}>
-        <div class="sidebar-brand">
-          <span class="sidebar-mark" aria-hidden="true">b</span>
+        <a class="sidebar-brand" href="/" aria-label="betal">
+          <Badge size="1.375rem" />
           <span style="min-width:0">
-            <span class="brand" style="display:block; font-size: var(--text-sm); line-height:1.2">
-              {fo.brand}
-            </span>
+            <Wordmark width="3.5rem" class="sidebar-wordmark" />
             {
               context && (
                 <span
@@ -79,7 +79,7 @@ const commands = nav.flatMap((section) =>
               )
             }
           </span>
-        </div>
+        </a>
 
         {
           nav.map((section) => (

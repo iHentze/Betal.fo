@@ -20,8 +20,10 @@
  *    with `tnum` enabled.
  */
 
-@import "@fontsource/poppins/500.css";
-@import "@fontsource/poppins/600.css";
+/* The brand guide specifies Poppins in Light and Bold. The wordmark itself is
+   artwork, so Poppins is only needed where brand type appears alongside it. */
+@import "@fontsource/poppins/300.css";
+@import "@fontsource/poppins/700.css";
 @import "@fontsource-variable/inter";
 @import "tailwindcss";
 
@@ -178,21 +180,14 @@
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    padding: 0.375rem 0.5rem 0.625rem;
+    padding: 0.375rem 0.5rem 0.75rem;
+    text-decoration: none;
   }
 
-  .sidebar-mark {
-    width: 1.25rem;
-    height: 1.25rem;
-    border-radius: 0.3125rem;
-    background: var(--color-accent);
-    color: var(--color-accent-ink);
-    display: grid;
-    place-items: center;
-    font-family: var(--font-brand);
-    font-weight: 600;
-    font-size: 0.6875rem;
-    flex-shrink: 0;
+  /* The wordmark is artwork, so it takes the brand green directly rather than
+     inheriting the muted ink the sidebar sets for its links. */
+  .sidebar-wordmark {
+    color: var(--color-accent);
   }
 
   .sidebar-section {
@@ -741,10 +736,16 @@
       color-mix(in oklch, var(--status-color) 28%, transparent);
   }
 
+  /* Brand type, per the guide: Poppins Light for display, Bold for emphasis. */
   .brand {
     font-family: var(--font-brand);
-    font-weight: 600;
+    font-weight: 300;
     letter-spacing: -0.01em;
+  }
+
+  .brand-bold {
+    font-family: var(--font-brand);
+    font-weight: 700;
   }
 }
 

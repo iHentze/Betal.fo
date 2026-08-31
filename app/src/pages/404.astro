@@ -1,5 +1,6 @@
 ---
 import "~/styles/app.css";
+import Wordmark from "~/components/ui/Wordmark.astro";
 import { fo } from "~/content/fo";
 
 export const prerender = false;
@@ -16,8 +17,10 @@ export const prerender = false;
   <body>
     <main style="display:grid; place-items:center; min-height:100dvh; padding:1rem">
       <div style="text-align:center">
-        <div class="brand" style="font-size:1.25rem; margin-bottom:1rem">
-          {fo.brand}
+        <div
+          style="color: var(--color-accent); margin-bottom:1.25rem; display:flex; justify-content:center"
+        >
+          <Wordmark width="5.5rem" />
         </div>
         <h1 style="font-size: var(--text-base); margin-bottom:.5rem">
           {fo.errors.notFound}

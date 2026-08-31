@@ -1,0 +1,30 @@
+---
+/**
+ * The circular b badge — the "grafiskt element" from the brand guide.
+ *
+ * Two colourways: navy circle with a green b, or the inverse. Used where the full
+ * wordmark is too wide, such as the sidebar and the favicon.
+ */
+interface Props {
+  /** "navy" is a navy disc with a green letter; "green" is the inverse. */
+  variant?: "navy" | "green";
+  size?: string;
+  class?: string;
+}
+
+const { variant = "green", size = "1.5rem", class: className = "" } = Astro.props;
+
+const disc = variant === "green" ? "#7AD966" : "#0D0033";
+const letter = variant === "green" ? "#0D0033" : "#7AD966";
+---
+
+<svg
+  class={className}
+  style={`width:${size};height:${size};display:block`}
+  viewBox="0 0 142.58 142.58"
+  role="img"
+  aria-label="betal"
+>
+  <path fill={disc} d="M0 71.29 C0 110.66 31.92 142.58 71.29 142.58 C110.66 142.58 142.58 110.66 142.58 71.29 C142.58 31.92 110.66 0 71.29 0 C31.92 0 0 31.92 0 71.29Z" />
+  <path fill={letter} d="M86.54 59.17 C78.58 59.17 73.25 63.42 70.18 66.65 C76.65 52.54 83.71 39.61 85.98 29.23 C87.73 21.24 82.5 14.95 70.48 14.95 C66.92 14.95 64.63 16.13 64.22 18.01 C63.66 20.56 65.09 25.66 62 39.78 C58.24 56.95 45.9 85.53 42.66 100.33 C39.68 113.93 46.42 122.61 60.31 122.61 C78.76 122.61 94.66 106.45 99.57 84 C102.88 68.86 98.23 59.17 86.54 59.17 M82.81 87.06 C80.21 98.97 74.61 111.38 66.83 111.38 C62.58 111.38 59.81 108.53 59.15 104.45 C58.74 101.84 59.12 99.28 59.53 96.69 C59.78 95.04 60.35 93.38 60.78 91.76 C61.23 90.04 62.28 87.1 62.96 85.47 C64.44 81.9 65.63 79.53 67.8 76.86 C70.81 73.16 74.18 70.94 78.88 71.75 C84.27 72.69 84.67 78.56 82.81 87.06Z" />
+</svg>
