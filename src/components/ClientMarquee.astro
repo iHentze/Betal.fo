@@ -1,0 +1,45 @@
+---
+import { clients } from "../content/clients";
+import { fo } from "../content/fo";
+
+// Nothing to show until real customers are added, and a reference section with
+// invented names would be worse than no section at all.
+const show = clients.length > 0;
+
+// Duplicate the track so the loop seam is exact.
+const track = [...clients, ...clients];
+---
+
+{
+  show && (
+    <section class="border-y border-white/8 bg-white/[0.015] py-9">
+      <p class="mb-6 text-center text-[11px] font-semibold uppercase tracking-[0.24em] text-mist">
+        {fo.clients.label}
+      </p>
+
+      <div class="marquee-mask overflow-hidden">
+        <ul class="marquee items-center gap-12 pr-12" aria-label={fo.clients.label}>
+          {track.map((client, i) => (
+            <li
+              class="flex shrink-0 items-center"
+              aria-hidden={i >= clients.length ? "true" : undefined}
+            >
+              {client.logo ? (
+                <img
+                  src={client.logo}
+                  alt={client.name}
+                  class="h-8 w-auto opacity-60 transition-opacity duration-300 hover:opacity-100 sm:h-9"
+                  loading="lazy"
+                />
+              ) : (
+                <span class="text-lg font-semibold whitespace-nowrap text-white/55 transition-colors duration-300 hover:text-white/90">
+                  {client.name}
+                </span>
+              )}
+            </li>
+          ))}
+        </ul>
+      </div>
+    </section>
+  )
+}

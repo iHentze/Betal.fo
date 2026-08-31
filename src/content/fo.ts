@@ -154,17 +154,20 @@ export const fo = {
   home: {
     eyebrow: "Føroyskar gjaldsloysnir",
     title: "Gjald. Har tú selur.",
-    lead: "Á alnetinum, á staðnum ella tillagað til tína skipan. Ein greið og nútímans gjaldsloysn — við føroyskari tænastu og fólki, tú fært fatur á.",
+    lead: "Vit halda, at føroysk fyritøki eiga at hava gjaldsloysnir í heimsklassa — og fólk at tosa við, tá tað brennur á. Á alnetinum, á staðnum ella tillagað til tína skipan.",
     primary: "Sí loysnir",
     secondary: "Set teg í samband",
     productsEyebrow: "Loysnir",
-    productsTitle: "Fýra greiðar loysnir. Sama Betal.",
+    productsTitle: "Greiðar loysnir. Sama Betal.",
     aboutEyebrow: "Um Betal",
     aboutTitle: "Føroyskt samskifti. Greið tøkni.",
     about:
-      "Betal er ikki ein gomul terminalbúð ella ein ópersónlig útlendsk bíðirøð. Vit eru ein føroysk gjaldsfyritøka: nethandilsgátt á ePay, Softpay á telefonini, tillagað hald — og eitt nýtt føroyskt lønarkervi á veg.",
+      "Vit eru føroyingar, ið byggja gjaldsloysnir til føroyska vinnu. Vit kenna, hvussu tað er at standa í handlinum ein trongan fríggjadag, tá gjaldið ikki fer ígjøgnum. Tí svara vit, tá tú ringir — og tí sleppa vit ikki, fyrr enn tað virkar.",
     contrast:
-      "Hini selja kassar, pappír og trý ymisk PSP-nøvn. Vit veita fýra framkomnar loysnir undir einum navni — við tøkni, sum bæði tú og kundin kenna tykkum trygg við.",
+      "Vit byggja loysnir, tú kanst lita á, og víðka tær, sum títt virksemi veksur. Sama hvar tú selur, er tað sama Betal — og sama fólk, tú ringir til.",
+  },
+  clients: {
+    label: "Tey brúka Betal",
   },
   steps: {
     eyebrow: "Gongdin",
@@ -186,7 +189,23 @@ export const fo = {
   },
   methods: {
     label: "Kundin rindar við",
-    items: ["Visa", "Mastercard", "Apple Pay", "Google Pay"],
+  },
+  values: {
+    eyebrow: "Hví Betal",
+    items: [
+      {
+        title: "Vit svara",
+        text: "Eitt telefonnummar, føroyskt mál og fólk, ið kenna tína loysn. Ongin bíðirøð, ongin sáttmálanummar.",
+      },
+      {
+        title: "Royndar tøkni",
+        text: "Bygt á ePay og Softpay — kervi, ið avgreiða gjøld hvønn dag runt um Norðurlond. Vit finna ikki upp hjólið av nýggjum.",
+      },
+      {
+        title: "Frælst at velja",
+        text: "Eingin bindandi tólaleiga og eingin fjøtur. Veksur virksemið, víðka vit. Minkar tað, minka vit.",
+      },
+    ],
   },
   faq: {
     eyebrow: "Spurningar og svør",
@@ -201,8 +220,8 @@ export const fo = {
         a: "Nei, als ikki. Vit hjálpa tær við allari flytingini — frá gomlum terminali, nethandilsgátt ella app — so tú sleppur undan at ringja runt til ymiskar veitarar.",
       },
       {
-        q: "Hvussu er Betal øðrvísi enn vanligir terminalveitarar?",
-        a: "Vit selja ikki bara ein kassa á diskinum. Á alnetinum veita vit eina sniðgivna ePay-gátt. Á staðnum brúkar tú tína egnu telefon við Softpay. Í haldi røkja vit alt tað tekniska, og skjótt kemur eisini føroysk løn.",
+        q: "Hvat fái eg hjá Betal?",
+        a: "Á alnetinum fært tú eina sniðgivna ePay-gátt. Á staðnum brúkar tú tína egnu telefon við Softpay. Skal tað tillagast, røkja vit alt tað tekniska fyri tær. Og fyrst og fremst fært tú eitt telefonnummar, ið verður svarað á føroyskum.",
       },
       {
         q: "Hvussu leingi tekur tað at koma í gongd?",

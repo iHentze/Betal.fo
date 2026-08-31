@@ -1,24 +1,32 @@
 ---
 /**
- * ePay-style payment window that plays through a real payment sequence:
- * idle -> card entry -> processing -> approved, then loops.
+ * ePay-style payment window. The card details are rendered already filled —
+ * the window arrives complete and only the authorisation plays out:
+ * filled -> processing -> approved, then back.
  */
+import { methods } from "../content/methods";
+
 interface Props {
   class?: string;
   amount?: string;
 }
 
 const { class: className = "", amount = "499,00" } = Astro.props;
+
+const googlePay = methods.find((m) => m.name === "Google Pay")!;
+
+// The official Apple Pay button is the  Pay lockup on a plain button, so the
+// glyph is drawn directly rather than using the boxed brand mark.
+const APPLE_GLYPH =
+  "M150.37 130.25c-2.45 5.66-5.35 10.87-8.71 15.66-4.58 6.53-8.33 11.05-11.22 13.56-4.48 4.12-9.28 6.23-14.42 6.35-3.69 0-8.14-1.05-13.32-3.18-5.19-2.12-9.97-3.17-14.34-3.17-4.58 0-9.49 1.05-14.75 3.17-5.26 2.13-9.5 3.24-12.74 3.35-4.35.13-9.16-1.9-14.42-6.08-3.69-3.04-7.69-7.86-12-14.46-6.09-9.35-10.86-19.9-14.32-31.65-3.46-11.75-5.19-22.85-5.19-33.3 0-13.48 3.51-24.66 10.53-33.53 7.02-8.87 15.83-13.39 26.43-13.56 5.13.12 10.56 1.44 16.3 3.97 5.74 2.53 9.4 3.86 10.98 3.97 1.35-.11 5.19-1.49 11.53-4.13 6.34-2.64 11.95-3.85 16.84-3.63 12.18.98 21.68 5.68 28.5 14.1-10.76 6.53-16.03 15.44-15.82 26.74.22 8.91 3.58 16.42 10.09 22.52 6.51 6.1 14.19 9.68 23.04 10.77-2.39 7.18-5.33 14.46-8.81 21.84zM119.22 33.74c0-7.39 2.61-14.13 7.84-20.21 5.23-6.09 11.85-10.22 19.86-12.4 1.09 6.85.05 13.59-3.12 20.21-3.17 6.63-8.21 11.74-15.12 15.33-.87-.87-1.96-1.52-3.26-1.96-3.8-1.3-6.2-1.96-7.2-1.96z";
 ---
 
 <div class:list={["relative w-full max-w-[23rem]", className]} data-checkout>
-  <!-- Glow behind the window -->
   <div class="pointer-events-none absolute -inset-6 rounded-[2.5rem] bg-green/12 blur-3xl"></div>
 
   <div
     class="relative overflow-hidden rounded-[1.75rem] border border-white/12 bg-navy/95 shadow-[0_30px_70px_-20px_rgba(0,0,0,0.8)] backdrop-blur-2xl"
   >
-    <!-- Top accent -->
     <div class="h-[3px] w-full bg-gradient-to-r from-transparent via-green to-transparent"></div>
 
     <!-- Merchant bar -->
@@ -26,7 +34,11 @@ const { class: className = "", amount = "499,00" } = Astro.props;
       <div class="flex items-center gap-2.5">
         <span class="grid h-7 w-7 place-items-center rounded-lg bg-green/12 text-green">
           <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+            ></path>
           </svg>
         </span>
         <div class="leading-tight">
@@ -36,29 +48,24 @@ const { class: className = "", amount = "499,00" } = Astro.props;
       </div>
       <div class="text-right leading-tight">
         <p class="text-[10px] text-white/45">At gjalda</p>
-        <p class="text-sm font-bold tracking-tight text-white">{amount} kr.</p>
+        <p class="tnum text-sm font-bold tracking-tight text-white">{amount} kr.</p>
       </div>
     </div>
 
-    <!-- Body: swaps between the form and the receipt -->
     <div class="relative min-h-[19.5rem]">
       <!-- FORM -->
       <div class="space-y-4 p-5 transition-opacity duration-300" data-checkout-form>
         <div class="grid grid-cols-2 gap-2.5">
-          <div
-            class="flex items-center justify-center gap-1.5 rounded-xl bg-white py-2.5 text-[11px] font-semibold text-black"
-            data-wallet="apple"
-          >
+          <div class="flex items-center justify-center gap-1.5 rounded-xl bg-white py-2.5 text-[11px] font-semibold text-black">
             <svg class="h-3.5 w-auto fill-current" viewBox="0 0 170 170" aria-hidden="true">
-              <path d="M150.37 130.25c-2.45 5.66-5.35 10.87-8.71 15.66-4.58 6.53-8.33 11.05-11.22 13.56-4.48 4.12-9.28 6.23-14.42 6.35-3.69 0-8.14-1.05-13.32-3.18-5.19-2.12-9.97-3.17-14.34-3.17-4.58 0-9.49 1.05-14.75 3.17-5.26 2.13-9.5 3.24-12.74 3.35-4.35.13-9.16-1.9-14.42-6.08-3.69-3.04-7.69-7.86-12-14.46-6.09-9.35-10.86-19.9-14.32-31.65-3.46-11.75-5.19-22.85-5.19-33.3 0-13.48 3.51-24.66 10.53-33.53 7.02-8.87 15.83-13.39 26.43-13.56 5.13.12 10.56 1.44 16.3 3.97 5.74 2.53 9.4 3.86 10.98 3.97 1.35-.11 5.19-1.49 11.53-4.13 6.34-2.64 11.95-3.85 16.84-3.63 12.18.98 21.68 5.68 28.5 14.1-10.76 6.53-16.03 15.44-15.82 26.74.22 8.91 3.58 16.42 10.09 22.52 6.51 6.1 14.19 9.68 23.04 10.77-2.39 7.18-5.33 14.46-8.81 21.84zM119.22 33.74c0-7.39 2.61-14.13 7.84-20.21 5.23-6.09 11.85-10.22 19.86-12.4 1.09 6.85.05 13.59-3.12 20.21-3.17 6.63-8.21 11.74-15.12 15.33-.87-.87-1.96-1.52-3.26-1.96-3.8-1.3-6.2-1.96-7.2-1.96z"></path>
+              <path d={APPLE_GLYPH}></path>
             </svg>
             <span>Pay</span>
           </div>
-          <div
-            class="flex items-center justify-center gap-1.5 rounded-xl border border-white/12 bg-white/8 py-2.5 text-[11px] font-semibold text-white"
-            data-wallet="google"
-          >
-            <span class="font-bold">G</span><span>Pay</span>
+          <div class="flex items-center justify-center rounded-xl border border-white/12 bg-white/8 py-2.5">
+            <svg viewBox={googlePay.viewBox} class="h-[15px] w-auto text-white" fill="currentColor" aria-hidden="true">
+              <path d={googlePay.path}></path>
+            </svg>
           </div>
         </div>
 
@@ -71,66 +78,42 @@ const { class: className = "", amount = "499,00" } = Astro.props;
         <div class="space-y-2.5">
           <div>
             <p class="mb-1.5 text-[10px] font-medium text-white/50">Kortnummar</p>
-            <div
-              class="flex items-center justify-between rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2.5 transition-colors duration-300"
-              data-field="number"
-            >
-              <span class="font-mono text-xs tracking-[0.06em] text-white" data-out="number"></span>
-              <span class="flex items-center gap-1">
-                <span
-                  class="rounded bg-white/8 px-1.5 py-0.5 text-[8px] font-bold text-white/50 transition-all duration-300"
-                  data-brand="visa">VISA</span
-                >
-                <span class="rounded bg-white/8 px-1.5 py-0.5 text-[8px] font-bold text-white/50">MC</span>
-              </span>
+            <div class="flex items-center justify-between rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2.5">
+              <span class="font-mono text-xs tracking-[0.06em] text-white">4571 8842 1907 8820</span>
+              <span class="rounded bg-green/20 px-1.5 py-0.5 text-[8px] font-bold text-green">VISA</span>
             </div>
           </div>
 
           <div class="grid grid-cols-2 gap-2.5">
             <div>
               <p class="mb-1.5 text-[10px] font-medium text-white/50">Gildugt til</p>
-              <div
-                class="rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2.5 transition-colors duration-300"
-                data-field="expiry"
-              >
-                <span class="font-mono text-xs text-white" data-out="expiry"></span>
+              <div class="rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2.5">
+                <span class="font-mono text-xs text-white">08 / 29</span>
               </div>
             </div>
             <div>
               <p class="mb-1.5 text-[10px] font-medium text-white/50">CVC</p>
-              <div
-                class="rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2.5 transition-colors duration-300"
-                data-field="cvc"
-              >
-                <span class="font-mono text-xs text-white" data-out="cvc"></span>
+              <div class="rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2.5">
+                <span class="font-mono text-xs text-white">•••</span>
               </div>
             </div>
           </div>
         </div>
 
-        <button
-          type="button"
-          tabindex="-1"
-          aria-hidden="true"
-          class="relative w-full overflow-hidden rounded-xl bg-green py-3 text-xs font-bold text-navy shadow-lg shadow-green/20"
-          data-pay
+        <div
+          class="relative w-full overflow-hidden rounded-xl bg-green py-3 text-center text-xs font-bold text-navy shadow-lg shadow-green/20"
         >
-          <span class="flex items-center justify-center gap-2" data-pay-label>
-            Rinda {amount} kr.
-          </span>
+          <span class="flex items-center justify-center gap-2" data-pay-label>Rinda {amount} kr.</span>
           <span class="absolute inset-0 hidden items-center justify-center gap-2" data-pay-busy>
             <span class="h-3.5 w-3.5 animate-spin rounded-full border-2 border-navy/25 border-t-navy"></span>
             <span>Viðgerð…</span>
           </span>
-        </button>
+        </div>
       </div>
 
       <!-- RECEIPT -->
-      <div
-        class="absolute inset-0 hidden flex-col items-center justify-center gap-3 p-6 text-center"
-        data-checkout-done
-      >
-        <span class="grid h-16 w-16 place-items-center rounded-full bg-green/12" style="animation: pop-in 0.45s var(--ease-spring) both;">
+      <div class="absolute inset-0 hidden flex-col items-center justify-center gap-3 p-6 text-center" data-checkout-done>
+        <span class="grid h-16 w-16 place-items-center rounded-full bg-green/12">
           <svg class="h-9 w-9" viewBox="0 0 52 52" fill="none" stroke="currentColor" aria-hidden="true">
             <circle cx="26" cy="26" r="23" class="stroke-green/30" stroke-width="3"></circle>
             <path
@@ -141,21 +124,22 @@ const { class: className = "", amount = "499,00" } = Astro.props;
               stroke-linejoin="round"
               stroke-dasharray="40"
               stroke-dashoffset="40"
-              style="animation: draw-check 0.5s var(--ease-out-expo) 0.15s forwards;"
+              data-check
             ></path>
           </svg>
         </span>
         <div>
           <p class="text-lg font-bold text-white">Goldið</p>
-          <p class="mt-0.5 text-xs text-white/55">{amount} kr. • góðkent á 1,2 sek.</p>
+          <p class="tnum mt-0.5 text-xs text-white/55">{amount} kr.</p>
         </div>
-        <span class="mt-1 rounded-full border border-green/25 bg-green/8 px-3 py-1 text-[10px] font-semibold text-green">
+        <span
+          class="mt-1 rounded-full border border-green/25 bg-green/8 px-3 py-1 text-[10px] font-semibold text-green"
+        >
           Kvittan send til kundan
         </span>
       </div>
     </div>
 
-    <!-- Trust footer -->
     <div class="flex items-center justify-between border-t border-white/8 px-5 py-2.5 text-[9px] text-white/40">
       <span class="flex items-center gap-1">
         <svg class="h-3 w-3 text-green" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
@@ -171,12 +155,24 @@ const { class: className = "", amount = "499,00" } = Astro.props;
   </div>
 </div>
 
-<script>
-  const NUMBER = "4571 8842 1907 8820";
-  const EXPIRY = "08 / 29";
-  const CVC = "•••";
-  const ACTIVE = "border-green/45 bg-green/[0.06]";
+<style>
+  [data-check] {
+    transition: stroke-dashoffset 0.5s var(--ease-out-expo) 0.12s;
+  }
 
+  [data-checkout-done].is-shown [data-check] {
+    stroke-dashoffset: 0;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    [data-check] {
+      stroke-dashoffset: 0;
+      transition: none;
+    }
+  }
+</style>
+
+<script>
   function run(root: HTMLElement) {
     const formEl = root.querySelector<HTMLElement>("[data-checkout-form]");
     const doneEl = root.querySelector<HTMLElement>("[data-checkout-done]");
@@ -188,57 +184,23 @@ const { class: className = "", amount = "499,00" } = Astro.props;
     const done: HTMLElement = doneEl;
     const label: HTMLElement = labelEl;
     const busy: HTMLElement = busyEl;
-    const brand = root.querySelector<HTMLElement>("[data-brand='visa']");
-    const outs = {
-      number: root.querySelector<HTMLElement>("[data-out='number']"),
-      expiry: root.querySelector<HTMLElement>("[data-out='expiry']"),
-      cvc: root.querySelector<HTMLElement>("[data-out='cvc']"),
-    };
-    const fields = {
-      number: root.querySelector<HTMLElement>("[data-field='number']"),
-      expiry: root.querySelector<HTMLElement>("[data-field='expiry']"),
-      cvc: root.querySelector<HTMLElement>("[data-field='cvc']"),
-    };
 
     const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
-    const focus = (k: keyof typeof fields, on: boolean) => {
-      const el = fields[k];
-      if (!el) return;
-      ACTIVE.split(" ").forEach((c) => el.classList.toggle(c, on));
-    };
-
-    async function type(k: keyof typeof outs, text: string, speed = 55) {
-      const el = outs[k];
-      if (!el) return;
-      focus(k, true);
-      for (let i = 1; i <= text.length; i++) {
-        el.textContent = text.slice(0, i);
-        await wait(text[i - 1] === " " ? speed / 3 : speed);
-      }
-      focus(k, false);
-    }
+    let timer: number | null = null;
+    let running = false;
 
     function reset() {
-      Object.values(outs).forEach((el) => el && (el.textContent = ""));
-      Object.keys(fields).forEach((k) => focus(k as keyof typeof fields, false));
-      brand?.classList.remove("!bg-green/20", "!text-green");
       form.classList.remove("opacity-0");
       form.style.display = "";
       done.style.display = "none";
+      done.classList.remove("is-shown");
       label.style.display = "";
       busy.style.display = "none";
     }
 
     async function cycle() {
       reset();
-      await wait(1100);
-      await type("number", NUMBER, 52);
-      brand?.classList.add("!bg-green/20", "!text-green");
-      await wait(260);
-      await type("expiry", EXPIRY, 80);
-      await wait(180);
-      await type("cvc", CVC, 130);
-      await wait(520);
+      await wait(2200);
 
       label.style.display = "none";
       busy.style.display = "flex";
@@ -248,42 +210,34 @@ const { class: className = "", amount = "499,00" } = Astro.props;
       await wait(300);
       form.style.display = "none";
       done.style.display = "flex";
-      await wait(3400);
+      done.classList.add("is-shown");
+      await wait(3600);
     }
 
-    void (async () => {
-      // Loop for as long as the widget is on screen.
-      for (;;) await cycle();
-    })();
+    async function loop() {
+      running = true;
+      while (running) await cycle();
+    }
+
+    // Only animate while the widget is actually on screen.
+    const io = new IntersectionObserver(
+      (entries) => {
+        for (const e of entries) {
+          if (e.isIntersecting && !running) void loop();
+          else if (!e.isIntersecting) {
+            running = false;
+            if (timer) clearTimeout(timer);
+          }
+        }
+      },
+      { threshold: 0.3 },
+    );
+    io.observe(root);
   }
 
   function boot() {
-    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    document.querySelectorAll<HTMLElement>("[data-checkout]").forEach((root) => {
-      if (reduced) {
-        const set = (k: string, v: string) => {
-          const el = root.querySelector<HTMLElement>(`[data-out='${k}']`);
-          if (el) el.textContent = v;
-        };
-        set("number", NUMBER);
-        set("expiry", EXPIRY);
-        set("cvc", CVC);
-        return;
-      }
-      // Only start animating once visible, to avoid burning cycles offscreen.
-      if (!("IntersectionObserver" in window)) return run(root);
-      const io = new IntersectionObserver(
-        (entries) => {
-          for (const e of entries) {
-            if (!e.isIntersecting) continue;
-            io.disconnect();
-            run(root);
-          }
-        },
-        { threshold: 0.3 },
-      );
-      io.observe(root);
-    });
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    document.querySelectorAll<HTMLElement>("[data-checkout]").forEach(run);
   }
 
   if (document.readyState === "loading") {
