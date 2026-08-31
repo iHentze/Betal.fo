@@ -8,8 +8,8 @@
     "build": "astro build",
     "preview": "wrangler dev",
     "deploy": "astro build && wrangler deploy",
-    "test": "vitest run",
-    "test:watch": "vitest",
+    "test": "NODE_OPTIONS=--experimental-sqlite vitest run",
+    "test:watch": "NODE_OPTIONS=--experimental-sqlite vitest",
     "typecheck": "astro check --minimumSeverity error",
     "db:migrate:local": "wrangler d1 migrations apply betal --local",
     "db:migrate": "wrangler d1 migrations apply betal --remote"

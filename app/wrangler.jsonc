@@ -1,15 +1,8 @@
 {
   "name": "betal-app",
-  "main": "./dist/_worker.js/index.js",
   "compatibility_date": "2026-08-27",
   "compatibility_flags": ["nodejs_compat"],
-  "assets": {
-    "binding": "ASSETS",
-    "directory": "./dist"
-  },
-  "observability": {
-    "enabled": true
-  },
+  "observability": { "enabled": true },
   "d1_databases": [
     {
       "binding": "DB",
@@ -20,28 +13,17 @@
   ],
   "kv_namespaces": [
     {
+      // Merchant access tokens. Never leaves the worker.
       "binding": "TOKENS",
       "id": "00000000000000000000000000000000"
     }
   ],
+  // Producer only. The consumer lives in workers/ingest so webhook projection is not
+  // affected by app deploys or app traffic.
   "queues": {
-    "producers": [
-      {
-        "binding": "INGEST_QUEUE",
-        "queue": "betal-ingest"
-      }
-    ],
-    "consumers": [
-      {
-        "queue": "betal-ingest",
-        "max_batch_size": 25,
-        "max_batch_timeout": 5,
-        "max_retries": 5,
-        "dead_letter_queue": "betal-ingest-dlq"
-      }
-    ]
+    "producers": [{ "binding": "INGEST_QUEUE", "queue": "betal-ingest" }]
   },
-  "triggers": {
-    "crons": ["*/10 * * * *"]
+  "vars": {
+    "APP_URL": "https://app.betal.fo"
   }
 }
