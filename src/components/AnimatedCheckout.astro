@@ -53,7 +53,11 @@ const APPLE_GLYPH =
     </div>
 
     <div class="relative min-h-[19.5rem]">
-      <!-- FORM -->
+      <!--
+        FORM — stays in flow even when the receipt is showing. Removing it
+        would shrink the window to fit whatever is left, so the two states
+        would not be the same size.
+      -->
       <div class="space-y-4 p-5 transition-opacity duration-300" data-checkout-form>
         <div class="grid grid-cols-2 gap-2.5">
           <div class="flex items-center justify-center gap-1.5 rounded-xl bg-white py-2.5 text-[11px] font-semibold text-black">
@@ -100,19 +104,25 @@ const APPLE_GLYPH =
           </div>
         </div>
 
+        <!--
+          Fixed height with both captions overlaid, so swapping to the busy
+          state cannot change the button's size and therefore the window's.
+        -->
         <div
-          class="relative w-full overflow-hidden rounded-xl bg-green py-3 text-center text-xs font-bold text-navy shadow-lg shadow-green/20"
+          class="relative h-10 w-full overflow-hidden rounded-xl bg-green text-xs font-bold text-navy shadow-lg shadow-green/20"
         >
-          <span class="flex items-center justify-center gap-2" data-pay-label>Rinda {amount} kr.</span>
-          <span class="absolute inset-0 hidden items-center justify-center gap-2" data-pay-busy>
+          <span class="absolute inset-0 flex items-center justify-center gap-2" data-pay-label>
+            Rinda {amount} kr.
+          </span>
+          <span class="absolute inset-0 flex items-center justify-center gap-2" data-pay-busy>
             <span class="h-3.5 w-3.5 animate-spin rounded-full border-2 border-navy/25 border-t-navy"></span>
             <span>Viðgerð…</span>
           </span>
         </div>
       </div>
 
-      <!-- RECEIPT -->
-      <div class="absolute inset-0 hidden flex-col items-center justify-center gap-3 p-6 text-center" data-checkout-done>
+      <!-- RECEIPT — overlays the form, so it never affects the window size. -->
+      <div class="absolute inset-0 flex flex-col items-center justify-center gap-3 p-6 text-center" data-checkout-done>
         <span class="grid h-16 w-16 place-items-center rounded-full bg-green/12">
           <svg class="h-9 w-9" viewBox="0 0 52 52" fill="none" stroke="currentColor" aria-hidden="true">
             <circle cx="26" cy="26" r="23" class="stroke-green/30" stroke-width="3"></circle>
@@ -156,11 +166,56 @@ const APPLE_GLYPH =
 </div>
 
 <style>
+  /*
+   * Both states occupy the same box: the form keeps its space and only its
+   * visibility changes, and the receipt is absolutely positioned on top.
+   */
+  [data-checkout-done] {
+    opacity: 0;
+    visibility: hidden;
+    transition:
+      opacity 0.3s var(--ease-out-expo),
+      visibility 0.3s;
+  }
+
+  [data-checkout-form] {
+    transition:
+      opacity 0.3s var(--ease-out-expo),
+      visibility 0.3s;
+  }
+
+  [data-checkout].is-done [data-checkout-form] {
+    opacity: 0;
+    visibility: hidden;
+  }
+
+  [data-checkout].is-done [data-checkout-done] {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  [data-pay-label],
+  [data-pay-busy] {
+    transition: opacity 0.2s var(--ease-out-expo);
+  }
+
+  [data-pay-busy] {
+    opacity: 0;
+  }
+
+  [data-checkout].is-busy [data-pay-label] {
+    opacity: 0;
+  }
+
+  [data-checkout].is-busy [data-pay-busy] {
+    opacity: 1;
+  }
+
   [data-check] {
     transition: stroke-dashoffset 0.5s var(--ease-out-expo) 0.12s;
   }
 
-  [data-checkout-done].is-shown [data-check] {
+  [data-checkout].is-done [data-check] {
     stroke-dashoffset: 0;
   }
 
@@ -174,43 +229,18 @@ const APPLE_GLYPH =
 
 <script>
   function run(root: HTMLElement) {
-    const formEl = root.querySelector<HTMLElement>("[data-checkout-form]");
-    const doneEl = root.querySelector<HTMLElement>("[data-checkout-done]");
-    const labelEl = root.querySelector<HTMLElement>("[data-pay-label]");
-    const busyEl = root.querySelector<HTMLElement>("[data-pay-busy]");
-    if (!formEl || !doneEl || !labelEl || !busyEl) return;
-
-    const form: HTMLElement = formEl;
-    const done: HTMLElement = doneEl;
-    const label: HTMLElement = labelEl;
-    const busy: HTMLElement = busyEl;
-
     const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
-    let timer: number | null = null;
     let running = false;
 
-    function reset() {
-      form.classList.remove("opacity-0");
-      form.style.display = "";
-      done.style.display = "none";
-      done.classList.remove("is-shown");
-      label.style.display = "";
-      busy.style.display = "none";
-    }
-
+    // State lives entirely in classes, so nothing is ever removed from flow.
     async function cycle() {
-      reset();
+      root.classList.remove("is-done", "is-busy");
       await wait(2200);
 
-      label.style.display = "none";
-      busy.style.display = "flex";
+      root.classList.add("is-busy");
       await wait(1250);
 
-      form.classList.add("opacity-0");
-      await wait(300);
-      form.style.display = "none";
-      done.style.display = "flex";
-      done.classList.add("is-shown");
+      root.classList.add("is-done");
       await wait(3600);
     }
 
@@ -224,10 +254,7 @@ const APPLE_GLYPH =
       (entries) => {
         for (const e of entries) {
           if (e.isIntersecting && !running) void loop();
-          else if (!e.isIntersecting) {
-            running = false;
-            if (timer) clearTimeout(timer);
-          }
+          else if (!e.isIntersecting) running = false;
         }
       },
       { threshold: 0.3 },
