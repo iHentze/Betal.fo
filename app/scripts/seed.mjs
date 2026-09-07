@@ -30,9 +30,23 @@ const MERCHANT_ID = "11111111-1111-4111-8111-111111111111";
 const POS_ID = "22222222-2222-4222-8222-222222222222";
 const ACCOUNT_ID = "33333333-3333-4333-8333-333333333333";
 
-// August 2026, the month being closed.
-const MONTH_START = Date.UTC(2026, 7, 1);
-const MONTH_END = Date.UTC(2026, 8, 1);
+// Dates are relative to today, not fixed.
+//
+// A hardcoded month means "today" and "this month" are empty the moment the calendar
+// moves past it, so the overview reads as a dead account. Trade runs from the start of
+// last month up to now, which gives a complete month to close and invoice plus a
+// part-month in progress — the state a real merchant is usually in.
+const NOW = new Date();
+const TODAY = Date.UTC(NOW.getUTCFullYear(), NOW.getUTCMonth(), NOW.getUTCDate());
+
+// The previous complete month: what gets frozen, reconciled and billed.
+const CLOSED_YEAR = NOW.getUTCMonth() === 0 ? NOW.getUTCFullYear() - 1 : NOW.getUTCFullYear();
+const CLOSED_MONTH = NOW.getUTCMonth() === 0 ? 12 : NOW.getUTCMonth();
+const MONTH_START = Date.UTC(CLOSED_YEAR, CLOSED_MONTH - 1, 1);
+const MONTH_END = Date.UTC(CLOSED_YEAR, CLOSED_MONTH, 1);
+
+// Trade continues into the current month, up to and including today.
+const TRADING_END = TODAY + 86_400_000;
 const iso = (ms) => new Date(ms).toISOString();
 
 add("PRAGMA foreign_keys = OFF;");
@@ -168,10 +182,11 @@ const references = ["Kaffi", "Morgunmatur", "Døgurði", "Kaka", "Take-away"];
 const transactions = [];
 let day = 1;
 
-// Roughly 8 payments a working day through the month.
-for (let d = 0; d < 31; d += 1) {
+// Roughly 8 payments a working day, from the start of last month until today.
+const TRADING_DAYS = Math.round((TRADING_END - MONTH_START) / 86_400_000);
+for (let d = 0; d < TRADING_DAYS; d += 1) {
   const dayStart = MONTH_START + d * 86_400_000;
-  if (dayStart >= MONTH_END) break;
+  if (dayStart >= TRADING_END) break;
   const weekday = new Date(dayStart).getUTCDay();
   const count = weekday === 0 ? 0 : 6 + Math.floor(rand() * 5);
 
@@ -263,6 +278,9 @@ for (const tx of transactions) {
 const successful = transactions.filter((t) => t.state === "SUCCESS");
 const firstWeek = successful.filter((t) => t.at < MONTH_START + 7 * 86_400_000);
 const TRANSFER_ID = randomUUID();
+// Acquirers settle on a lag, so the first week's trade lands a week later.
+const SETTLED_AT_MS = MONTH_START + 7 * 86_400_000 + 6 * 3_600_000;
+const SETTLED_ON = new Date(SETTLED_AT_MS).toISOString().slice(0, 10);
 
 const decimal = (minor) => (minor / 100).toFixed(2);
 let grossMinor = 0;
@@ -284,9 +302,10 @@ add(`INSERT INTO settlement_transfer (
   net_amount, currency, acquirer_reference, created_at, created_at_ms,
   transactions_synced
 ) VALUES (
-  ${q(TRANSFER_ID)}, ${q(MERCHANT_ID)}, 'clearhaus', 'settlement-2026-08-08.csv',
-  '["R01234"]', '2026-08-08', ${q(decimal(grossMinor + feeMinor))}, 'DKK',
-  'acq-2026-08-08', '2026-08-08T06:00:00Z', ${Date.UTC(2026, 7, 8, 6)}, 1
+  ${q(TRANSFER_ID)}, ${q(MERCHANT_ID)}, 'clearhaus',
+  ${q(`settlement-${SETTLED_ON}.csv`)},
+  '["R01234"]', ${q(SETTLED_ON)}, ${q(decimal(grossMinor + feeMinor))}, 'DKK',
+  ${q(`acq-${SETTLED_ON}`)}, ${q(`${SETTLED_ON}T06:00:00Z`)}, ${SETTLED_AT_MS}, 1
 );`);
 
 for (const row of settlementRows) {
@@ -297,8 +316,8 @@ for (const row of settlementRows) {
     created_at
   ) VALUES (
     ${q(settlementId)}, ${q(TRANSFER_ID)}, ${q(MERCHANT_ID)}, ${q(row.tx.id)},
-    'R01234', ${q(row.tx.reference)}, ${q(`acq-${row.tx.id}`)}, '2026-08-08',
-    ${q(decimal(row.net))}, 'DKK', '2026-08-08T06:00:00Z'
+    'R01234', ${q(row.tx.reference)}, ${q(`acq-${row.tx.id}`)}, ${q(SETTLED_ON)},
+    ${q(decimal(row.net))}, 'DKK', ${q(`${SETTLED_ON}T06:00:00Z`)}
   );`);
 
   for (const [type, amount] of [
@@ -318,18 +337,25 @@ for (const row of settlementRows) {
 
 // --- Closed period and issued invoice -------------------------------------
 
-const PERIOD_ID = `${MERCHANT_ID}:2026-08`;
-const billableCount = successful.length;
-const volumeMinor = successful.reduce((sum, t) => sum + t.amount, 0);
+const PERIOD_ID = `${MERCHANT_ID}:${CLOSED_YEAR}-${String(CLOSED_MONTH).padStart(2, '0')}`;
+// Closed on the first of the following month, which is when a close actually runs.
+const CLOSED_AT = new Date(MONTH_END).toISOString().slice(0, 10);
+// Only the closed month is billable; trade since then belongs to the open period.
+const closedMonthTransactions = transactions.filter((t) => t.at < MONTH_END);
+const closedMonthSuccessful = closedMonthTransactions.filter((t) => t.state === 'SUCCESS');
+const billableCount = closedMonthSuccessful.length;
+const volumeMinor = closedMonthSuccessful.reduce((sum, t) => sum + t.amount, 0);
 
 add(`INSERT INTO billing_period (
   id, merchant_id, year, month, state, starts_at_ms, ends_at_ms, frozen_at,
   reconciled_at, rated_at, issued_at, mirror_count, epay_count, billable_count,
   gross_minor, price_plan_id, created_at, updated_at
 ) VALUES (
-  ${q(PERIOD_ID)}, ${q(MERCHANT_ID)}, 2026, 8, 'issued', ${MONTH_START}, ${MONTH_END},
-  '2026-09-01T00:00:00Z', '2026-09-01T00:10:00Z', '2026-09-01T00:15:00Z',
-  '2026-09-01T00:20:00Z', ${transactions.length}, ${transactions.length},
+  ${q(PERIOD_ID)}, ${q(MERCHANT_ID)}, ${CLOSED_YEAR}, ${CLOSED_MONTH}, 'issued',
+  ${MONTH_START}, ${MONTH_END},
+  ${q(`${CLOSED_AT}T00:00:00Z`)}, ${q(`${CLOSED_AT}T00:10:00Z`)},
+  ${q(`${CLOSED_AT}T00:15:00Z`)}, ${q(`${CLOSED_AT}T00:20:00Z`)},
+  ${closedMonthTransactions.length}, ${closedMonthTransactions.length},
   ${billableCount}, ${volumeMinor}, ${q(PLAN_ID)}, '2026-09-01', '2026-09-01'
 );`);
 
@@ -348,8 +374,9 @@ add(`INSERT INTO invoice (
   'manual',
   '{"name":"Betal P/F","vTal":null,"city":"Tórshavn","countryCode":"FO","email":"rokning@betal.fo"}',
   '{"name":"Kaffihúsið við Vág P/F","vTal":"123456","city":"Tórshavn","postalCode":"100","addressLineOne":"Bryggjubakki 12","countryCode":"FO","email":"rokning@kaffihusid.fo"}',
-  '2026-09-01T00:20:00Z', '2026-09-15T00:20:00Z', '2026-09-01T00:15:00Z',
-  '2026-09-01T00:18:00Z', 'ingvar@betal.fo'
+  ${q(`${CLOSED_AT}T00:20:00Z`)},
+  ${q(new Date(MONTH_END + 14 * 86_400_000).toISOString().slice(0, 10) + 'T00:20:00Z')},
+  ${q(`${CLOSED_AT}T00:15:00Z`)}, ${q(`${CLOSED_AT}T00:18:00Z`)}, 'ingvar@betal.fo'
 );`);
 
 const LINE_FIXED = randomUUID();
@@ -363,7 +390,7 @@ add(`INSERT INTO invoice_line (
    ${billableCount}, 50, ${billableCount * 50});`);
 
 // The evidence behind the per-transaction line: every payment it counted.
-for (const tx of successful) {
+for (const tx of closedMonthSuccessful) {
   add(`INSERT INTO invoice_line_input (id, invoice_line_id, transaction_id, amount_minor)
 VALUES (${q(randomUUID())}, ${q(LINE_PER_TX)}, ${q(tx.id)}, 50);`);
 }
@@ -416,7 +443,8 @@ process.stdout.write(lines.join("\n") + "\n");
 process.stderr.write(
   [
     "",
-    `Seeded ${transactions.length} transactions (${billableCount} billable) for August 2026.`,
+    `Seeded ${transactions.length} transactions from ${new Date(MONTH_START).toISOString().slice(0, 10)} to today.`,
+    `Closed period ${CLOSED_YEAR}-${String(CLOSED_MONTH).padStart(2, "0")}: ${billableCount} billable, invoiced.`,
     "",
     "Sign in by setting a cookie on http://localhost:4321 :",
     `  Betal staff:  document.cookie = 'betal_session=${STAFF_TOKEN}; path=/'`,

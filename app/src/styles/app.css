@@ -993,8 +993,18 @@
   }
 }
 
-/* Mobile. The staff tooling stays desktop-dense, but merchants check takings on a
-   phone, so list rows stack instead of scrolling sideways. */
+/*
+ * Mobile.
+ *
+ * A seven-column table cannot survive a 390px screen: the fixed columns overflow and
+ * the amount — the one thing anyone opens this for — ends up off the right edge. Every
+ * mobile banking app solves it the same way, so this does too: name on the left,
+ * amount on the right, everything else dropped.
+ *
+ * Each table declares `--cols-sm` alongside `--cols`, and cells that should not
+ * survive the narrow layout carry `.cell-hide-sm`. Group headers use the same classes
+ * in the same positions so their columns stay aligned with the rows beneath them.
+ */
 @media (max-width: 48rem) {
   .shell {
     grid-template-columns: minmax(0, 1fr);
@@ -1002,6 +1012,21 @@
 
   .sidebar {
     display: none;
+  }
+
+  .trow,
+  .group-header {
+    grid-template-columns: var(--cols-sm, auto minmax(0, 1fr) auto);
+    gap: 0.5rem;
+  }
+
+  .cell-hide-sm {
+    display: none;
+  }
+
+  .trow {
+    min-height: 2.75rem;
+    padding: 0.375rem 0.875rem;
   }
 
   .list-row {
@@ -1014,11 +1039,96 @@
   .list-row-meta {
     margin-left: 0;
     width: 100%;
+    gap: 0.75rem;
   }
 
   .properties {
     width: 100%;
     border-left: 0;
     border-top: 1px solid var(--color-line);
+  }
+
+  /* Stats wrap rather than squeezing into unreadable columns. */
+  .page-header {
+    gap: 1.25rem 1.75rem;
+    padding: 0.875rem;
+  }
+
+  .stat-value {
+    font-size: 1.25rem;
+  }
+
+  .detail-amount {
+    font-size: 1.75rem;
+  }
+
+  .cards {
+    grid-template-columns: minmax(0, 1fr);
+    padding: 0.75rem;
+  }
+
+  /* Room for the tab bar. */
+  main {
+    padding-bottom: 4rem;
+  }
+
+  .topbar {
+    padding: 0 0.875rem;
+  }
+}
+
+/*
+ * Bottom tab bar.
+ *
+ * The sidebar is hidden on a phone, which without this leaves no way to navigate at
+ * all. Shown only where the sidebar is not.
+ */
+.tabbar {
+  display: none;
+}
+
+@media (max-width: 48rem) {
+  .tabbar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: 1fr;
+    background: var(--color-surface-1);
+    border-top: 1px solid var(--color-line);
+    padding-bottom: env(safe-area-inset-bottom, 0);
+    z-index: 20;
+  }
+
+  .tab {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.1875rem;
+    padding: 0.5rem 0.125rem 0.4375rem;
+    font-size: 0.625rem;
+    line-height: 1.1;
+    color: var(--color-ink-muted);
+    text-decoration: none;
+    min-width: 0;
+  }
+
+  .tab span {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .tab[aria-current="page"] {
+    color: var(--color-accent);
+  }
+
+  .tab .nav-icon {
+    width: 1.125rem;
+    height: 1.125rem;
+    opacity: 1;
   }
 }

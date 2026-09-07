@@ -59,6 +59,8 @@ const feeLabels: Record<string, string> = {
 };
 
 const COLUMNS = "minmax(7rem, 1fr) 7rem 5rem 8.5rem 8rem 9rem";
+// On a phone: the date and what actually arrived. Tapping opens the breakdown.
+const COLUMNS_SM = "minmax(0, 1fr) 7.5rem";
 const nav = navFor(actor, merchantId);
 ---
 
@@ -106,13 +108,13 @@ const nav = navFor(actor, merchantId);
         Avrokningar koma, tá innloysarin hevur útgoldið.
       </div>
     ) : (
-      <div class="table" style={`--cols: ${COLUMNS}`}>
+      <div class="table" style={`--cols: ${COLUMNS}; --cols-sm: ${COLUMNS_SM}`}>
         <div class="group-header">
           <span class="group-title">{fo.settlements.posted}</span>
-          <span class="group-count">{fo.transactions.acquirer}</span>
-          <span class="group-count cell-num">{fo.settlements.transactionCount}</span>
-          <span class="group-count cell-num">Sølan</span>
-          <span class="group-count cell-num">{fo.settlements.fees}</span>
+          <span class="group-count cell-hide-sm">{fo.transactions.acquirer}</span>
+          <span class="group-count cell-num cell-hide-sm">{fo.settlements.transactionCount}</span>
+          <span class="group-count cell-num cell-hide-sm">Sølan</span>
+          <span class="group-count cell-num cell-hide-sm">{fo.settlements.fees}</span>
           <span class="group-count cell-num">{fo.settlements.netAmount}</span>
         </div>
 
@@ -122,14 +124,14 @@ const nav = navFor(actor, merchantId);
               <span class="cell-primary">
                 {formatDate(row.transfer.posting_date as string)}
               </span>
-              <span class="cell-quiet">{row.transfer.acquirer as string}</span>
-              <span class="cell-quiet cell-num">
+              <span class="cell-quiet cell-hide-sm">{row.transfer.acquirer as string}</span>
+              <span class="cell-quiet cell-num cell-hide-sm">
                 {String(row.transfer.transaction_count ?? 0)}
               </span>
-              <span class="cell-num" style="color: var(--color-ink-secondary)">
+              <span class="cell-num cell-hide-sm" style="color: var(--color-ink-secondary)">
                 <Amount minor={row.grossMinor} />
               </span>
-              <span class="cell-num">
+              <span class="cell-num cell-hide-sm">
                 <Amount minor={row.feesMinor} />
               </span>
               <span class="cell-amount">

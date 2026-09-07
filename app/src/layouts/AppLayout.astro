@@ -140,6 +140,31 @@ const commands = nav.flatMap((section) =>
       </div>
     </div>
 
+    <!--
+      Phone navigation. The sidebar is hidden below 48rem, so without this there is
+      no way off the current screen. Four tabs, because Faroese labels are long and a
+      fifth truncates at 390px; the rest stay reachable through the command palette.
+    -->
+    <nav class="tabbar" aria-label={fo.nav.overview}>
+      {
+        nav[0]?.items.slice(0, 4).map((item) => (
+          <a
+            class="tab"
+            href={item.href}
+            aria-current={
+              path === item.href.split("?")[0] ||
+              path.startsWith(`${item.href.split("?")[0]}/`)
+                ? "page"
+                : undefined
+            }
+          >
+            {item.icon && <NavIcon name={item.icon} />}
+            <span>{item.label}</span>
+          </a>
+        ))
+      }
+    </nav>
+
     <CommandPalette commands={commands} />
   </body>
 </html>

@@ -38,6 +38,8 @@ const paid = invoices.results
   .reduce((sum, i) => sum + Number(i.gross_minor), 0);
 
 const COLUMNS = "0.6rem 9rem minmax(0, 1fr) 7rem 7rem 8rem 9rem";
+// On a phone: dot, number, total. The rest is detail for a wider screen.
+const COLUMNS_SM = "0.6rem minmax(0, 1fr) 7rem";
 const nav = navFor(actor, merchantId);
 ---
 
@@ -68,14 +70,14 @@ const nav = navFor(actor, merchantId);
         Rokningar koma, tá fyrsta tíðarskeiðið er avstemt.
       </div>
     ) : (
-      <div class="table" style={`--cols: ${COLUMNS}`}>
+      <div class="table" style={`--cols: ${COLUMNS}; --cols-sm: ${COLUMNS_SM}`}>
         <div class="group-header">
           <span />
           <span class="group-title">{fo.invoices.number}</span>
-          <span class="group-count">{fo.common.status}</span>
-          <span class="group-count">{fo.invoices.issued}</span>
-          <span class="group-count">{fo.invoices.due}</span>
-          <span class="group-count cell-num">{fo.invoices.net}</span>
+          <span class="group-count cell-hide-sm">{fo.common.status}</span>
+          <span class="group-count cell-hide-sm">{fo.invoices.issued}</span>
+          <span class="group-count cell-hide-sm">{fo.invoices.due}</span>
+          <span class="group-count cell-num cell-hide-sm">{fo.invoices.net}</span>
           <span class="group-count cell-num">{fo.invoices.gross}</span>
         </div>
 
@@ -83,14 +85,14 @@ const nav = navFor(actor, merchantId);
           <a class="trow" href={`/rokningar/${invoice.id}`}>
             <StatusBadge status={invoiceStatus(invoice.state)} iconOnly />
             <span class="cell-primary tnum">{invoice.number}</span>
-            <span class="cell-quiet">
+            <span class="cell-quiet cell-hide-sm">
               {invoice.kind === "credit_note"
                 ? fo.invoices.creditNote
                 : invoiceStatus(invoice.state).label}
             </span>
-            <span class="cell-quiet">{formatDate(invoice.issued_at)}</span>
-            <span class="cell-quiet">{formatDate(invoice.due_at)}</span>
-            <span class="cell-num" style="color: var(--color-ink-secondary)">
+            <span class="cell-quiet cell-hide-sm">{formatDate(invoice.issued_at)}</span>
+            <span class="cell-quiet cell-hide-sm">{formatDate(invoice.due_at)}</span>
+            <span class="cell-num cell-hide-sm" style="color: var(--color-ink-secondary)">
               <Amount minor={invoice.net_minor} />
             </span>
             <span class="cell-amount">
