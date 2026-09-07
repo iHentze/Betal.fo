@@ -1,0 +1,252 @@
+---
+import AppLayout from "~/layouts/AppLayout.astro";
+import Amount from "~/components/ui/Amount.astro";
+import StatusBadge from "~/components/ui/StatusBadge.astro";
+import Banner from "~/components/ui/Banner.astro";
+import { env } from "~/lib/env";
+import { fo } from "~/content/fo";
+import { navFor, groupByDay, sumAmounts } from "~/lib/nav";
+import { merchantScopeOrNull } from "~/lib/auth";
+import { listTransactions, transactionTotals, pausedWebhooks } from "~/lib/db/queries";
+import { settlementStatus } from "~/lib/status";
+
+export const prerender = false;
+
+const actor = Astro.locals.actor!;
+const db = env.DB;
+const params = Astro.url.searchParams;
+
+const merchantId = merchantScopeOrNull(actor, params.get("handil"));
+// Staff reach these screens from their own sidebar before choosing a merchant,
+// which is a navigation state rather than an error.
+if (!merchantId) return Astro.redirect("/betal/handlar");
+
+const filters = {
+  merchantId,
+  state: params.get("stoda") ?? undefined,
+  search: params.get("leita") ?? undefined,
+  from: params.get("fra") ? Date.parse(params.get("fra")!) : undefined,
+  to: params.get("til") ? Date.parse(params.get("til")!) : undefined,
+};
+
+const cursor = params.get("cursor") ?? undefined;
+const [page, totals, allPaused] = await Promise.all([
+  listTransactions(db, filters, 100, cursor),
+  transactionTotals(db, filters),
+  pausedWebhooks(db),
+]);
+
+const groups = groupByDay(page.rows);
+const paused = allPaused.filter((w) => w.merchant_id === merchantId);
+const nav = navFor(actor, merchantId);
+const filtered = Boolean(filters.state || filters.search || filters.from);
+
+// Every field sits in the same column on every row. Without this the metadata is a
+// right-aligned cluster and a "Mastercard" row knocks the one above it out of line.
+//
+// The status is spelled out rather than left as a bare dot: "did I actually get paid"
+// is the question this list exists to answer, and a colour alone does not answer it.
+const COLUMNS =
+  "0.6rem minmax(8rem, 1fr) 10rem minmax(0, 6rem) 6rem 3.25rem 8.5rem";
+
+// On a phone only four of those survive: the dot, the reference, an exception label
+// and the amount. The card, scheme and time are dropped — the group header already
+// carries the date, and losing the amount off the right edge is not an option.
+const COLUMNS_SM = "0.6rem minmax(0, 1fr) auto 6.5rem";
+
+/**
+ * Show the status word only when something needs attention.
+ *
+ * Nearly every row in a healthy month is captured, so spelling that out 190 times is
+ * a column of identical words that the eye has to wade through. Leaving the normal
+ * case blank means a refund or a decline is the only thing written there, and it
+ * stops you. The dot still marks every row.
+ */
+function exceptionLabel(row: Parameters<typeof settlementStatus>[0]) {
+  const status = settlementStatus(row);
+  return status.tone === "success" && status.label === "Tikið" ? null : status;
+}
+
+/** Last four digits. The full masked PAN is too long to scan and mostly identical. */
+function cardTail(display: string | null): string {
+  if (!display) return "—";
+  return `•••• ${display.slice(-4)}`;
+}
+
+function withParam(key: string, value: string | null): string {
+  const next = new URLSearchParams(params);
+  if (value === null) next.delete(key);
+  else next.set(key, value);
+  next.delete("cursor");
+  const query = next.toString();
+  return query ? `?${query}` : "/gjaldingar";
+}
+
+const stateFilters = [
+  { label: fo.common.all, value: null },
+  { label: "Góðkent", value: "SUCCESS" },
+  { label: "Miseydnað", value: "FAILED" },
+  { label: "Bíðar", value: "PENDING" },
+];
+
+const nextHref = page.nextCursor
+  ? `?${new URLSearchParams({ ...Object.fromEntries(params), cursor: page.nextCursor })}`
+  : null;
+---
+
+<AppLayout
+  title={fo.transactions.title}
+  crumbs={[{ label: fo.transactions.title }]}
+  nav={nav}
+  context={actor.kind === "staff" ? "Betal" : ""}
+>
+  <form slot="actions" method="GET" style="display:flex; gap:.25rem">
+    {params.get("stoda") && <input type="hidden" name="stoda" value={params.get("stoda")} />}
+    <input
+      class="input"
+      type="search"
+      name="leita"
+      value={params.get("leita") ?? ""}
+      placeholder={`${fo.common.search} tilvísing…`}
+      style="width:13rem; font-size: var(--text-xs)"
+    />
+  </form>
+
+  {
+    paused.length > 0 && (
+      <Fragment slot="banner">
+        <Banner
+          tone="paused"
+          title={fo.webhooks.paused}
+          detail={fo.webhooks.pausedExplainer}
+          href="/stillingar"
+          actionLabel={fo.nav.settings}
+        />
+      </Fragment>
+    )
+  }
+
+  <!-- The figures the page is about, before any individual row. -->
+  <div class="page-header">
+    <div>
+      <div class="stat-label">{filtered ? "Í úrvalinum" : "Tilsamans"}</div>
+      <div class="stat-value">
+        <Amount minor={totals.gross} currency="DKK" />
+      </div>
+      <div class="stat-sub">{fo.transactions.count(totals.count)}</div>
+    </div>
+    <div>
+      <div class="stat-label">{fo.transactions.captured}</div>
+      <div class="stat-value" style="font-size:1.125rem">
+        <Amount minor={totals.captured} />
+      </div>
+    </div>
+    {
+      totals.refunded > 0 && (
+        <div>
+          <div class="stat-label">{fo.transactions.refunded}</div>
+          <div class="stat-value" style="font-size:1.125rem">
+            <Amount minor={-totals.refunded} />
+          </div>
+        </div>
+      )
+    }
+  </div>
+
+  <div class="filter-bar">
+    {
+      stateFilters.map((option) => (
+        <a
+          class="chip"
+          href={withParam("stoda", option.value)}
+          aria-pressed={(params.get("stoda") ?? null) === option.value}
+        >
+          {option.label}
+        </a>
+      ))
+    }
+    {
+      filtered && (
+        <a class="chip" href="/gjaldingar" style="margin-left:auto">
+          {fo.common.clear} ✕
+        </a>
+      )
+    }
+  </div>
+
+  {
+    page.rows.length === 0 ? (
+      <div class="empty">
+        <div class="empty-title">
+          {filtered ? fo.transactions.emptyFiltered : fo.transactions.empty}
+        </div>
+        {filtered && (
+          <a class="chip" href="/gjaldingar" style="margin-top:.5rem">
+            {fo.common.clear}
+          </a>
+        )}
+      </div>
+    ) : (
+      <div class="table" style={`--cols: ${COLUMNS}; --cols-sm: ${COLUMNS_SM}`}>
+        {groups.map((group) => (
+          <>
+            {/* The day's takings, aligned with the amount column below it. The
+                placeholders carry the same hide class as the cells they sit above,
+                so the columns stay aligned when those drop on a phone. */}
+            <div class="group-header">
+              <span />
+              <span class="group-title">{group.label}</span>
+              <span />
+              <span class="cell-hide-sm" />
+              <span class="cell-hide-sm" />
+              <span class="group-count cell-num cell-hide-sm">{group.rows.length}</span>
+              {/* Sums what is on screen, so it means the same as the header total.
+                  Summing only successes would show a column of 0,00 whenever the
+                  list is filtered to declines. */}
+              <span class="cell-num" style="color: var(--color-ink-secondary)">
+                <Amount minor={sumAmounts(group.rows, false)} />
+              </span>
+            </div>
+
+            {group.rows.map((row) => (
+              <a class="trow" href={`/gjaldingar/${row.id}`}>
+                <StatusBadge status={settlementStatus(row)} iconOnly />
+                <span class="cell-primary">{row.reference ?? row.id}</span>
+                <span class="cell-quiet">
+                  {exceptionLabel(row) && (
+                    <StatusBadge status={exceptionLabel(row)!} variant="pill" />
+                  )}
+                </span>
+                <span class="cell-quiet cell-hide-sm">
+                  {cardTail(row.payment_method_display)}
+                </span>
+                <span class="cell-quiet cell-hide-sm">
+                  {row.card_scheme ?? row.payment_method_type ?? "—"}
+                </span>
+                {/* Time only — the group header owns the date. */}
+                <span class="cell-quiet cell-num cell-hide-sm">
+                  {new Date(row.created_at_ms).toISOString().slice(11, 16)}
+                </span>
+                <span class="cell-amount">
+                  <Amount minor={row.amount} currency={row.currency} />
+                </span>
+              </a>
+            ))}
+          </>
+        ))}
+      </div>
+    )
+  }
+
+  <div class="list-footer" style="display:flex; align-items:center; gap:1rem">
+    <span>
+      {fo.transactions.count(totals.count)}
+      {page.rows.length < totals.count && ` · vísir ${page.rows.length}`}
+    </span>
+    {nextHref && (
+      <a href={nextHref} style="margin-left:auto">
+        Næstu 100 →
+      </a>
+    )}
+  </div>
+</AppLayout>

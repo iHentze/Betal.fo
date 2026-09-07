@@ -1,0 +1,136 @@
+---
+import AppLayout from "~/layouts/AppLayout.astro";
+import Settings from "~/components/ui/Settings.astro";
+import { env } from "~/lib/env";
+import { fo } from "~/content/fo";
+import { navFor } from "~/lib/nav";
+import { ONBOARDING_STEPS } from "~/lib/provisioning";
+
+export const prerender = false;
+
+const actor = Astro.locals.actor!;
+if (actor.kind !== "staff") return Astro.redirect("/");
+
+const db = env.DB;
+const error = Astro.url.searchParams.get("feilur");
+
+const templates = await db
+  .prepare(
+    `SELECT id, name FROM price_plan WHERE is_template = 1 ORDER BY name`,
+  )
+  .all<{ id: string; name: string }>();
+
+const nav = navFor(actor);
+---
+
+<AppLayout
+  title="Nýggjur handil"
+  crumbs={[
+    { label: "Betal" },
+    { label: fo.merchants.title, href: "/betal/handlar" },
+    { label: "Nýggjur" },
+  ]}
+  nav={nav}
+  context="Betal"
+>
+  <div style="max-width:36rem; padding:1.25rem .875rem">
+    {
+      error && (
+        <p
+          style="margin-bottom:1rem; padding:.5rem .75rem; border-radius: var(--radius-control); font-size: var(--text-xs); color: var(--color-state-failed); background: color-mix(in oklch, var(--color-state-failed) 14%, transparent)"
+        >
+          {error}
+        </p>
+      )
+    }
+
+    <form method="POST" action="/api/handlar">
+      <Settings
+        title="Handilin"
+        description="Vit stovna eina ePay-konta og seta sølustað og hendingar upp."
+      >
+        <div style="padding:.875rem; display:grid; gap:.75rem">
+          <label>
+            <span style="display:block; font-size: var(--text-xs); color: var(--color-ink-muted)">
+              Navn
+            </span>
+            <input class="input" type="text" name="name" required placeholder="Handil P/F" />
+          </label>
+
+          <label>
+            <span style="display:block; font-size: var(--text-xs); color: var(--color-ink-muted)">
+              Teldupostur hjá eigaranum
+            </span>
+            <input class="input" type="email" name="email" required />
+            <span style="font-size: var(--text-2xs); color: var(--color-ink-faint)">
+              ePay sendur eina innbjóðing higar. Tað kann ikki sláast frá.
+            </span>
+          </label>
+
+          <label>
+            <span style="display:block; font-size: var(--text-xs); color: var(--color-ink-muted)">
+              Økisnavn
+            </span>
+            <input class="input" type="text" name="domain" required placeholder="handil.fo" />
+            <span style="font-size: var(--text-2xs); color: var(--color-ink-faint)">
+              Brúka høvuðsøkisnavnið, ikki eitt undirøkisnavn.
+            </span>
+          </label>
+
+          <label>
+            <span style="display:block; font-size: var(--text-xs); color: var(--color-ink-muted)">
+              {fo.merchants.vTal}
+            </span>
+            <input class="input tnum" type="text" name="vTal" placeholder="123456" />
+          </label>
+
+          {
+            templates.results.length > 0 && (
+              <label>
+                <span style="display:block; font-size: var(--text-xs); color: var(--color-ink-muted)">
+                  {fo.merchants.plan}
+                </span>
+                <select class="input" name="pricePlanTemplateId">
+                  <option value="">Onga enn</option>
+                  {templates.results.map((template) => (
+                    <option value={template.id}>{template.name}</option>
+                  ))}
+                </select>
+              </label>
+            )
+          }
+        </div>
+      </Settings>
+
+      <Settings
+        title="Hetta hendir"
+        description="Stigini verða goymd, so tey kunnu takast upp aftur, um okkurt miseydnast."
+      >
+        {
+          ONBOARDING_STEPS.map((step) => (
+            <div class="settings-row">
+              <div>
+                <div class="settings-row-title">{step.label}</div>
+                {!step.automatic && (
+                  <div class="settings-row-description">
+                    Handviljað — ePay hevur einki API til hetta
+                  </div>
+                )}
+              </div>
+              <div class="settings-row-control">
+                <span style="font-size: var(--text-2xs); color: var(--color-ink-faint)">
+                  {step.automatic ? "Sjálvvirkandi" : "Handviljað"}
+                </span>
+              </div>
+            </div>
+          ))
+        }
+      </Settings>
+
+      <div style="display:flex; gap:.5rem; justify-content:flex-end">
+        <a class="btn" href="/betal/handlar">{fo.common.cancel}</a>
+        <button class="btn btn-primary" type="submit">Stovna handil</button>
+      </div>
+    </form>
+  </div>
+</AppLayout>

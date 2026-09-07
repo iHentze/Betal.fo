@@ -1,0 +1,166 @@
+---
+import { env } from "~/lib/env";
+import AppLayout from "~/layouts/AppLayout.astro";
+import Amount from "~/components/ui/Amount.astro";
+import StatusBadge from "~/components/ui/StatusBadge.astro";
+import { fo } from "~/content/fo";
+import { navFor, formatDate } from "~/lib/nav";
+import { merchantScopeOrNull } from "~/lib/auth";
+import { renderInvoice, lineEvidence } from "~/lib/billing/invoice";
+import { invoiceStatus } from "~/lib/status";
+import { formatBasisPoints } from "~/lib/money";
+
+export const prerender = false;
+
+const actor = Astro.locals.actor!;
+const db = env.DB;
+const merchantId = merchantScopeOrNull(actor, Astro.url.searchParams.get("handil"));
+// Staff reach these screens from their own sidebar before choosing a merchant,
+// which is a navigation state rather than an error.
+if (!merchantId) return Astro.redirect("/betal/handlar");
+
+const rendered = await renderInvoice(db, Astro.params.id!);
+if (rendered.invoice.merchant_id !== merchantId) return Astro.redirect("/rokningar");
+
+// The transactions behind each line. This is what turns a total into an answer when a
+// merchant asks why a figure is what it is.
+const lineRows = await db
+  .prepare(
+    `SELECT id, description, quantity, unit_minor, amount_minor, basis_points
+       FROM invoice_line WHERE invoice_id = ?1 ORDER BY position`,
+  )
+  .bind(Astro.params.id!)
+  .all<Record<string, any>>();
+
+const evidence = await Promise.all(
+  lineRows.results.map(async (line) => ({
+    line,
+    inputs: await lineEvidence(db, line.id),
+  })),
+);
+
+const nav = navFor(actor, merchantId);
+const invoice = rendered.invoice;
+---
+
+<AppLayout
+  title={invoice.number ?? fo.invoices.title}
+  crumbs={[
+    { label: fo.invoices.title, href: "/rokningar" },
+    { label: invoice.number ?? "" },
+  ]}
+  nav={nav}
+  context={actor.kind === "staff" ? "Betal" : ""}
+>
+  <div style="max-width:44rem; padding:1.5rem .875rem">
+    <div style="display:flex; align-items:center; gap:.75rem; margin-bottom:1.25rem">
+      <h1 class="tnum" style="font-size:1.25rem">{invoice.number}</h1>
+      <StatusBadge status={invoiceStatus(invoice.state)} variant="pill" />
+    </div>
+
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:1.5rem; margin-bottom:1.5rem">
+      <div>
+        <div style="font-size: var(--text-2xs); color: var(--color-ink-faint)">Frá</div>
+        <div>{rendered.issuer.name}</div>
+        {rendered.issuer.vTal && (
+          <div style="font-size: var(--text-xs); color: var(--color-ink-muted)">
+            {fo.invoices.vTal} {rendered.issuer.vTal}
+          </div>
+        )}
+      </div>
+      <div>
+        <div style="font-size: var(--text-2xs); color: var(--color-ink-faint)">Til</div>
+        <div>{rendered.merchant.name}</div>
+        {rendered.merchant.vTal && (
+          <div style="font-size: var(--text-xs); color: var(--color-ink-muted)">
+            {fo.invoices.vTal} {rendered.merchant.vTal}
+          </div>
+        )}
+        {rendered.merchant.city && (
+          <div style="font-size: var(--text-xs); color: var(--color-ink-muted)">
+            {rendered.merchant.city}
+          </div>
+        )}
+      </div>
+    </div>
+
+    <div style="display:flex; gap:1.5rem; font-size: var(--text-xs); color: var(--color-ink-muted); margin-bottom:1rem">
+      <span>{fo.invoices.issued}: {formatDate(invoice.issued_at)}</span>
+      <span>{fo.invoices.due}: {formatDate(invoice.due_at)}</span>
+    </div>
+
+    <h2 style="font-size: var(--text-sm); margin-bottom:.5rem">{fo.invoices.lines}</h2>
+    {
+      evidence.map(({ line, inputs }) => (
+        <details style="border-bottom:1px solid var(--color-line)">
+          <summary
+            style="display:flex; align-items:center; gap:.75rem; padding:.5rem 0; cursor:pointer; list-style:none"
+          >
+            <span style="flex:1; min-width:0">
+              {line.description}
+              {line.basis_points && (
+                <span style="color: var(--color-ink-muted); margin-left:.5rem">
+                  {formatBasisPoints(line.basis_points)}
+                </span>
+              )}
+            </span>
+            <span class="tnum" style="color: var(--color-ink-muted)">
+              {line.quantity} ×
+            </span>
+            <Amount minor={line.amount_minor} />
+          </summary>
+          {inputs.length > 0 && (
+            <div style="padding:.25rem 0 .75rem 1rem">
+              <div style="font-size: var(--text-2xs); color: var(--color-ink-faint); margin-bottom:.25rem">
+                {inputs.length} {fo.transactions.title.toLowerCase()}
+              </div>
+              <div style="max-height:12rem; overflow-y:auto">
+                {inputs.slice(0, 200).map((input) => (
+                  <a
+                    href={`/gjaldingar/${input.transaction_id}`}
+                    style="display:flex; gap:.75rem; font-size: var(--text-2xs); padding:.125rem 0; color: var(--color-ink-muted); text-decoration:none"
+                  >
+                    <span class="tnum" style="font-family: var(--font-mono)">
+                      {input.transaction_id}
+                    </span>
+                    {input.amount_minor !== null && (
+                      <span style="margin-left:auto">
+                        <Amount minor={input.amount_minor} />
+                      </span>
+                    )}
+                  </a>
+                ))}
+              </div>
+            </div>
+          )}
+        </details>
+      ))
+    }
+
+    <div style="margin-top:1rem; margin-left:auto; width:16rem">
+      <div class="property-row">
+        <span class="property-label">{fo.invoices.net}</span>
+        <span class="property-value" style="margin-left:auto">
+          <Amount minor={invoice.net_minor} />
+        </span>
+      </div>
+      <div class="property-row">
+        <span class="property-label">
+          {fo.invoices.vat} {formatBasisPoints(invoice.vat_rate_basis_points)}
+        </span>
+        <span class="property-value" style="margin-left:auto">
+          <Amount minor={invoice.vat_minor} />
+        </span>
+      </div>
+      <div
+        class="property-row"
+        style="border-top:1px solid var(--color-line); padding-top:.375rem; font-weight:500"
+      >
+        <span class="property-label">{fo.invoices.gross}</span>
+        <span class="property-value" style="margin-left:auto">
+          <Amount minor={invoice.gross_minor} currency={invoice.currency} />
+        </span>
+      </div>
+    </div>
+  </div>
+</AppLayout>

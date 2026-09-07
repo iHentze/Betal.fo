@@ -1,0 +1,38 @@
+---
+/**
+ * A settings group: a titled card of rows, each with a description and a right-aligned
+ * control. Destructive actions go in a group marked `danger`, isolated at the bottom
+ * of the page.
+ */
+interface Props {
+  title?: string | undefined;
+  description?: string | undefined;
+  danger?: boolean;
+}
+
+const { title, description, danger = false } = Astro.props;
+---
+
+<section style="margin-bottom: 1.5rem">
+  {
+    title && (
+      <header style="margin-bottom: .5rem">
+        <h2
+          style={`font-size: var(--text-base); font-weight: 500; color: ${
+            danger ? "var(--color-state-failed)" : "var(--color-ink)"
+          }`}
+        >
+          {title}
+        </h2>
+        {description && (
+          <p style="font-size: var(--text-xs); color: var(--color-ink-muted)">
+            {description}
+          </p>
+        )}
+      </header>
+    )
+  }
+  <div class:list={["settings-group", danger && "settings-group-danger"]}>
+    <slot />
+  </div>
+</section>

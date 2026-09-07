@@ -1,0 +1,35 @@
+---
+import { toneColor, type StatusDescriptor } from "~/lib/status";
+
+/**
+ * A status indicator. Colours come only from the semantic token map, never from a
+ * value chosen at the call site.
+ *
+ * `dot` is the list-row form: a coloured dot plus a label, quiet enough that a
+ * thousand rows do not turn into a rainbow. `pill` is for detail views and banners
+ * where the state is the point of the element.
+ */
+interface Props {
+  status: StatusDescriptor;
+  variant?: "dot" | "pill";
+  /** Hide the text, leaving only the dot. Used in the densest columns. */
+  iconOnly?: boolean;
+}
+
+const { status, variant = "dot", iconOnly = false } = Astro.props;
+const color = toneColor[status.tone];
+---
+
+{
+  variant === "pill" ? (
+    <span class="status-pill" style={`--status-color: ${color}`}>
+      <span class="status-dot" />
+      {status.label}
+    </span>
+  ) : (
+    <span class="status" style={`--status-color: ${color}`} title={status.label}>
+      <span class="status-dot" />
+      {!iconOnly && <span>{status.label}</span>}
+    </span>
+  )
+}

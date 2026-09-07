@@ -1,0 +1,276 @@
+---
+import AppLayout from "~/layouts/AppLayout.astro";
+import Amount from "~/components/ui/Amount.astro";
+import StatusBadge from "~/components/ui/StatusBadge.astro";
+import Properties from "~/components/ui/Properties.astro";
+import PropertyRow from "~/components/ui/PropertyRow.astro";
+import Modal from "~/components/ui/Modal.astro";
+import { env } from "~/lib/env";
+import { fo } from "~/content/fo";
+import { navFor, formatDateTime } from "~/lib/nav";
+import { merchantScopeOrNull } from "~/lib/auth";
+import { getTransaction } from "~/lib/db/queries";
+import { operationStatus, settlementStatus, toneColor } from "~/lib/status";
+import { can } from "~/lib/audit";
+import { decimalToMinor } from "~/lib/money";
+
+export const prerender = false;
+
+const actor = Astro.locals.actor!;
+const db = env.DB;
+const merchantId = merchantScopeOrNull(actor, Astro.url.searchParams.get("handil"));
+// Staff reach these screens from their own sidebar before choosing a merchant,
+// which is a navigation state rather than an error.
+if (!merchantId) return Astro.redirect("/betal/handlar");
+
+const { transaction, operations, settlement, adjustments } = await getTransaction(
+  db,
+  merchantId,
+  Astro.params.id!,
+);
+
+if (!transaction) return Astro.redirect("/gjaldingar");
+
+const row = transaction as Record<string, any>;
+const nav = navFor(actor, merchantId);
+const mayMoveMoney = can(actor.role, "move_money");
+const failed = Astro.url.searchParams.get("feilur");
+
+const captured = (row.amount_captured as number) ?? 0;
+const refunded = (row.amount_refunded as number) ?? 0;
+const refundable = Math.max(captured - refunded, 0);
+
+// Gross, what the acquirer took, and what actually arrives. Answered here rather
+// than only on the settlements screen, because this is where it gets asked.
+const feesMinor = adjustments.reduce((sum, a) => sum + decimalToMinor(a.amount), 0);
+const settled = settlement.length > 0;
+const netMinor = captured + feesMinor - refunded;
+
+const feeLabels: Record<string, string> = {
+  ACQUIRER_FEE: fo.settlements.acquirerFee,
+  INTERCHANGE_FEE: fo.settlements.interchangeFee,
+  SCHEME_FEE: fo.settlements.schemeFee,
+};
+
+const status = settlementStatus(row as any);
+---
+
+<AppLayout
+  title={row.reference ?? row.id}
+  crumbs={[
+    { label: fo.transactions.title, href: `/gjaldingar?handil=${merchantId}` },
+    { label: row.reference ?? row.id },
+  ]}
+  nav={nav}
+  context={actor.kind === "staff" ? "Betal" : ""}
+>
+  <div slot="actions">
+    {
+      mayMoveMoney && refundable > 0 && (
+        <button
+          class="btn btn-danger"
+          type="button"
+          onclick="document.getElementById('refund-dialog').showModal()"
+        >
+          {fo.transactions.refund}
+        </button>
+      )
+    }
+  </div>
+
+  <div style="display:flex; align-items:flex-start; min-height:calc(100dvh - 2.75rem)">
+    <div style="flex:1; min-width:0; padding:1.5rem .875rem 3rem; max-width:46rem">
+      {
+        failed && (
+          <p
+            style="margin-bottom:1rem; padding:.5rem .75rem; border-radius: var(--radius-control); font-size: var(--text-xs); color: var(--color-state-failed); background: color-mix(in oklch, var(--color-state-failed) 14%, transparent)"
+          >
+            {fo.errors.operationFailed}
+          </p>
+        )
+      }
+
+      <div class="detail-eyebrow">{fo.transactions.title}</div>
+      <div class="detail-head">
+        <span class="detail-amount">
+          <Amount minor={row.amount} currency={row.currency} />
+        </span>
+        <StatusBadge status={status} variant="pill" />
+      </div>
+      <p style="color: var(--color-ink-muted); font-size: var(--text-xs); margin-top:.375rem">
+        {formatDateTime(row.created_at_ms)}
+        {row.reference && ` · ${row.reference}`}
+        {row.error_code && ` · ${row.error_code}`}
+      </p>
+
+      <!-- What was charged, what was taken, what arrives. -->
+      <h2 class="section-title">Peningaflæði</h2>
+      <div class="breakdown">
+        <div class="breakdown-row">
+          <span class="breakdown-label">{fo.transactions.authorized}</span>
+          <span class="tnum"><Amount minor={row.amount_authorized ?? row.amount} /></span>
+        </div>
+        <div class="breakdown-row">
+          <span class="breakdown-label">{fo.transactions.captured}</span>
+          <span class="tnum"><Amount minor={captured} /></span>
+        </div>
+        {
+          refunded > 0 && (
+            <div class="breakdown-row">
+              <span class="breakdown-label">{fo.transactions.refunded}</span>
+              <span class="tnum">
+                <Amount minor={-refunded} />
+              </span>
+            </div>
+          )
+        }
+        {
+          adjustments.map((adjustment) => (
+            <div class="breakdown-row">
+              <span class="breakdown-label">
+                {feeLabels[adjustment.type] ?? adjustment.type}
+              </span>
+              <span class="tnum">
+                <Amount decimal={adjustment.amount} />
+              </span>
+            </div>
+          ))
+        }
+        <div class="breakdown-row is-total">
+          <span class="breakdown-label">
+            {settled ? fo.settlements.netAmount : "Væntað netto"}
+          </span>
+          <span class="tnum"><Amount minor={netMinor} currency={row.currency} /></span>
+        </div>
+      </div>
+      {
+        !settled && (
+          <p style="font-size: var(--text-2xs); color: var(--color-ink-faint); margin-top:.375rem">
+            Avrokningin er ikki komin enn, so avgjøldini eru ikki endalig.
+          </p>
+        )
+      }
+
+      <h2 class="section-title">Hendingar</h2>
+      {
+        operations.length === 0 ? (
+          <p style="font-size: var(--text-xs); color: var(--color-ink-muted)">
+            {fo.common.none}
+          </p>
+        ) : (
+          <div class="timeline">
+            {operations.map((operation: any) => {
+              const opStatus = operationStatus(operation.type, operation.state);
+              return (
+                <div class="timeline-item" style={`--dot: ${toneColor[opStatus.tone]}`}>
+                  <span class="timeline-label">{opStatus.label}</span>
+                  {operation.error_code && (
+                    <span style="color: var(--color-state-failed)">
+                      {operation.error_code}
+                    </span>
+                  )}
+                  <span class="timeline-meta">
+                    <Amount minor={operation.amount} />
+                    <span style="margin-left:.75rem">
+                      {formatDateTime(operation.created_at_ms)}
+                    </span>
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        )
+      }
+
+      {
+        settlement.length > 0 && (
+          <>
+            <h2 class="section-title">{fo.settlements.title}</h2>
+            <div class="timeline">
+              {settlement.map((line: any) => (
+                <div class="timeline-item" style={`--dot: ${toneColor.success}`}>
+                  <span class="timeline-label">
+                    Útgoldið · {line.acquirer}
+                  </span>
+                  <span class="timeline-meta">
+                    <Amount decimal={line.net_amount} currency={line.currency} />
+                    <span style="margin-left:.75rem">{line.posting_date}</span>
+                  </span>
+                </div>
+              ))}
+            </div>
+          </>
+        )
+      }
+    </div>
+
+    <Properties title="Smálutir">
+      <PropertyRow label={fo.common.reference}>{row.reference ?? "—"}</PropertyRow>
+      <PropertyRow label={fo.transactions.method}>
+        {row.payment_method_type ?? "—"}
+      </PropertyRow>
+      <PropertyRow label={fo.transactions.scheme}>
+        {row.card_scheme ?? row.payment_method_sub_type ?? "—"}
+      </PropertyRow>
+      <PropertyRow label={fo.transactions.card} mono>
+        {row.payment_method_display ?? "—"}
+      </PropertyRow>
+      <PropertyRow label={fo.transactions.issuer}>{row.card_issuer ?? "—"}</PropertyRow>
+      <PropertyRow label={fo.transactions.acquirer}>{row.acquirer ?? "—"}</PropertyRow>
+      <PropertyRow label={fo.transactions.sca}>
+        {row.sca_verification ?? "—"}
+      </PropertyRow>
+      {
+        row.surcharge > 0 && (
+          <PropertyRow label={fo.transactions.surcharge} numeric>
+            <Amount minor={row.surcharge} />
+          </PropertyRow>
+        )
+      }
+      <PropertyRow label={fo.common.customer}>{row.customer_id ?? "—"}</PropertyRow>
+      <PropertyRow label="ID" mono>{row.id}</PropertyRow>
+    </Properties>
+  </div>
+
+  {
+    mayMoveMoney && refundable > 0 && (
+      <Modal
+        id="refund-dialog"
+        title={fo.transactions.refundConfirm}
+        danger
+        confirmLabel={fo.transactions.refund}
+      >
+        <form
+          method="POST"
+          action={`/api/gjaldingar/${row.id}/endurgjald?handil=${merchantId}`}
+          id="refund-form"
+        >
+          <label style="display:block; font-size: var(--text-xs); color: var(--color-ink-muted); margin-bottom:.25rem">
+            {fo.common.amount}
+          </label>
+          <input
+            class="input tnum"
+            type="number"
+            name="amount"
+            step="1"
+            min="1"
+            max={refundable}
+            value={refundable}
+            required
+          />
+          <p style="font-size: var(--text-2xs); color: var(--color-ink-muted); margin-top:.375rem">
+            Í oyrum. Mest <Amount minor={refundable} currency={row.currency} />
+          </p>
+        </form>
+      </Modal>
+    )
+  }
+
+  <script is:inline>
+    document.getElementById("refund-dialog")?.addEventListener("close", (event) => {
+      if (event.target.returnValue === "confirm") {
+        document.getElementById("refund-form")?.submit();
+      }
+    });
+  </script>
+</AppLayout>

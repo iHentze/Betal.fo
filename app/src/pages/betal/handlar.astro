@@ -1,0 +1,129 @@
+---
+import AppLayout from "~/layouts/AppLayout.astro";
+import StatusBadge from "~/components/ui/StatusBadge.astro";
+import Banner from "~/components/ui/Banner.astro";
+import { env } from "~/lib/env";
+import { fo } from "~/content/fo";
+import { navFor, formatDate } from "~/lib/nav";
+import { webhookStatus } from "~/lib/status";
+
+export const prerender = false;
+
+const actor = Astro.locals.actor!;
+if (actor.kind !== "staff") return Astro.redirect("/");
+
+const db = env.DB;
+
+const merchants = await db
+  .prepare(
+    `SELECT m.*,
+            (SELECT COUNT(*) FROM point_of_sale p WHERE p.merchant_id = m.id)
+              AS pos_count,
+            (SELECT MIN(w.paused_at) FROM webhook_endpoint w
+              WHERE w.merchant_id = m.id AND w.paused_at IS NOT NULL)
+              AS webhook_paused_at,
+            (SELECT COUNT(*) FROM txn t WHERE t.merchant_id = m.id) AS txn_count
+       FROM merchant m
+      WHERE m.archived_at IS NULL
+      ORDER BY m.name`,
+  )
+  .all<Record<string, any>>();
+
+const paused = merchants.results.filter((m) => m.webhook_paused_at);
+const live = merchants.results.filter((m) => m.status === "active");
+
+const COLUMNS = "0.6rem minmax(0, 1fr) 6rem 7rem 7rem 6rem 7rem 6rem";
+const nav = navFor(actor);
+
+const statusLabels: Record<string, string> = {
+  onboarding: fo.merchants.onboarding,
+  active: fo.merchants.active,
+  suspended: fo.merchants.suspended,
+  closed: fo.merchants.closed,
+};
+---
+
+<AppLayout
+  title={fo.merchants.title}
+  crumbs={[{ label: "Betal" }, { label: fo.merchants.title }]}
+  nav={nav}
+  context="Betal"
+>
+  <a slot="actions" class="btn btn-primary" href="/betal/handlar/nyggjur">
+    Nýggjur handil
+  </a>
+
+  {
+    paused.length > 0 && (
+      <Fragment slot="banner">
+        <Banner
+          tone="paused"
+          title={`${paused.length} handlar fáa ikki hendingar`}
+          detail={fo.webhooks.pausedExplainer}
+        />
+      </Fragment>
+    )
+  }
+
+  <div class="page-header">
+    <div>
+      <div class="stat-label">Handlar</div>
+      <div class="stat-value">{merchants.results.length}</div>
+      <div class="stat-sub">{live.length} virknir</div>
+    </div>
+    <div>
+      <div class="stat-label">Gjaldingar tilsamans</div>
+      <div class="stat-value" style="font-size:1.125rem">
+        {merchants.results.reduce((sum, m) => sum + Number(m.txn_count ?? 0), 0)}
+      </div>
+    </div>
+  </div>
+
+  {
+    merchants.results.length === 0 ? (
+      <div class="empty">
+        <div class="empty-title">{fo.common.noResults}</div>
+        <a class="btn btn-primary" href="/betal/handlar/nyggjur" style="margin-top:.75rem">
+          Stovna fyrsta handilin
+        </a>
+      </div>
+    ) : (
+      <div class="table" style={`--cols: ${COLUMNS}`}>
+        <div class="group-header">
+          <span />
+          <span class="group-title">Navn</span>
+          <span class="group-count">{fo.merchants.vTal}</span>
+          <span class="group-count">{fo.transactions.acquirer}</span>
+          <span class="group-count">{fo.common.status}</span>
+          <span class="group-count cell-num">Sølustøð</span>
+          <span class="group-count">Hendingar</span>
+          <span class="group-count cell-num">Gjaldingar</span>
+        </div>
+
+        {merchants.results.map((merchant) => (
+          <a class="trow" href={`/gjaldingar?handil=${merchant.id}`}>
+            <StatusBadge status={webhookStatus(merchant.webhook_paused_at)} iconOnly />
+            <span class="cell-primary">{merchant.name}</span>
+            <span class="cell-quiet tnum">{merchant.v_tal ?? "—"}</span>
+            <span class="cell-quiet">{merchant.acquirer ?? "—"}</span>
+            <span class="cell-quiet">
+              {statusLabels[merchant.status] ?? merchant.status}
+              {merchant.environment !== "live" && " · test"}
+            </span>
+            <span class="cell-quiet cell-num">{merchant.pos_count}</span>
+            <span class="cell-quiet">
+              {merchant.webhook_paused_at ? "Steðgað" : "Virka"}
+            </span>
+            <span class="cell-num" style="color: var(--color-ink-secondary)">
+              {merchant.txn_count}
+            </span>
+          </a>
+        ))}
+      </div>
+    )
+  }
+
+  <div class="list-footer">
+    {merchants.results.length} {fo.merchants.title.toLowerCase()}
+  </div>
+</AppLayout>

@@ -1,0 +1,20 @@
+---
+interface Props {
+  title: string;
+  description?: string | undefined;
+  href?: string | undefined;
+}
+
+const { title, description, href } = Astro.props;
+const Tag = href ? "a" : "div";
+---
+
+<Tag class="settings-row" href={href} style={href ? "text-decoration:none" : undefined}>
+  <div style="min-width:0">
+    <div class="settings-row-title">{title}</div>
+    {description && <div class="settings-row-description">{description}</div>}
+  </div>
+  <div class="settings-row-control">
+    <slot />
+  </div>
+</Tag>

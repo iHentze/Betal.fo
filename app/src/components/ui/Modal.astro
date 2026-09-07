@@ -1,0 +1,48 @@
+---
+/**
+ * A dialog. Uses the native <dialog> element so focus trapping, Escape to close and
+ * inertness of the page behind come from the platform rather than from script.
+ */
+interface Props {
+  id: string;
+  title: string;
+  /** Marks the confirm button destructive, for refunds and voids. */
+  danger?: boolean;
+  confirmLabel?: string;
+  cancelLabel?: string;
+}
+
+const {
+  id,
+  title,
+  danger = false,
+  confirmLabel = "Vátta",
+  cancelLabel = "Avlýs",
+} = Astro.props;
+---
+
+<dialog id={id} class="modal" aria-labelledby={`${id}-title`}>
+  <form method="dialog">
+    <div class="modal-header" id={`${id}-title`}>{title}</div>
+    <div class="modal-body">
+      <slot />
+    </div>
+    <div class="modal-footer">
+      <button class="btn" value="cancel" type="submit">{cancelLabel}</button>
+      <button
+        class:list={["btn", danger ? "btn-danger" : "btn-primary"]}
+        value="confirm"
+        type="submit"
+        data-confirm
+      >
+        {confirmLabel}
+      </button>
+    </div>
+  </form>
+</dialog>
+
+<style>
+  .modal::backdrop {
+    background: oklch(0.1 0.02 284 / 0.6);
+  }
+</style>

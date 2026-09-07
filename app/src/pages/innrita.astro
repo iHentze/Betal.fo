@@ -1,0 +1,108 @@
+---
+import "~/styles/app.css";
+import Wordmark from "~/components/ui/Wordmark.astro";
+import { fo } from "~/content/fo";
+
+export const prerender = false;
+
+const params = Astro.url.searchParams;
+const sent = params.get("sent") === "1";
+const expired = params.get("expired") === "1";
+const next = params.get("next") ?? "/";
+
+// Present only in development, where the link is handed straight back instead of
+// being emailed. The branch that produces it is compiled out of a production build.
+const devLink = params.get("leinki");
+---
+
+<!doctype html>
+<html lang="fo">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Innrita · {fo.brand}</title>
+    <meta name="robots" content="noindex" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  </head>
+  <body>
+    <main style="display:grid; place-items:center; min-height:100dvh; padding:1.5rem">
+      <div style="width:min(23rem, 100%)">
+        <div style="color: var(--color-accent); margin-bottom:1.75rem">
+          <Wordmark width="7rem" />
+        </div>
+
+        {
+          expired && (
+            <p
+              style="margin-bottom:1rem; padding:.5rem .75rem; border-radius: var(--radius-control); font-size: var(--text-xs); color: var(--color-state-failed); background: color-mix(in oklch, var(--color-state-failed) 14%, transparent)"
+            >
+              Leinkjan riggar ikki longur. Bið um eina nýggja.
+            </p>
+          )
+        }
+
+        {
+          sent ? (
+            <div>
+              <h1 style="font-size: var(--text-base); margin-bottom:.5rem">
+                Vit hava sent tær ein teldupost
+              </h1>
+              <p style="font-size: var(--text-sm); color: var(--color-ink-muted)">
+                Trýst á leinkjuna í teldupostinum fyri at innrita. Leinkjan riggar í 15
+                minuttir.
+              </p>
+
+              {devLink && (
+                <div
+                  style="margin-top:1.25rem; padding:.75rem; border-radius: var(--radius-panel); background: var(--color-surface-2); border:1px solid var(--color-line-strong)"
+                >
+                  <div
+                    style="font-size: var(--text-2xs); color: var(--color-ink-faint); margin-bottom:.5rem"
+                  >
+                    Menningarumhvørvi — eingin teldupostur verður sendur enn
+                  </div>
+                  <a class="btn btn-primary" href={devLink} style="width:100%; justify-content:center">
+                    Innrita beinleiðis
+                  </a>
+                </div>
+              )}
+
+              <p style="margin-top:1rem">
+                <a href="/innrita" style="font-size: var(--text-xs); color: var(--color-ink-muted)">
+                  Royn aftur
+                </a>
+              </p>
+            </div>
+          ) : (
+            <form method="POST" action="/api/auth/leinki">
+              <h1 style="font-size: var(--text-base); margin-bottom:.75rem">Innrita</h1>
+              <input type="hidden" name="next" value={next} />
+              <label
+                for="email"
+                style="display:block; font-size: var(--text-xs); color: var(--color-ink-muted); margin-bottom:.25rem"
+              >
+                Teldupostur
+              </label>
+              <input
+                id="email"
+                class="input"
+                type="email"
+                name="email"
+                required
+                autocomplete="email"
+                autofocus
+              />
+              <button
+                class="btn btn-primary"
+                type="submit"
+                style="margin-top:.75rem; width:100%; justify-content:center"
+              >
+                Send innritingarleinki
+              </button>
+            </form>
+          )
+        }
+      </div>
+    </main>
+  </body>
+</html>

@@ -1,0 +1,237 @@
+---
+import AppLayout from "~/layouts/AppLayout.astro";
+import Amount from "~/components/ui/Amount.astro";
+import StatusBadge from "~/components/ui/StatusBadge.astro";
+import Banner from "~/components/ui/Banner.astro";
+import Properties from "~/components/ui/Properties.astro";
+import PropertyRow from "~/components/ui/PropertyRow.astro";
+import { env } from "~/lib/env";
+import { fo } from "~/content/fo";
+import { navFor, formatDate } from "~/lib/nav";
+import { periodStatus, invoiceStatus } from "~/lib/status";
+import type { PeriodState } from "~/lib/billing/types";
+
+export const prerender = false;
+
+const actor = Astro.locals.actor!;
+if (actor.kind !== "staff") return Astro.redirect("/");
+
+const db = env.DB;
+const periodId = Astro.params.id!;
+const message = Astro.url.searchParams.get("boð");
+
+const period = await db
+  .prepare(
+    `SELECT p.*, m.name AS merchant_name FROM billing_period p
+       JOIN merchant m ON m.id = p.merchant_id
+      WHERE p.id = ?1`,
+  )
+  .bind(periodId)
+  .first<Record<string, any>>();
+
+if (!period) return Astro.redirect("/betal/tidarskeid");
+
+const [discrepancies, invoice] = await Promise.all([
+  db
+    .prepare(
+      `SELECT * FROM period_discrepancy WHERE billing_period_id = ?1
+        ORDER BY resolved_at IS NOT NULL, created_at`,
+    )
+    .bind(periodId)
+    .all<Record<string, any>>(),
+  db
+    .prepare(
+      `SELECT id, number, state, net_minor, vat_minor, gross_minor, currency
+         FROM invoice WHERE billing_period_id = ?1 AND kind = 'invoice'`,
+    )
+    .bind(periodId)
+    .first<Record<string, any>>(),
+]);
+
+const open = discrepancies.results.filter((d) => !d.resolved_at);
+const state = period.state as PeriodState;
+const nav = navFor(actor);
+
+// The close is a sequence, so only the action that is actually next is offered.
+const actions: Array<{ action: string; label: string; primary?: boolean }> = [];
+if (state === "open") actions.push({ action: "freeze", label: fo.periods.freeze, primary: true });
+if (state === "frozen" || state === "reconciling" || state === "discrepancy") {
+  actions.push({
+    action: "reconcile",
+    label: fo.periods.reconcile,
+    primary: open.length === 0,
+  });
+}
+if (state === "reconciled") actions.push({ action: "rate", label: fo.periods.rate, primary: true });
+if (state === "rated") actions.push({ action: "issue", label: fo.periods.issue, primary: true });
+
+const kindLabels: Record<string, string> = {
+  missing_locally: fo.periods.missing,
+  missing_at_epay: fo.periods.extra,
+  amount_mismatch: "Upphædd skilir",
+  state_mismatch: "Støða skilir",
+};
+---
+
+<AppLayout
+  title={`${period.merchant_name} ${period.year}-${String(period.month).padStart(2, "0")}`}
+  crumbs={[
+    { label: "Betal" },
+    { label: fo.periods.title, href: "/betal/tidarskeid" },
+    { label: `${period.year}-${String(period.month).padStart(2, "0")}` },
+  ]}
+  nav={nav}
+  context="Betal"
+>
+  <div slot="actions" style="display:flex; gap:.375rem">
+    {
+      actions.map((action) => (
+        <form method="POST" action={`/api/tidarskeid/${encodeURIComponent(periodId)}/gerd`}>
+          <input type="hidden" name="action" value={action.action} />
+          <button
+            class:list={["btn", action.primary && "btn-primary"]}
+            type="submit"
+            disabled={action.action !== "reconcile" && open.length > 0}
+          >
+            {action.label}
+          </button>
+        </form>
+      ))
+    }
+  </div>
+
+  {
+    open.length > 0 && (
+      <Fragment slot="banner">
+        <Banner
+          tone="discrepancy"
+          title={fo.periods.discrepancyFound(open.length)}
+          detail={fo.periods.blocked}
+        />
+      </Fragment>
+    )
+  }
+
+  {
+    message && (
+      <div
+        style="padding:.5rem .875rem; font-size: var(--text-xs); color: var(--color-ink-secondary); border-bottom:1px solid var(--color-line)"
+      >
+        {message}
+      </div>
+    )
+  }
+
+  <div style="display:flex; align-items:flex-start; min-height:calc(100dvh - 2.75rem)">
+    <div style="flex:1; min-width:0; padding:1.25rem .875rem">
+      <div style="display:flex; align-items:center; gap:.75rem; margin-bottom:1.25rem">
+        <h1 style="font-size:1.25rem">{period.merchant_name}</h1>
+        <StatusBadge status={periodStatus(state)} variant="pill" />
+      </div>
+
+      <div style="display:flex; gap:2.5rem; margin-bottom:1.5rem">
+        <div>
+          <div style="font-size: var(--text-2xs); color: var(--color-ink-faint)">
+            {fo.periods.inMirror}
+          </div>
+          <div style="font-size:1.125rem" class="tnum">{period.mirror_count ?? "—"}</div>
+        </div>
+        <div>
+          <div style="font-size: var(--text-2xs); color: var(--color-ink-faint)">
+            {fo.periods.inEpay}
+          </div>
+          <div style="font-size:1.125rem" class="tnum">{period.epay_count ?? "—"}</div>
+        </div>
+        <div>
+          <div style="font-size: var(--text-2xs); color: var(--color-ink-faint)">
+            Roknað
+          </div>
+          <div style="font-size:1.125rem" class="tnum">
+            {period.billable_count ?? "—"}
+          </div>
+        </div>
+      </div>
+
+      <h2 style="font-size: var(--text-sm); margin-bottom:.5rem">Ósamsvar</h2>
+      {
+        discrepancies.results.length === 0 ? (
+          <p style="font-size: var(--text-xs); color: var(--color-ink-muted)">
+            Einki ósamsvar. Tølini hjá okkum og ePay stemma.
+          </p>
+        ) : (
+          discrepancies.results.map((d) => (
+            <div class="list-row" style="padding-left:0">
+              <span class="list-row-primary">
+                <a href={`/gjaldingar/${d.transaction_id}?handil=${period.merchant_id}`}
+                   style="color:inherit; font-family: var(--font-mono); font-size: var(--text-2xs)">
+                  {d.transaction_id}
+                </a>
+                <span style="margin-left:.75rem">{kindLabels[d.kind] ?? d.kind}</span>
+              </span>
+              <span class="list-row-meta">
+                {d.resolved_at ? (
+                  <span style="color: var(--color-state-success)">
+                    {d.resolution} · {d.resolved_by}
+                  </span>
+                ) : (
+                  <form
+                    method="POST"
+                    action={`/api/tidarskeid/${encodeURIComponent(periodId)}/gerd`}
+                    style="display:flex; gap:.25rem"
+                  >
+                    <input type="hidden" name="action" value="resolve" />
+                    <input type="hidden" name="discrepancyId" value={d.id} />
+                    <input
+                      class="input"
+                      type="text"
+                      name="resolution"
+                      placeholder="Hvussu varð tað loyst?"
+                      style="width:14rem; font-size: var(--text-2xs)"
+                      required
+                    />
+                    <button class="btn" type="submit">Loys</button>
+                  </form>
+                )}
+              </span>
+            </div>
+          ))
+        )
+      }
+
+      {
+        invoice && (
+          <>
+            <h2 style="font-size: var(--text-sm); margin:1.5rem 0 .5rem">
+              {fo.invoices.title}
+            </h2>
+            <a class="list-row" style="padding-left:0" href={`/rokningar/${invoice.id}?handil=${period.merchant_id}`}>
+              <StatusBadge status={invoiceStatus(invoice.state)} iconOnly />
+              <span class="list-row-primary tnum">
+                {invoice.number ?? "Uppskot"}
+              </span>
+              <span class="list-row-meta">
+                <Amount minor={invoice.net_minor} />
+                <Amount minor={invoice.vat_minor} muted />
+                <Amount minor={invoice.gross_minor} currency={invoice.currency} />
+              </span>
+            </a>
+          </>
+        )
+      }
+    </div>
+
+    <Properties title={fo.common.status}>
+      <PropertyRow label={fo.common.status}>
+        <StatusBadge status={periodStatus(state)} />
+      </PropertyRow>
+      <PropertyRow label="Fryst">{formatDate(period.frozen_at)}</PropertyRow>
+      <PropertyRow label="Avstemt">{formatDate(period.reconciled_at)}</PropertyRow>
+      <PropertyRow label="Roknað">{formatDate(period.rated_at)}</PropertyRow>
+      <PropertyRow label="Sent">{formatDate(period.issued_at)}</PropertyRow>
+      <PropertyRow label="Umsetningur" numeric>
+        <Amount minor={period.gross_minor ?? 0} />
+      </PropertyRow>
+      {period.notes && <PropertyRow label="Viðmerking">{period.notes}</PropertyRow>}
+    </Properties>
+  </div>
+</AppLayout>

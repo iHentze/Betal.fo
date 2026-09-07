@@ -1,0 +1,15 @@
+# Copy to .dev.vars for local development. Wrangler loads it automatically and it is
+# gitignored, so the key never reaches the repository.
+#
+# The ePay partner key. This is the credential that opens /public/api/v1/partner/*,
+# and it is a different tier from a merchant API key — a merchant key gets 403 on
+# partner routes. ePay provisions it when the partnership is established; there is no
+# endpoint to create or rotate one.
+#
+# One key serves both environments. Which environment a merchant transacts in is
+# decided per access token, not per key.
+EPAY_PARTNER_KEY="..."
+
+# Where ePay should send webhooks. Must be a domain approved on the merchant's point
+# of sale, so for local testing this needs a tunnel rather than localhost.
+APP_URL="http://localhost:4321"

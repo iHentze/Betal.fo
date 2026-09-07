@@ -1,0 +1,170 @@
+---
+import "~/styles/app.css";
+import { fo } from "~/content/fo";
+import CommandPalette from "~/components/ui/CommandPalette.astro";
+import NavIcon from "~/components/ui/NavIcon.astro";
+import Wordmark from "~/components/ui/Wordmark.astro";
+import Badge from "~/components/ui/Badge.astro";
+
+/**
+ * The application shell.
+ *
+ * Sidebar plus main column, with a thin top bar carrying a breadcrumb instead of a
+ * large page heading — the breadcrumb is the title. Nothing here is wider than it
+ * needs to be, because the point of this layout is to get out of the way of the data.
+ */
+export interface Crumb {
+  label: string;
+  href?: string;
+}
+
+export interface NavItem {
+  label: string;
+  href: string;
+  count?: number;
+  icon?: string;
+}
+
+export interface NavSection {
+  label?: string;
+  items: NavItem[];
+}
+
+interface Props {
+  title: string;
+  crumbs: Crumb[];
+  nav: NavSection[];
+  /** Shown in the sidebar header: the merchant, or "Betal" for staff. */
+  context: string;
+}
+
+const { title, crumbs, nav, context } = Astro.props;
+const path = Astro.url.pathname;
+
+const commands = nav.flatMap((section) =>
+  section.items.map((item) => ({
+    id: item.href,
+    label: item.label,
+    href: item.href,
+    hint: section.label,
+  })),
+);
+---
+
+<!doctype html>
+<html lang="fo">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title} · {fo.brand}</title>
+    <meta name="theme-color" content="#0d0033" />
+    <meta name="robots" content="noindex" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  </head>
+  <body>
+    <div class="shell">
+      <nav class="sidebar" aria-label={fo.nav.overview}>
+        <a class="sidebar-brand" href="/" aria-label="betal">
+          <Badge size="1.375rem" />
+          <span style="min-width:0">
+            <Wordmark width="3.5rem" class="sidebar-wordmark" />
+            {
+              context && (
+                <span
+                  class="truncate-cell"
+                  style="display:block; font-size: var(--text-2xs); color: var(--color-ink-faint)"
+                >
+                  {context}
+                </span>
+              )
+            }
+          </span>
+        </a>
+
+        {
+          nav.map((section) => (
+            <>
+              {section.label && <div class="sidebar-section">{section.label}</div>}
+              {section.items.map((item) => (
+                <a
+                  class="nav-item"
+                  href={item.href}
+                  aria-current={
+                    path === item.href || path.startsWith(`${item.href}/`)
+                      ? "page"
+                      : undefined
+                  }
+                >
+                  {item.icon && <NavIcon name={item.icon} />}
+                  <span class="truncate-cell">{item.label}</span>
+                  {item.count !== undefined && (
+                    <span class="nav-count">{item.count}</span>
+                  )}
+                </a>
+              ))}
+            </>
+          ))
+        }
+
+        <div style="margin-top:auto; padding:.625rem .5rem; font-size: var(--text-2xs); color: var(--color-ink-faint)">
+          <kbd>⌘K</kbd> fyri skipanir
+        </div>
+      </nav>
+
+      <div style="min-width:0; display:flex; flex-direction:column">
+        <header class="topbar">
+          {
+            crumbs.map((crumb, index) => (
+              <>
+                {index > 0 && <span class="breadcrumb-sep">/</span>}
+                {crumb.href ? (
+                  <a href={crumb.href} style="color:inherit; text-decoration:none">
+                    {crumb.label}
+                  </a>
+                ) : (
+                  <span style="color: var(--color-ink)">{crumb.label}</span>
+                )}
+              </>
+            ))
+          }
+          <div class="topbar-actions">
+            <slot name="actions" />
+          </div>
+        </header>
+
+        <slot name="banner" />
+
+        <main style="min-width:0; flex:1">
+          <slot />
+        </main>
+      </div>
+    </div>
+
+    <!--
+      Phone navigation. The sidebar is hidden below 48rem, so without this there is
+      no way off the current screen. Four tabs, because Faroese labels are long and a
+      fifth truncates at 390px; the rest stay reachable through the command palette.
+    -->
+    <nav class="tabbar" aria-label={fo.nav.overview}>
+      {
+        nav[0]?.items.slice(0, 4).map((item) => (
+          <a
+            class="tab"
+            href={item.href}
+            aria-current={
+              path === item.href.split("?")[0] ||
+              path.startsWith(`${item.href.split("?")[0]}/`)
+                ? "page"
+                : undefined
+            }
+          >
+            {item.icon && <NavIcon name={item.icon} />}
+            <span>{item.label}</span>
+          </a>
+        ))
+      }
+    </nav>
+
+    <CommandPalette commands={commands} />
+  </body>
+</html>

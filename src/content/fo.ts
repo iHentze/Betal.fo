@@ -164,8 +164,9 @@ export const fo = {
     productAny: "Ikki víst enn",
     message: "Boð",
     submit: "Send",
-    mailtoHint: "Teldupostur latast upp, so tú kanst senda.",
+    mailtoHint: "Vit venda aftur so skjótt vit kunnu.",
     required: "Útfyll navn, teldupost og boð.",
+    sent: "Takk — vit hava fingið boðini og venda aftur.",
   },
   privacy: {
     eyebrow: "Privatlív",

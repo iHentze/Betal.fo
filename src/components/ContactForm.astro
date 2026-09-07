@@ -85,9 +85,24 @@ import { site } from "../content/site";
   </div>
 </form>
 
-<script define:vars={{ emailTo: site.email, requiredText: fo.contact.required }}>
+<script
+  define:vars={{
+    emailTo: site.email,
+    requiredText: fo.contact.required,
+    intakeUrl: `${site.appUrl}/api/ahugadir`,
+    sentText: fo.contact.sent,
+  }}
+>
   const form = document.querySelector("[data-contact-form]");
   const error = document.querySelector("[data-form-error]");
+
+  function showMessage(text) {
+    if (error instanceof HTMLElement) {
+      error.textContent = text;
+      error.classList.remove("hidden");
+    }
+  }
+
   if (form instanceof HTMLFormElement) {
     const select = form.querySelector("select[name=product]");
     const requested = new URLSearchParams(window.location.search).get("t");
@@ -95,7 +110,8 @@ import { site } from "../content/site";
       const option = select.querySelector(`[data-id="${requested}"]`);
       if (option instanceof HTMLOptionElement) option.selected = true;
     }
-    form.addEventListener("submit", (event) => {
+
+    form.addEventListener("submit", async (event) => {
       event.preventDefault();
       const data = new FormData(form);
       const name = String(data.get("name") ?? "").trim();
@@ -106,28 +122,58 @@ import { site } from "../content/site";
       const message = String(data.get("message") ?? "").trim();
 
       if (!name || !email || !message) {
-        if (error instanceof HTMLElement) {
-          error.textContent = requiredText;
-          error.classList.remove("hidden");
-        }
+        showMessage(requiredText);
         return;
       }
 
-      const subject = product ? `Betal: ${product}` : "Betal: samband";
-      const body = [
-        `Navn: ${name}`,
-        company && `Fyritøka: ${company}`,
-        phone && `Telefon: ${phone}`,
-        `Teldupostur: ${email}`,
-        product && `Tænasta: ${product}`,
-        "",
-        message,
-      ]
-        .filter((line) => line !== false)
-        .join("\n");
+      // The product id, not its display label, so the pipeline can group by service.
+      const selected =
+        select instanceof HTMLSelectElement ? select.selectedOptions[0] : null;
+      const productId = selected?.dataset.id ?? "";
 
-      const url = `mailto:${emailTo}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-      window.location.href = url;
+      const submit = form.querySelector("button[type=submit]");
+      if (submit instanceof HTMLButtonElement) submit.disabled = true;
+
+      try {
+        const response = await fetch(intakeUrl, {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            name,
+            company,
+            phone,
+            email,
+            product: productId,
+            message,
+          }),
+        });
+        if (!response.ok) throw new Error("intake rejected");
+
+        form.reset();
+        showMessage(sentText);
+        return;
+      } catch {
+        // The platform being unreachable must not lose an enquiry, so fall back to
+        // the mail client exactly as before.
+        const subject = product ? `Betal: ${product}` : "Betal: samband";
+        const body = [
+          `Navn: ${name}`,
+          company && `Fyritøka: ${company}`,
+          phone && `Telefon: ${phone}`,
+          `Teldupostur: ${email}`,
+          product && `Tænasta: ${product}`,
+          "",
+          message,
+        ]
+          .filter((line) => line !== false)
+          .join("\n");
+
+        window.location.href = `mailto:${emailTo}?subject=${encodeURIComponent(
+          subject,
+        )}&body=${encodeURIComponent(body)}`;
+      } finally {
+        if (submit instanceof HTMLButtonElement) submit.disabled = false;
+      }
     });
   }
 </script>
