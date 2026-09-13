@@ -139,8 +139,10 @@ Steps, in this order, because later steps depend on earlier answers:
    typed here; Samleikin returns it for the signing person.
 4. **Finances** — equity positive / negative / unknown; operations the same. Unknown
    is allowed only if they upload accounts. Negative routes off Swedbank.
-5. **Bank** — Faroese account number + download/upload of the Swedbank confirmation
-   form. The bank stamps this, so this step is an upload, not a Skriva signature.
+5. **Bank** — Faroese account number, then a merchant-reviewed `.eml` request with
+   the prefilled Swedbank confirmation attached. The bank adviser is `To`, the
+   merchant's required email is `CC`, and Betal never presses Send. The bank stamps
+   the form; the merchant uploads the reply, so this is not a Skriva signature.
 6. **Documents** — skásetingar prógv, eigarabók if not assembled from step 3,
    accounts if required.
 7. **Sign** — we fill `Kortindlosning-Online-FO.pdf` with FO + the price list that

@@ -572,12 +572,44 @@ const continueLabel = stig === "banki" && !app.bank_account
             <div class="task-heading">
               <span class="task-number tnum">2</span>
               <div>
-                <h2>Fá skjalið stemplað</h2>
-                <p>Tak forútfylta skjalið niður og lat bankan stempla tað.</p>
+                <h2>Bið bankan vátta kontuna</h2>
+                <p>Vit gera ein lidnan teldupost við bankaskjalinum viðheftum.</p>
               </div>
             </div>
-            <a class="btn task-action" href={`/api/umbon/${id}/bankaskjal.pdf${q}`}>
-              Tak bankaskjalið niður
+            <form
+              class="bank-email-form"
+              method="POST"
+              action={`/api/umbon/${id}/bankateldupostur${q}`}
+              target="_blank"
+            >
+              <Field
+                label="Teldupostur hjá bankanum"
+                name="bank_email"
+                type="email"
+                required
+                autocomplete="email"
+                placeholder="radgevi@banki.fo"
+                hint="Til ráðgevan ella deildina, sum kann stempla skjalið."
+              />
+              <Field
+                label="Tín teldupostur (CC)"
+                name="cc_email"
+                type="email"
+                value={actor.email}
+                required
+                autocomplete="email"
+                hint="Svarið frá bankanum kemur eisini beinleiðis til tín."
+              />
+              <button class="btn task-action" type="submit">
+                Ger teldupostin kláran
+              </button>
+              <p class="field-hint bank-email-note">
+                Betal sendir einki. Telduposturin verður latin upp sum eitt uppskot;
+                tú kannar hann og trýstir Send.
+              </p>
+            </form>
+            <a class="bank-pdf-fallback" href={`/api/umbon/${id}/bankaskjal.pdf${q}`}>
+              Ella tak bert bankaskjalið niður
             </a>
           </section>
         )}
