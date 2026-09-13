@@ -12,8 +12,6 @@ avstemming
 haldarskipan
 ikoni
 integratiónir
-óbiðna
-samtvinnað
 terminalurin
 
 # Page slugs

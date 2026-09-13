@@ -52,7 +52,7 @@ export const products = [
         text: "Við borðið, á verkstaðnum, í bilinum ella á útimarknaðinum. Terminalurin fylgir við tær hagar, sum kundin er.",
       },
       {
-        title: "Sjálvstøðugt ella samtvinnað",
+        title: "Sjálvstøðugt ella samantvinnað",
         text: "Brúka Softpay sum sjálvstøðuga app, ella bind hana saman við verandi kassa- og søluskipan.",
       },
       {
@@ -249,14 +249,15 @@ export const fo = {
     submit: "Send boð",
     mailtoHint: "Títt teldupostforrit letur upp, so tú kanst senda boðini.",
     required: "Vinarliga skriva navn, teldupost og boð.",
+    invalidEmail: "Vinarliga skriva eina gildiga teldupostadressu.",
   },
   privacy: {
     eyebrow: "Privatlívspolitikkur",
     title: "Hvussu vit handfara tínar upplýsingar",
-    lead: "Vit taka vernd av tínum persónsupplýsingum í fullum álvara. Tá tú hevur samband við okkum, brúka vit bert tínar upplýsingar til at svara tær og veita tænastu.",
+    lead: "Vit taka vernd av tínum persónupplýsingum í fullum álvara. Tá tú hevur samband við okkum, brúka vit bert tínar upplýsingar til at svara tær og veita tænastu.",
     body: [
       "Upplýsingar sum navn, teldupostur, telefonnummar, fyritøka og innihald í boðum verða sendar beinleiðis til okkara teldupost. Vit goyma bert hesar upplýsingar so leingi, sum tað er neyðugt fyri at avgreiða tín fyrispurning.",
-      "Vit selja ella lata ongantíð tínar upplýsingar víðari til triðjapartsfeløg, og vit brúka tær ikki til óbiðna marknaðarføring.",
+      "Vit selja ella lata ongantíð tínar upplýsingar víðari til triðjapartsfeløg, og vit brúka tær ikki til óbidna marknaðarføring.",
       "Tú hevur altíð rætt til at fáa innlit í ella biðja um striking av teimum upplýsingum, ið vit hava um teg. Set teg í samband við okkum á {email}.",
     ],
   },
