@@ -1921,6 +1921,14 @@
     font-weight: 700;
   }
 
+  .bank-email-again {
+    display: inline-block;
+    margin-top: 0.75rem;
+    color: var(--color-ink-muted);
+    font-size: var(--text-xs);
+    text-underline-offset: 0.15em;
+  }
+
   .bank-pdf-fallback {
     display: block;
     margin: 0.875rem 0 0 2.5rem;

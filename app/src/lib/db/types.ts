@@ -55,4 +55,8 @@ export interface Env {
   /** URL fallback for local/staging only. */
   EYGA_API_BASE_URL?: string;
   EYGA_API_TOKEN?: string;
+  /** Resend transactional email configuration. */
+  RESEND_API_KEY?: string;
+  RESEND_BASE_URL?: string;
+  BANK_EMAIL_FROM?: string;
 }

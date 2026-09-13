@@ -230,6 +230,7 @@ export const fo = {
       docs_requested: "Fleiri skjøl biðið um",
       staff_sector: "Geiri sett við hond",
       skriva_blocked_no_tenant: "Skriva ikki tøkt",
+      bank_request_sent: "Bankafyrispurningur sendur",
     },
   },
 } as const;

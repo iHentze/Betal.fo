@@ -19,6 +19,11 @@ APP_URL="http://localhost:4321"
 # EYGA_API_BASE_URL="https://api.eyga.fo"
 # EYGA_API_TOKEN=""
 
+# Transactional bank requests. Verify betal.fo in Resend before using this sender.
+# RESEND_API_KEY=""
+# RESEND_BASE_URL="https://api.resend.com"
+# BANK_EMAIL_FROM="Betal <banki@betal.fo>"
+
 # Klintra Skriva. Empty means the Undirskriva step can preview a filled FO PDF
 # but will not create a signing request. Do not put a real password here.
 # SKRIVA_BASE_URL="https://klintraelectronicsigningapi.azurewebsites.net"

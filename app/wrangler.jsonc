@@ -32,6 +32,7 @@
     }
   ],
   "vars": {
-    "APP_URL": "https://app.betal.fo"
+    "APP_URL": "https://app.betal.fo",
+    "BANK_EMAIL_FROM": "Betal <banki@betal.fo>"
   }
 }

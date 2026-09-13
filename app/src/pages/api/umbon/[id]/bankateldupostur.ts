@@ -1,15 +1,24 @@
 import type { APIRoute } from "astro";
+import { Resend } from "resend";
 import { env } from "~/lib/env";
-import { requirePack } from "~/lib/onboarding/access";
+import { requirePack, wizardPath } from "~/lib/onboarding/access";
 import {
-  bankEmailFileName,
+  bankRequestIdempotencyKey,
   buildBankRequestEmail,
   cleanEmailAddress,
 } from "~/lib/onboarding/bank-email";
+import { recordEvent } from "~/lib/onboarding/application";
 import { fillBankFormPdf } from "~/lib/onboarding/pdf";
-import { toArrayBuffer } from "~/lib/onboarding/bytes";
 
 export const prerender = false;
+
+function redirect(location: string): Response {
+  return new Response(null, { status: 303, headers: { Location: location } });
+}
+
+function withMessage(path: string, key: "sent" | "feilur", message: string): string {
+  return `${path}${path.includes("?") ? "&" : "?"}${key}=${encodeURIComponent(message)}`;
+}
 
 export const POST: APIRoute = async ({ params, request, locals, url }) => {
   const actor = locals.actor;
@@ -24,9 +33,15 @@ export const POST: APIRoute = async ({ params, request, locals, url }) => {
     return new Response("forbidden", { status: 403 });
   }
 
+  const back = wizardPath(id, "banki", actor, pack.application.merchant_id);
+  const fail = (message: string) => redirect(withMessage(back, "feilur", message));
   const app = pack.application;
+
   if (!app.bank_account || !app.legal_name || !app.v_tal) {
-    return new Response("Goym kontunummar og felagsupplýsingar fyrst", { status: 409 });
+    return fail("Goym kontunummar og felagsupplýsingar fyrst");
+  }
+  if (!env.RESEND_API_KEY) {
+    return fail("Teldupostur frá Betal er ikki settur upp enn");
   }
 
   try {
@@ -34,26 +49,71 @@ export const POST: APIRoute = async ({ params, request, locals, url }) => {
     const to = cleanEmailAddress(String(form.get("bank_email") ?? ""), "bankan");
     const cc = cleanEmailAddress(String(form.get("cc_email") ?? ""), "CC");
     const attachment = await fillBankFormPdf(pack);
-    const message = buildBankRequestEmail({
+    const input = {
+      from: env.BANK_EMAIL_FROM ?? "Betal <banki@betal.fo>",
       to,
       cc,
       companyName: app.legal_name,
       vTal: app.v_tal,
+      applicationId: id,
       attachment,
-    });
+    };
+    const idempotencyKey = await bankRequestIdempotencyKey(input);
 
-    return new Response(toArrayBuffer(message), {
-      headers: {
-        "Content-Type": "message/rfc822",
-        "Content-Disposition": `attachment; filename="${bankEmailFileName(app.v_tal)}"`,
-        "Cache-Control": "private, no-store",
-        "X-Content-Type-Options": "nosniff",
-      },
-    });
+    const existing = await env.DB
+      .prepare(
+        `SELECT provider_id FROM onboarding_bank_email WHERE idempotency_key = ?1`,
+      )
+      .bind(idempotencyKey)
+      .first<{ provider_id: string }>();
+    if (existing) return redirect(withMessage(back, "sent", "banki"));
+
+    const resend = new Resend(
+      env.RESEND_API_KEY,
+      env.RESEND_BASE_URL ? { baseUrl: env.RESEND_BASE_URL } : undefined,
+    );
+    const { data, error } = await resend.emails.send(
+      buildBankRequestEmail(input),
+      { idempotencyKey },
+    );
+    if (error || !data?.id) {
+      console.error(JSON.stringify({
+        event: "bank_request_email_failed",
+        applicationId: id,
+        error: error?.name ?? "missing_provider_id",
+      }));
+      return fail("Telduposturin varð ikki sendur. Royn aftur um eina løtu.");
+    }
+
+    const at = Date.now();
+    const inserted = await env.DB
+      .prepare(
+        `INSERT OR IGNORE INTO onboarding_bank_email (
+           idempotency_key, application_id, bank_email, cc_email, provider_id,
+           sent_by, sent_at_ms
+         ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)`,
+      )
+      .bind(idempotencyKey, id, to, cc, data.id, actor.email, at)
+      .run();
+
+    if ((inserted.meta.changes ?? 0) > 0) {
+      await recordEvent(env.DB, id, "bank_request_sent", actor.email, {
+        provider: "resend",
+        providerId: data.id,
+      }, () => at);
+    }
+
+    return redirect(withMessage(back, "sent", "banki"));
   } catch (error) {
-    return new Response(error instanceof Error ? error.message : "Telduposturin kundi ikki gerast", {
-      status: 400,
-      headers: { "Content-Type": "text/plain; charset=utf-8" },
-    });
+    console.error(JSON.stringify({
+      event: "bank_request_email_error",
+      applicationId: id,
+      error: error instanceof Error ? error.name : "unknown",
+    }));
+    return fail(
+      error instanceof Error && error.message.startsWith("Skriva ein gildugan")
+        ? error.message
+        : "Telduposturin varð ikki sendur. Royn aftur um eina løtu.",
+    );
   }
 };
