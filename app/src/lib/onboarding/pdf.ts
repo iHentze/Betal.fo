@@ -92,6 +92,7 @@ export async function fillAgreementPdf(
   y -= 8;
   line("Felag", 11, bold);
   line(`Navn: ${text(app.legal_name)}`);
+  line(`Felagsslag: ${text(app.company_type)}`);
   line(`V-tal: ${text(app.v_tal)}`);
   line(`Adressa: ${text(app.address_line_one)}${app.address_line_two ? `, ${app.address_line_two}` : ""}`);
   line(`${text(app.postal_code)} ${text(app.city)}`);
@@ -103,7 +104,7 @@ export async function fillAgreementPdf(
   for (const owner of pack.owners) {
     const pct = owner.ownership_bps == null ? "—" : `${(owner.ownership_bps / 100).toFixed(1)}%`;
     line(
-      `${owner.name}  ·  P-tal ${text(owner.p_tal)}  ·  ${pct}  ·  ${
+      `${owner.name}  ·  ${pct}  ·  ${
         owner.is_signatory ? "undirskrivari" : "eigari"
       }`,
     );
@@ -121,7 +122,7 @@ export async function fillAgreementPdf(
     }
   }
   y -= 12;
-  line("Undirskriftin kemur frá Samleikin / Skriva. Eingin teljing á lørifti.", 9, font, muted);
+  line("Undirskrift og P-tal hjá undirskrivara koma frá Samleikanum / Skriva.", 9, font, muted);
   line(`Útflutt ${new Date().toISOString().slice(0, 10)}  ·  Betal`, 9, font, muted);
 
   return pdf.save();

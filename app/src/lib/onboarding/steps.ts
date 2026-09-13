@@ -38,20 +38,21 @@ export function isStepComplete(slug: StepSlug, pack: ApplicationPack): boolean {
   switch (slug) {
     case "felag":
       return Boolean(
+        app.company_details_confirmed &&
         app.legal_name &&
           app.v_tal &&
+          app.company_type &&
           app.address_line_one &&
           app.city &&
-          app.postal_code &&
-          app.sells,
+          app.postal_code,
       );
     case "vinnugrein":
-      return Boolean(app.vertical_key);
+      return Boolean(app.vertical_key && app.sells);
     case "eigarar":
       return (
         pack.owners.length > 0 &&
         pack.owners.some((owner) => owner.is_signatory) &&
-        pack.owners.every((owner) => owner.name && owner.p_tal)
+        pack.owners.every((owner) => owner.name)
       );
     case "roknskapur":
       return Boolean(app.equity && app.operations);

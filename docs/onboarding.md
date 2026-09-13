@@ -124,17 +124,19 @@ payments, until the acquirer has approved. Test money and live money stay distin
 A resume-safe application the merchant owns. Stripe Connect is the shape
 ([verify a business](https://mobbin.com/flows/46860e68-4922-421b-8cf9-06e6953a61f5),
 [Connect setup checklist](https://mobbin.com/flows/cd7a208f-2712-4dee-8c02-c9768a57f33d)):
-left-hand steps, one section at a time, dashboard banner while something is missing,
-never a dead end.
+one centered task at a time, dashboard checklist while something is missing, never a
+dead end. Company facts and public ownership come from the private Eyga API.
 
 Steps, in this order, because later steps depend on earlier answers:
 
-1. **Company** — legal name, V-tal, address, website, what they sell.
-2. **Vertical** — pick from our list, which is tagged sector 1 / sector 2 / allowed.
+1. **Company** — search Eyga, confirm legal name, company type and address, then add
+   the TAKS V-tal (which is not Skráseting Føroya's registration number).
+2. **Business** — website, what they sell, and a vertical from our list, tagged
+   sector 1 / sector 2 / allowed.
    Sector 1 stops the Swedbank path here. Sector 2 unlocks the extra-doc steps.
-3. **Owners** — each owner: name, P-tal, email, role, ownership %. This is both the
-   eigarabók capture and the Skriva signer list. Signatories must be people who can
-   bind the company.
+3. **Owners** — confirm public owners from Eyga, then add email, role and ownership
+   corrections. Signatories must be people who can bind the company. P-tal is never
+   typed here; Samleikin returns it for the signing person.
 4. **Finances** — equity positive / negative / unknown; operations the same. Unknown
    is allowed only if they upload accounts. Negative routes off Swedbank.
 5. **Bank** — Faroese account number + download/upload of the Swedbank confirmation
@@ -176,6 +178,9 @@ onboarding_application
   recommended_acquirer   swedbank | clearhaus | shift4 | decline
   chosen_acquirer        staff-confirmed, may differ
   country_code           FO
+  registry_source        eyga | manual
+  registry_id, registry_snapshot, registry_checked_at
+  company_type, company_details_confirmed
   vertical_id
   equity                 positive | negative | unknown
   operations             positive | negative | unknown
@@ -183,7 +188,7 @@ onboarding_application
 
 onboarding_owner
   application_id
-  name, email, p_tal, role, ownership_bps
+  name, email, role, ownership_bps
   is_signatory
 
 onboarding_document
@@ -237,7 +242,8 @@ a new PDF.
 
 - Generate the FO agreement as PDF bytes (template + filled company / owners /
   prices / `FO`).
-- Call Skriva `create-signing-request` with every signatory's P-tal.
+- Start the Skriva/Samleikin identity flow for each signatory; persist the verified
+  P-tal returned by the provider rather than asking the merchant to type it.
 - Store tokens. Mail can come from Skriva (`sendMailToSigningPersons`) so we do not
   block on our own email provider.
 - `redirectUrl` = `https://app.betal.fo/umbon/{id}/skriva` with

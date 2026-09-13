@@ -22,6 +22,13 @@ import {
 } from "~/lib/onboarding/steps";
 import { VERTICALS } from "~/lib/onboarding/verticals";
 import { formatDateTime } from "~/lib/nav";
+import {
+  getEygaCompany,
+  parseEygaSnapshot,
+  searchEygaCompanies,
+  type EygaCompany,
+  type EygaSearchResult,
+} from "~/lib/onboarding/eyga";
 
 export const prerender = false;
 
@@ -69,7 +76,38 @@ const app = pack.application;
 const formAction = `/api/umbon/${id}${q}`;
 const uploadAction = `/api/umbon/${id}/skjol${q}`;
 const backHref = currentIndex > 0 ? href(STEP_SLUGS[currentIndex - 1]!) : `/${q}`;
-const savedLabel = `${fo.onboarding.saved} · ${formatDateTime(app.updated_at_ms)}`;
+const savedLabel = fo.onboarding.saved;
+
+const registrySnapshot = parseEygaSnapshot(app.registry_snapshot);
+const eygaQuery = (Astro.url.searchParams.get("eyga_q") ?? "").trim();
+const choosingCompany = Astro.url.searchParams.has("eyga_q");
+const requestedEygaId = Astro.url.searchParams.get("eyga");
+const manualCompany = Astro.url.searchParams.get("manual") === "1";
+let selectedCompany: EygaCompany | null = choosingCompany || requestedEygaId || manualCompany
+  ? null
+  : registrySnapshot;
+let eygaResults: EygaSearchResult[] = [];
+let eygaError: string | null = null;
+
+if (stig === "felag" && requestedEygaId) {
+  try {
+    selectedCompany = await getEygaCompany(env, requestedEygaId);
+  } catch {
+    eygaError = "Vit fingu ikki lisið felagið frá Eyga. Royn aftur ella skriva upplýsingarnar sjálv/ur.";
+  }
+} else if (stig === "felag" && choosingCompany && eygaQuery) {
+  try {
+    eygaResults = await searchEygaCompanies(env, eygaQuery);
+  } catch {
+    eygaError = "Eyga svarar ikki beint nú. Tú kanst royna aftur ella skriva upplýsingarnar sjálv/ur.";
+  }
+}
+
+function felagUrl(params: Record<string, string>): string {
+  const target = new URL(href("felag"), Astro.url);
+  for (const [key, value] of Object.entries(params)) target.searchParams.set(key, value);
+  return `${target.pathname}${target.search}`;
+}
 
 const screening = screenApplication({
   sector: app.vertical_sector,
@@ -80,7 +118,24 @@ const priceList = await getActivePriceList(env.DB, priceListKind(screening));
 const fill = canFillAgreement(pack);
 const send = canSendToSkriva(pack, priceList, skrivaConfigured(env));
 const swedbank = app.recommended_acquirer === "swedbank" || !app.recommended_acquirer;
-const owners = pack.owners.length > 0 ? pack.owners : [
+const registryOwnerSuggestions = registrySnapshot
+  ? (registrySnapshot.beneficialOwners.length > 0
+      ? registrySnapshot.beneficialOwners
+      : registrySnapshot.owners.filter((owner) => owner.kind === "person"))
+  : [];
+const owners = pack.owners.length > 0 ? pack.owners : registryOwnerSuggestions.length > 0
+  ? registryOwnerSuggestions.map((owner, index) => ({
+      id: "",
+      application_id: id,
+      name: owner.name,
+      email: "",
+      p_tal: "",
+      role: owner.role ?? owner.description ?? "Eigari",
+      ownership_bps: owner.ownershipBps,
+      is_signatory: index === 0 ? 1 : 0,
+      sort_order: index,
+    }))
+  : [
   {
     id: "",
     application_id: id,
@@ -97,6 +152,23 @@ const owners = pack.owners.length > 0 ? pack.owners : [
 const docChip = (kind: string) => pack.documents.find((d) => d.kind === kind && d.byte_size);
 
 const hideContinue = stig === "bida";
+const companyFormReady = manualCompany || Boolean(selectedCompany);
+const selectedCompanyActive = selectedCompany?.status === "active";
+const selectedCompanyComplete = Boolean(
+  selectedCompany?.companyType &&
+  selectedCompany.address &&
+  selectedCompany.postalCode &&
+  selectedCompany.city,
+);
+const pageFormAction = hideContinue || stig === "undirskriva"
+  || (stig === "felag" && !companyFormReady)
+  || (stig === "felag" && Boolean(selectedCompany) && !selectedCompanyActive)
+  || (stig === "felag" && Boolean(selectedCompany) && !selectedCompanyComplete)
+  ? undefined
+  : formAction;
+const continueLabel = stig === "banki" && !app.bank_account
+  ? "Ger bankaskjalið"
+  : fo.onboarding.continue;
 ---
 
 <WizardLayout
@@ -106,53 +178,263 @@ const hideContinue = stig === "bida";
   currentIndex={currentIndex}
   savedLabel={savedLabel}
   backHref={backHref}
-  formAction={hideContinue ? undefined : formAction}
+  formAction={pageFormAction}
+  continueLabel={continueLabel}
   hideContinue={hideContinue}
 >
   {
     error && (
-      <p class="field-error" style="margin-bottom:1rem">{error}</p>
+      <div class="wizard-alert is-error">{error}</div>
     )
   }
 
   {
-    stig !== "bida" && stig !== "banki" && stig !== "skjol" && stig !== "undirskriva" && (
-      <form id="wizard-form" method="POST" action={formAction}>
-        <input type="hidden" name="step" value={stig} />
+    stig === "felag" && (
+      <>
+        {eygaError && <div class="wizard-alert is-error">{eygaError}</div>}
 
-        {stig === "felag" && (
+        {!selectedCompany && !manualCompany && (
           <>
-            <Field label="Lógligt navn" name="legal_name" value={app.legal_name} required />
-            <Field label="V-tal" name="v_tal" value={app.v_tal} required inputmode="numeric" hint="Seks siffer hjá TAKS" />
-            <Field label="Adressa" name="address_line_one" value={app.address_line_one} required />
-            <Field label="Adressa 2" name="address_line_two" value={app.address_line_two} />
-            <div class="field-row">
-              <Field label="Postnr." name="postal_code" value={app.postal_code} required inputmode="numeric" />
-              <Field label="Býur" name="city" value={app.city} required />
-            </div>
-            <Field label="Heimasíða" name="website" value={app.website} placeholder="https://" />
-            <Field
-              label="Hvat selja tit"
-              name="sells"
-              type="textarea"
-              value={app.sells}
-              required
-              hint="Ein setningur. Innloysarin lesur hetta."
-            />
+            <section class="wizard-panel">
+              <div class="wizard-panel-heading">
+                <div>
+                  <h2>Finn felagið</h2>
+                  <p>Vit fylla navn, felagsslag, adressu og eigarar úr almennu skránni.</p>
+                </div>
+                <span class="source-badge">eyga.fo</span>
+              </div>
+              <form
+                class="registry-search"
+                action={new URL(href("felag"), Astro.url).pathname}
+                method="GET"
+                role="search"
+              >
+                {actor.kind === "staff" && <input type="hidden" name="handil" value={merchantId} />}
+                <label class="field-label" for="eyga-search">{fo.onboarding.eygaSearch}</label>
+                <div class="registry-search-control">
+                  <input
+                    class="input field-input"
+                    id="eyga-search"
+                    name="eyga_q"
+                    type="search"
+                    value={eygaQuery}
+                    placeholder="t.d. Føroya Banki ella 10"
+                    autocomplete="off"
+                    data-result-base={felagUrl({ eyga: "__ID__" })}
+                  />
+                  <button class="btn" type="submit">Leita</button>
+                </div>
+              </form>
+
+              <div class="registry-results" id="eyga-results" aria-live="polite">
+                {eygaResults.map((result) => (
+                  <a class="registry-result" href={felagUrl({ eyga: result.id })}>
+                    <span class="registry-avatar" aria-hidden="true">
+                      {result.companyType}
+                    </span>
+                    <span class="registry-result-copy">
+                      <strong>{result.name}</strong>
+                      <span>{result.location} · skrásetingarnr. {result.registryNumber}</span>
+                    </span>
+                    <span class:list={["registry-status", result.status !== "virkid" && "is-warning"]}>
+                      {result.statusLabel}
+                    </span>
+                    <span class="registry-chevron" aria-hidden="true">›</span>
+                  </a>
+                ))}
+                {eygaQuery && eygaResults.length === 0 && !eygaError && (
+                  <p class="registry-empty">Einki felag funnið. Kanna stavsetingina ella skrásetingarnummarið.</p>
+                )}
+              </div>
+            </section>
+
+            <p class="wizard-under-panel">
+              Nýtt felag ella ikki í skránni? <a href={felagUrl({ manual: "1" })}>Skriva upplýsingarnar sjálv/ur</a>
+            </p>
           </>
         )}
 
+        {selectedCompany && !manualCompany && (
+          <>
+            <section class="wizard-panel registry-company">
+              <div class="wizard-panel-heading">
+                <div>
+                  <span class="source-badge">eyga.fo</span>
+                  <h2>{selectedCompany.name}</h2>
+                </div>
+                <span class:list={["registry-status", !selectedCompanyActive && "is-warning"]}>
+                  {selectedCompany.statusLabel}
+                </span>
+              </div>
+
+              <dl class="registry-facts">
+                <div>
+                  <dt>Felagsslag</dt>
+                  <dd>{selectedCompany.companyType}</dd>
+                </div>
+                <div>
+                  <dt>Skrásetingarnr.</dt>
+                  <dd class="tnum">{selectedCompany.registryNumber}</dd>
+                </div>
+                <div>
+                  <dt>Adressa</dt>
+                  <dd>
+                    {selectedCompany.address || "Eingin gøta skrásett"}<br />
+                    <span class="tnum">{selectedCompany.postalCode}</span> {selectedCompany.city}
+                  </dd>
+                </div>
+              </dl>
+
+              {selectedCompany.owners.length > 0 && (
+                <div class="registry-people-preview">
+                  <div class="registry-people-title">
+                    <span>Eigarar á Eyga</span>
+                    <span class="tnum">{selectedCompany.owners.length}</span>
+                  </div>
+                  {selectedCompany.owners.slice(0, 4).map((owner) => (
+                    <div class="registry-person">
+                      <span>
+                        <strong>{owner.name}</strong>
+                        {owner.description && <small>{owner.description}</small>}
+                      </span>
+                      {owner.ownershipBps != null && (
+                        <span class="tnum">{(owner.ownershipBps / 100).toLocaleString("fo-FO")} %</span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <div class="registry-source-line">
+                {selectedCompany.updatedAt ? `Dagført ${selectedCompany.updatedAt}` : fo.onboarding.eygaSource}
+                <a href={selectedCompany.sourceUrl} target="_blank" rel="noreferrer">Síggj á Eyga ↗</a>
+              </div>
+            </section>
+
+            {!selectedCompanyActive && (
+              <div class="wizard-alert is-error">
+                Felagið stendur ikki sum virkið. Vel eitt annað felag ella skriva til okkara.
+              </div>
+            )}
+
+            {selectedCompanyActive && !selectedCompanyComplete && (
+              <div class="wizard-alert">
+                Eyga manglar eina fulla adressu fyri felagið. Kanna felagið ella
+                <a href={felagUrl({ manual: "1" })}> skriva upplýsingarnar sjálv/ur</a>.
+              </div>
+            )}
+
+            {selectedCompanyActive && selectedCompanyComplete && (
+              <form id="wizard-form" method="POST" action={formAction} class="wizard-stack">
+                <input type="hidden" name="step" value="felag" />
+                <input type="hidden" name="registry_id" value={selectedCompany.id} />
+                <section class="wizard-panel">
+                  <Field
+                    label="V-tal"
+                    name="v_tal"
+                    value={app.v_tal}
+                    required
+                    inputmode="numeric"
+                    autocomplete="organization"
+                    hint="V-talið hjá TAKS — ikki tað sama sum skrásetingarnummarið á Eyga."
+                  />
+                  <Field
+                    label="Ja, hetta er rætta felagið"
+                    name="company_confirmed"
+                    type="checkbox"
+                    value="1"
+                    checked={Boolean(app.company_details_confirmed && app.registry_id === selectedCompany.id)}
+                    required
+                  />
+                </section>
+              </form>
+            )}
+
+            <p class="wizard-under-panel">
+              Ikki rætta felagið? <a href={felagUrl({ eyga_q: "" })}>Leita av nýggjum</a>
+            </p>
+          </>
+        )}
+
+        {manualCompany && (
+          <>
+            <div class="wizard-alert">
+              Brúka hetta bert, um felagið er nýtt ella ikki finst á Eyga enn.
+            </div>
+            <form id="wizard-form" method="POST" action={formAction} class="wizard-stack">
+              <input type="hidden" name="step" value="felag" />
+              <section class="wizard-panel">
+                <Field label="Lógligt navn" name="legal_name" value={app.legal_name} required autocomplete="organization" />
+                <div class="field-row">
+                  <Field label="Felagsslag" name="company_type" value={app.company_type} required placeholder="t.d. Sp/f" />
+                  <Field label="V-tal" name="v_tal" value={app.v_tal} required inputmode="numeric" />
+                </div>
+                <Field label="Adressa" name="address_line_one" value={app.address_line_one} required autocomplete="street-address" />
+                <Field label="Adressa 2" name="address_line_two" value={app.address_line_two} />
+                <div class="field-row">
+                  <Field label="Postnr." name="postal_code" value={app.postal_code} required inputmode="numeric" autocomplete="postal-code" />
+                  <Field label="Býur" name="city" value={app.city} required autocomplete="address-level2" />
+                </div>
+                <Field
+                  label="Eg vátti, at upplýsingarnar eru rættar"
+                  name="company_confirmed"
+                  type="checkbox"
+                  value="1"
+                  checked={Boolean(app.company_details_confirmed && app.registry_source === "manual")}
+                  required
+                />
+              </section>
+            </form>
+            <p class="wizard-under-panel">
+              <a href={felagUrl({ eyga_q: "" })}>← Leita á Eyga í staðin</a>
+            </p>
+          </>
+        )}
+      </>
+    )
+  }
+
+  {
+    (stig === "vinnugrein" || stig === "eigarar" || stig === "roknskapur") && (
+      <form id="wizard-form" method="POST" action={formAction}>
+        <input type="hidden" name="step" value={stig} />
+
         {stig === "vinnugrein" && (
-          <div class="choice-grid" data-cols="2">
-            {VERTICALS.map((vertical) => (
-              <ChoiceCard
-                name="vertical_key"
-                value={vertical.key}
-                title={vertical.label}
-                hint={vertical.hint}
-                checked={app.vertical_key === vertical.key}
+          <div class="wizard-stack">
+            <section class="wizard-panel">
+              <Field
+                label="Hvat selja tit?"
+                name="sells"
+                type="textarea"
+                value={app.sells}
+                required
+                rows={3}
+                placeholder="T.d. kaffi, køkur og matur í kaffistovu"
+                hint="Ein greiður setningur er nokk."
               />
-            ))}
+              <Field
+                label="Heimasíða"
+                name="website"
+                type="url"
+                value={app.website}
+                placeholder="https://"
+                autocomplete="url"
+              />
+            </section>
+            <section>
+              <h2 class="wizard-section-title">Hvør lýsing passar best?</h2>
+              <div class="choice-grid" data-cols="2">
+                {VERTICALS.map((vertical) => (
+                  <ChoiceCard
+                    name="vertical_key"
+                    value={vertical.key}
+                    title={vertical.label}
+                    hint={vertical.hint}
+                    checked={app.vertical_key === vertical.key}
+                  />
+                ))}
+              </div>
+            </section>
           </div>
         )}
 
@@ -164,238 +446,344 @@ const hideContinue = stig === "bida";
         )}
 
         {stig === "eigarar" && (
-          <div id="owners">
-            {owners.map((owner, index) => (
-              <div class="owner-card">
-                <Field label="Navn" name="owner_name" value={owner.name} required={index === 0} />
-                <div class="field-row">
-                  <Field label="P-tal" name="owner_p_tal" value={owner.p_tal} inputmode="numeric" />
-                  <Field label="Teldupostur" name="owner_email" type="email" value={owner.email} />
+          <div class="wizard-stack">
+            {registrySnapshot && (
+              <section class="wizard-panel registry-context">
+                <div class="wizard-panel-heading">
+                  <div>
+                    <span class="source-badge">eyga.fo</span>
+                    <h2>Hetta funnu vit í almennu skránni</h2>
+                  </div>
+                  <a href={registrySnapshot.sourceUrl} target="_blank" rel="noreferrer">Opna ↗</a>
                 </div>
-                <div class="field-row">
-                  <Field label="Lutur %" name="owner_bps" value={owner.ownership_bps == null ? "" : String(owner.ownership_bps / 100)} inputmode="decimal" />
-                  <Field label="Leiklutur" name="owner_role" value={owner.role} placeholder="Stjóri" />
+                <div class="registry-person-list">
+                  {(registrySnapshot.beneficialOwners.length > 0
+                    ? registrySnapshot.beneficialOwners
+                    : registrySnapshot.owners).slice(0, 6).map((owner) => (
+                    <div class="registry-person">
+                      <span>
+                        <strong>{owner.name}</strong>
+                        {owner.description && <small>{owner.description}</small>}
+                      </span>
+                      {owner.ownershipBps != null && (
+                        <span class="tnum">{(owner.ownershipBps / 100).toLocaleString("fo-FO")} %</span>
+                      )}
+                    </div>
+                  ))}
                 </div>
-                <Field
-                  label="Kann undirskriva fyri felagið"
-                  name="owner_signatory"
-                  type="checkbox"
-                  value={String(index)}
-                  checked={Boolean(owner.is_signatory)}
-                />
-              </div>
-            ))}
+                <p class="field-hint">{fo.onboarding.eygaPrivate}</p>
+              </section>
+            )}
+
+            <div id="owners" class="owner-list">
+              {owners.map((owner, index) => (
+                <section class="owner-card" data-owner-card>
+                  <div class="owner-card-heading">
+                    <h2>Persónur <span class="tnum">{index + 1}</span></h2>
+                    <button class="owner-remove" type="button" aria-label="Tak persón burt">Tak burt</button>
+                  </div>
+                  <Field label="Navn" name="owner_name" value={owner.name} required={index === 0} autocomplete="name" />
+                  <div class="field-row">
+                    <Field label="Teldupostur" name="owner_email" type="email" value={owner.email} autocomplete="email" />
+                    <Field label="Leiklutur" name="owner_role" value={owner.role} placeholder="t.d. stjóri" />
+                  </div>
+                  <Field label="Eigaralutur %" name="owner_bps" value={owner.ownership_bps == null ? "" : String(owner.ownership_bps / 100)} inputmode="decimal" />
+                  <Field
+                    label="Kann undirskriva fyri felagið"
+                    name="owner_signatory"
+                    type="checkbox"
+                    value={String(index)}
+                    checked={Boolean(owner.is_signatory)}
+                  />
+                  <p class="identity-note">
+                    <span aria-hidden="true">◇</span>
+                    P-talið verður knýtt at undirskrivaranum við Samleikanum.
+                  </p>
+                </section>
+              ))}
+            </div>
+            <button class="btn owner-add" type="button" id="add-owner">
+              + Legg persón afturat
+            </button>
           </div>
         )}
 
         {stig === "roknskapur" && (
-          <>
-            <p class="field-label" style="margin-bottom:.5rem">Eginogn</p>
-            <div class="choice-grid" data-cols="2">
-              <ChoiceCard name="equity" value="positive" title="Positiv" hint="Eginognin er ikki negativ" checked={app.equity === "positive"} />
-              <ChoiceCard name="equity" value="negative" title="Negativ" hint="Fer ikki til Swedbank" checked={app.equity === "negative"} />
-              <ChoiceCard name="equity" value="unknown" title="Vit vita ikki" hint="Krevur ársroknskap" checked={app.equity === "unknown"} />
-            </div>
-            <p class="field-label" style="margin:1.25rem 0 .5rem">Rakstur</p>
-            <div class="choice-grid" data-cols="2">
-              <ChoiceCard name="operations" value="positive" title="Positiv drift" checked={app.operations === "positive"} />
-              <ChoiceCard name="operations" value="negative" title="Negativ drift" hint="Fer ikki til Swedbank" checked={app.operations === "negative"} />
-              <ChoiceCard name="operations" value="unknown" title="Vit vita ikki" checked={app.operations === "unknown"} />
-            </div>
-          </>
+          <div class="wizard-stack">
+            <section class="wizard-panel">
+              <h2 class="wizard-section-title">Er eginognin positiv?</h2>
+              <p class="wizard-section-copy">Hygg í seinasta ársroknskap, um tú ivast.</p>
+              <div class="choice-grid" data-cols="3">
+                <ChoiceCard name="equity" value="positive" title="Ja" checked={app.equity === "positive"} />
+                <ChoiceCard name="equity" value="negative" title="Nei" hint="Vit finna aðra leið" checked={app.equity === "negative"} />
+                <ChoiceCard name="equity" value="unknown" title="Veit ikki" checked={app.equity === "unknown"} />
+              </div>
+            </section>
+            <section class="wizard-panel">
+              <h2 class="wizard-section-title">Er raksturin positivur?</h2>
+              <p class="wizard-section-copy">Svar eftir seinasta roknskaparári.</p>
+              <div class="choice-grid" data-cols="3">
+                <ChoiceCard name="operations" value="positive" title="Ja" checked={app.operations === "positive"} />
+                <ChoiceCard name="operations" value="negative" title="Nei" hint="Vit finna aðra leið" checked={app.operations === "negative"} />
+                <ChoiceCard name="operations" value="unknown" title="Veit ikki" checked={app.operations === "unknown"} />
+              </div>
+            </section>
+          </div>
         )}
       </form>
     )
   }
 
   {
-    stig === "eigarar" && (
-      <button slot="foot" class="btn" type="button" id="add-owner">
-        Legg eigara afturat
-      </button>
-    )
-  }
-
-  {
     stig === "banki" && (
-      <>
-        <form id="wizard-form" method="POST" action={formAction}>
+      <div class="wizard-stack">
+        {Astro.url.searchParams.get("klárt") === "bankaskjal" && (
+          <div class="wizard-alert is-success">
+            Kontan er goymd. Nú er bankaskjalið fylt og klárt at taka niður.
+          </div>
+        )}
+        <form id="wizard-form" method="POST" action={formAction} class="wizard-panel">
           <input type="hidden" name="step" value="banki" />
+          <div class="task-heading">
+            <span class="task-number tnum">1</span>
+            <div>
+              <h2>Goym kontunummarið</h2>
+              <p>Vit seta tað inn í bankaskjalið fyri teg.</p>
+            </div>
+          </div>
           <Field
             label="Kontunummar"
             name="bank_account"
             value={app.bank_account}
             required
-            hint="Føroyskt kontunummar. Bankin stemplar restina."
+            inputmode="numeric"
+            autocomplete="off"
+            hint="Føroyskt kontunummar. Tú kanst rætta tað, áðrenn tú heldur fram."
           />
         </form>
 
-        <div style="margin:1.25rem 0 .75rem">
-          <a class="btn" href={`/api/umbon/${id}/bankaskjal.pdf${q}`}>
-            Tak niður bankaskjalið
-          </a>
-        </div>
+        {app.bank_account && (
+          <section class="wizard-panel">
+            <div class="task-heading">
+              <span class="task-number tnum">2</span>
+              <div>
+                <h2>Fá skjalið stemplað</h2>
+                <p>Tak forútfylta skjalið niður og lat bankan stempla tað.</p>
+              </div>
+            </div>
+            <a class="btn task-action" href={`/api/umbon/${id}/bankaskjal.pdf${q}`}>
+              Tak bankaskjalið niður
+            </a>
+          </section>
+        )}
 
-        <div class="req-list">
-          <div class:list={["req-item", hasDocument(pack, "bank_confirmation") && "is-done"]}>
-            <span class="req-tick" />
-            <span>Swedbank-formularin, stemplaður av bankanum</span>
-          </div>
-        </div>
+        {app.bank_account && (
+          <section class="wizard-panel">
+            <div class="task-heading">
+              <span class="task-number tnum">3</span>
+              <div>
+                <h2>Legg stemplaða skjalið upp</h2>
+                <p>Ein PDF ella greið mynd er nóg mikið.</p>
+              </div>
+            </div>
 
-        {docChip("bank_confirmation") ? (
-          <div class="file-chip">
-            <span class="file-chip-name">{docChip("bank_confirmation")?.file_name}</span>
-            <span class="file-chip-meta tnum">{docChip("bank_confirmation")?.byte_size} B</span>
-          </div>
-        ) : null}
-
-        <form method="POST" action={uploadAction} enctype="multipart/form-data" style="margin-top:.75rem">
-          <input type="hidden" name="kind" value="bank_confirmation" />
-          <input type="hidden" name="step" value="banki" />
-          <Dropzone title="Stemplað bankaskjal" />
-          <button class="btn" type="submit" style="margin-top:.75rem">
-            Legg upp
-          </button>
-        </form>
-      </>
+            {docChip("bank_confirmation") ? (
+              <div class="file-chip is-complete">
+                <span class="file-chip-check" aria-hidden="true">✓</span>
+                <span class="file-chip-name">{docChip("bank_confirmation")?.file_name}</span>
+                <span class="file-chip-meta tnum">{docChip("bank_confirmation")?.byte_size} B</span>
+              </div>
+            ) : (
+              <form method="POST" action={uploadAction} enctype="multipart/form-data">
+                <input type="hidden" name="kind" value="bank_confirmation" />
+                <input type="hidden" name="step" value="banki" />
+                <Dropzone title="Vel stemplað bankaskjal" />
+                <button class="btn upload-submit" type="submit">Legg upp</button>
+              </form>
+            )}
+          </section>
+        )}
+      </div>
     )
   }
 
   {
     stig === "skjol" && (
-      <>
+      <div class="wizard-stack">
         <form id="wizard-form" method="POST" action={formAction}>
           <input type="hidden" name="step" value="skjol" />
         </form>
 
-        <p class="field-label" style="margin-bottom:.5rem">Skásetingar prógv</p>
-        <div class="req-list">
-          <div class="req-item">
-            <span class="req-tick" />
-            <span>Útskrift frá TAKS / Vinnuskránni, ikki eldri enn tríggir mánaðir</span>
+        <section class="wizard-panel upload-panel">
+          <div class="upload-panel-heading">
+            <div>
+              <h2>Skásetingarprógv</h2>
+              <p>Útskrift frá TAKS ella Vinnuskránni, í mesta lagi tríggjar mánaðir gomul.</p>
+            </div>
+            {docChip("company_registration") && <span class="upload-done">Klárt</span>}
           </div>
-        </div>
-        {docChip("company_registration") && (
-          <div class="file-chip" style="margin-bottom:.75rem">
-            <span class="file-chip-name">{docChip("company_registration")?.file_name}</span>
-            <span class="file-chip-meta tnum">{docChip("company_registration")?.byte_size} B</span>
-          </div>
-        )}
-        <form method="POST" action={uploadAction} enctype="multipart/form-data">
-          <input type="hidden" name="kind" value="company_registration" />
-          <input type="hidden" name="step" value="skjol" />
-          <Dropzone title="Skásetingar prógv" />
-          <button class="btn" type="submit" style="margin-top:.75rem">Legg upp</button>
-        </form>
+          {docChip("company_registration") ? (
+            <div class="file-chip is-complete">
+              <span class="file-chip-check" aria-hidden="true">✓</span>
+              <span class="file-chip-name">{docChip("company_registration")?.file_name}</span>
+              <span class="file-chip-meta tnum">{docChip("company_registration")?.byte_size} B</span>
+            </div>
+          ) : (
+            <form method="POST" action={uploadAction} enctype="multipart/form-data">
+              <input type="hidden" name="kind" value="company_registration" />
+              <input type="hidden" name="step" value="skjol" />
+              <Dropzone title="Vel skásetingarprógv" />
+              <button class="btn upload-submit" type="submit">Legg upp</button>
+            </form>
+          )}
+        </section>
 
-        <p class="field-label" style="margin:1.5rem 0 .5rem">Eigarabók</p>
-        <div class="req-list">
-          <div class="req-item">
-            <span class="req-tick" />
-            <span>Eigarabók ella samsvarandi yvirlit yvir eigarar</span>
+        <section class="wizard-panel upload-panel">
+          <div class="upload-panel-heading">
+            <div>
+              <h2>Eigarabók</h2>
+              <p>Seinasta eigarabók ella samsvarandi yvirlit yvir eigarar.</p>
+            </div>
+            {docChip("owners_book") && <span class="upload-done">Klárt</span>}
           </div>
-        </div>
-        {docChip("owners_book") && (
-          <div class="file-chip" style="margin-bottom:.75rem">
-            <span class="file-chip-name">{docChip("owners_book")?.file_name}</span>
-            <span class="file-chip-meta tnum">{docChip("owners_book")?.byte_size} B</span>
-          </div>
-        )}
-        <form method="POST" action={uploadAction} enctype="multipart/form-data">
-          <input type="hidden" name="kind" value="owners_book" />
-          <input type="hidden" name="step" value="skjol" />
-          <Dropzone title="Eigarabók" />
-          <button class="btn" type="submit" style="margin-top:.75rem">Legg upp</button>
-        </form>
+          {docChip("owners_book") ? (
+            <div class="file-chip is-complete">
+              <span class="file-chip-check" aria-hidden="true">✓</span>
+              <span class="file-chip-name">{docChip("owners_book")?.file_name}</span>
+              <span class="file-chip-meta tnum">{docChip("owners_book")?.byte_size} B</span>
+            </div>
+          ) : (
+            <form method="POST" action={uploadAction} enctype="multipart/form-data">
+              <input type="hidden" name="kind" value="owners_book" />
+              <input type="hidden" name="step" value="skjol" />
+              <Dropzone title="Vel eigarabók" />
+              <button class="btn upload-submit" type="submit">Legg upp</button>
+            </form>
+          )}
+        </section>
 
         {app.extra_docs_required === 1 && (
-          <>
-            <p class="field-label" style="margin:1.5rem 0 .5rem">Ársroknskapur</p>
-            <div class="req-list">
-              <div class="req-item">
-                <span class="req-tick" />
-                <span>Seinasti ársroknskapur ella YTD — geiri 2</span>
+          <section class="wizard-panel upload-panel">
+            <div class="upload-panel-heading">
+              <div>
+                <h2>Ársroknskapur</h2>
+                <p>Seinasti ársroknskapur ella YTD, tí vinnugreinin krevur eyka skjalprógv.</p>
               </div>
+              {docChip("annual_accounts") && <span class="upload-done">Klárt</span>}
             </div>
-            {docChip("annual_accounts") && (
-              <div class="file-chip" style="margin-bottom:.75rem">
+            {docChip("annual_accounts") ? (
+              <div class="file-chip is-complete">
+                <span class="file-chip-check" aria-hidden="true">✓</span>
                 <span class="file-chip-name">{docChip("annual_accounts")?.file_name}</span>
               </div>
+            ) : (
+              <form method="POST" action={uploadAction} enctype="multipart/form-data">
+                <input type="hidden" name="kind" value="annual_accounts" />
+                <input type="hidden" name="step" value="skjol" />
+                <Dropzone title="Vel ársroknskap" />
+                <button class="btn upload-submit" type="submit">Legg upp</button>
+              </form>
             )}
-            <form method="POST" action={uploadAction} enctype="multipart/form-data">
-              <input type="hidden" name="kind" value="annual_accounts" />
-              <input type="hidden" name="step" value="skjol" />
-              <Dropzone title="Ársroknskapur" />
-              <button class="btn" type="submit" style="margin-top:.75rem">Legg upp</button>
-            </form>
-          </>
+          </section>
         )}
-      </>
+      </div>
     )
   }
 
   {
     stig === "undirskriva" && (
-      <>
+      <div class="wizard-stack">
         {!swedbank && app.recommended_acquirer && (
-          <form id="wizard-form" method="POST" action={formAction}>
+          <form method="POST" action={formAction} class="wizard-panel">
             <input type="hidden" name="step" value="undirskriva" />
             <input type="hidden" name="mode" value="acknowledge" />
-            <p class="wizard-why">{fo.onboarding.noSwedbankPdf}</p>
+            <h2>Vit finna eina aðra leið</h2>
+            <p class="wizard-section-copy">{fo.onboarding.noSwedbankPdf}</p>
             <p class="field-hint">{app.screening_reason}</p>
+            <button class="btn btn-primary signing-action" type="submit">
+              Eg skilji — halt áfram
+            </button>
           </form>
         )}
 
         {swedbank && (
           <>
-            {!fill.ok && <p class="field-error">{fill.reason}</p>}
-            {fill.ok && (
-              <iframe
-                title="FO-avtalan"
-                src={`/api/umbon/${id}/avtalan.pdf${q}`}
-                style="width:100%; height:22rem; border:1px solid var(--color-line); border-radius: var(--radius-panel); background: var(--color-surface-1); margin-bottom:1rem"
-              />
-            )}
-            {!send.ok && <p class="field-hint" style="margin-bottom:1rem">{send.reason}</p>}
-
-            <form method="POST" action={`/api/umbon/${id}/skriva${q}`} style="margin-bottom:1.25rem">
-              <button class="btn btn-primary" type="submit" disabled={!send.ok}>
-                Send til Samleikin
-              </button>
-            </form>
-
-            <p class="field-label">{fo.onboarding.wetInk}</p>
-            {docChip("agreement") && (
-              <div class="file-chip" style="margin:.5rem 0">
-                <span class="file-chip-name">{docChip("agreement")?.file_name}</span>
+            <section class="wizard-panel agreement-panel">
+              <div class="wizard-panel-heading">
+                <div>
+                  <h2>Avtalan hjá tykkum</h2>
+                  <p>Navn, eigarar, FO og rætti príslistin eru fylt frammanundan.</p>
+                </div>
               </div>
-            )}
-            <form method="POST" action={uploadAction} enctype="multipart/form-data">
-              <input type="hidden" name="kind" value="agreement" />
-              <input type="hidden" name="step" value="undirskriva" />
-              <Dropzone title="Undirskrivað avtalan" />
-              <button class="btn" type="submit" style="margin-top:.5rem">Legg avtalu upp</button>
-            </form>
-            {docChip("photo_id") && (
-              <div class="file-chip" style="margin:.75rem 0 .5rem">
-                <span class="file-chip-name">{docChip("photo_id")?.file_name}</span>
-              </div>
-            )}
-            <form method="POST" action={uploadAction} enctype="multipart/form-data" style="margin-top:.75rem">
-              <input type="hidden" name="kind" value="photo_id" />
-              <input type="hidden" name="step" value="undirskriva" />
-              <Dropzone title="Persónsprógv" accept="image/jpeg,image/png,application/pdf" />
-              <button class="btn" type="submit" style="margin-top:.5rem">Legg persónsprógv upp</button>
-            </form>
+              {!fill.ok && <div class="wizard-alert is-error">{fill.reason}</div>}
+              {fill.ok && (
+                <iframe
+                  class="agreement-preview"
+                  title="FO-avtalan"
+                  src={`/api/umbon/${id}/avtalan.pdf${q}`}
+                />
+              )}
+            </section>
 
-            <form id="wizard-form" method="POST" action={formAction}>
-              <input type="hidden" name="step" value="undirskriva" />
-              <input type="hidden" name="mode" value="wet_ink" />
-            </form>
+            <section class="wizard-panel signing-panel">
+              <div class="task-heading">
+                <span class="task-number" aria-hidden="true">◇</span>
+                <div>
+                  <h2>Undirskriva við Samleikanum</h2>
+                  <p>Samleikin váttar bæði undirskriftina og P-talið hjá undirskrivaranum.</p>
+                </div>
+              </div>
+              {!send.ok && <p class="field-hint signing-note">{send.reason}</p>}
+              <form method="POST" action={`/api/umbon/${id}/skriva${q}`}>
+                <button class="btn btn-primary signing-action" type="submit" disabled={!send.ok}>
+                  Far til Samleikan
+                </button>
+              </form>
+            </section>
+
+            <details class="wizard-panel wet-ink">
+              <summary>Eg vil heldur undirskriva á pappíri</summary>
+              <p class="field-hint">{fo.onboarding.wetInk}</p>
+
+              {docChip("agreement") ? (
+                <div class="file-chip is-complete">
+                  <span class="file-chip-check" aria-hidden="true">✓</span>
+                  <span class="file-chip-name">{docChip("agreement")?.file_name}</span>
+                </div>
+              ) : (
+                <form method="POST" action={uploadAction} enctype="multipart/form-data">
+                  <input type="hidden" name="kind" value="agreement" />
+                  <input type="hidden" name="step" value="undirskriva" />
+                  <Dropzone title="Vel undirskrivaðu avtaluna" />
+                  <button class="btn upload-submit" type="submit">Legg avtalu upp</button>
+                </form>
+              )}
+
+              {docChip("photo_id") ? (
+                <div class="file-chip is-complete">
+                  <span class="file-chip-check" aria-hidden="true">✓</span>
+                  <span class="file-chip-name">{docChip("photo_id")?.file_name}</span>
+                </div>
+              ) : (
+                <form method="POST" action={uploadAction} enctype="multipart/form-data">
+                  <input type="hidden" name="kind" value="photo_id" />
+                  <input type="hidden" name="step" value="undirskriva" />
+                  <Dropzone title="Vel persónsprógv" accept="image/jpeg,image/png,application/pdf" />
+                  <button class="btn upload-submit" type="submit">Legg persónsprógv upp</button>
+                </form>
+              )}
+
+              {docChip("agreement") && docChip("photo_id") && (
+                <form method="POST" action={formAction}>
+                  <input type="hidden" name="step" value="undirskriva" />
+                  <input type="hidden" name="mode" value="wet_ink" />
+                  <button class="btn signing-action" type="submit">Send pappírsavtaluna</button>
+                </form>
+              )}
+            </details>
           </>
         )}
-      </>
+      </div>
     )
   }
 
@@ -431,21 +819,120 @@ const hideContinue = stig === "bida";
 {
   stig === "eigarar" && (
     <script is:inline>
+      const ownerList = document.getElementById("owners");
+
+      function renumberOwners() {
+        const cards = ownerList?.querySelectorAll("[data-owner-card]") ?? [];
+        cards.forEach((card, index) => {
+          const number = card.querySelector(".owner-card-heading .tnum");
+          const checkbox = card.querySelector('input[name="owner_signatory"]');
+          if (number) number.textContent = String(index + 1);
+          if (checkbox) checkbox.value = String(index);
+          card.querySelector(".owner-remove")?.toggleAttribute("hidden", cards.length === 1);
+        });
+      }
+
       document.getElementById("add-owner")?.addEventListener("click", () => {
         const list = document.getElementById("owners");
-        const cards = list?.querySelectorAll(".owner-card");
+        const cards = list?.querySelectorAll("[data-owner-card]");
         const first = cards?.[0];
         if (!list || !first) return;
         const clone = first.cloneNode(true);
         clone.querySelectorAll("input").forEach((input) => {
           if (input.type === "checkbox") {
             input.checked = false;
-            input.value = String(cards.length);
           } else {
             input.value = "";
           }
         });
         list.appendChild(clone);
+        renumberOwners();
+        clone.querySelector('input[name="owner_name"]')?.focus();
+      });
+
+      ownerList?.addEventListener("click", (event) => {
+        const button = event.target.closest(".owner-remove");
+        if (!button || ownerList.querySelectorAll("[data-owner-card]").length === 1) return;
+        button.closest("[data-owner-card]")?.remove();
+        renumberOwners();
+      });
+
+      renumberOwners();
+    </script>
+  )
+}
+
+{
+  stig === "felag" && !selectedCompany && !manualCompany && (
+    <script is:inline>
+      const search = document.getElementById("eyga-search");
+      const resultList = document.getElementById("eyga-results");
+      let searchTimer;
+      let searchSequence = 0;
+
+      function resultRow(result) {
+        const link = document.createElement("a");
+        link.className = "registry-result";
+        link.href = search.dataset.resultBase.replace("__ID__", encodeURIComponent(result.id));
+
+        const avatar = document.createElement("span");
+        avatar.className = "registry-avatar";
+        avatar.setAttribute("aria-hidden", "true");
+        avatar.textContent = result.companyType;
+
+        const copy = document.createElement("span");
+        copy.className = "registry-result-copy";
+        const name = document.createElement("strong");
+        name.textContent = result.name;
+        const meta = document.createElement("span");
+        meta.textContent = `${result.location} · skrásetingarnr. ${result.registryNumber}`;
+        copy.append(name, meta);
+
+        const status = document.createElement("span");
+        status.className = `registry-status${result.status === "virkid" ? "" : " is-warning"}`;
+        status.textContent = result.statusLabel;
+
+        const chevron = document.createElement("span");
+        chevron.className = "registry-chevron";
+        chevron.setAttribute("aria-hidden", "true");
+        chevron.textContent = "›";
+
+        link.append(avatar, copy, status, chevron);
+        return link;
+      }
+
+      search?.addEventListener("input", () => {
+        clearTimeout(searchTimer);
+        const query = search.value.trim();
+        if (query.length < 2) {
+          resultList?.replaceChildren();
+          return;
+        }
+        searchTimer = setTimeout(async () => {
+          const sequence = ++searchSequence;
+          resultList?.setAttribute("aria-busy", "true");
+          try {
+            const response = await fetch(`/api/eyga/leita?q=${encodeURIComponent(query)}`);
+            const payload = await response.json();
+            if (sequence !== searchSequence || !resultList) return;
+            if (payload.results?.length) {
+              resultList.replaceChildren(...payload.results.map(resultRow));
+            } else {
+              const empty = document.createElement("p");
+              empty.className = "registry-empty";
+              empty.textContent = payload.error ?? "Einki felag funnið.";
+              resultList.replaceChildren(empty);
+            }
+          } catch {
+            if (sequence !== searchSequence || !resultList) return;
+            const empty = document.createElement("p");
+            empty.className = "registry-empty";
+            empty.textContent = "Eyga svarar ikki beint nú.";
+            resultList.replaceChildren(empty);
+          } finally {
+            resultList?.removeAttribute("aria-busy");
+          }
+        }, 180);
       });
     </script>
   )

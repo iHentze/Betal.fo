@@ -3,6 +3,7 @@ import { freshDatabase, seedMerchant } from "./helpers/sqlite";
 import {
   getOrCreateApplication,
   loadPack,
+  saveBusinessProfile,
   saveCompany,
   saveFinances,
   saveOwners,
@@ -34,6 +35,13 @@ function emptyPack(overrides: Partial<ApplicationPack["application"]> = {}): App
       address_line_two: null,
       postal_code: "100",
       city: "Tórshavn",
+      company_type: "P/F Partafelag",
+      registry_source: "manual",
+      registry_id: null,
+      registry_status: null,
+      registry_checked_at_ms: null,
+      registry_snapshot: null,
+      company_details_confirmed: 1,
       website: null,
       sells: "Kaffi",
       vertical_key: "cafe",
@@ -126,32 +134,32 @@ describe("wizard resume", () => {
     await saveCompany(db, app.id, {
       legal_name: "Handil P/F",
       v_tal: "123456",
+      company_type: "P/F Partafelag",
       address_line_one: "Gongin 1",
       postal_code: "100",
       city: "Tórshavn",
-      sells: "Kaffi",
     });
     pack = await loadPack(db, app.id);
     expect(firstIncompleteStep(pack!)).toBe("vinnugrein");
 
-    await saveVertical(db, app.id, "cafe", "test@betal.fo");
+    await saveBusinessProfile(db, app.id, "cafe", "Kaffi og køkur", "https://handil.fo", "test@betal.fo");
     pack = await loadPack(db, app.id);
     expect(firstIncompleteStep(pack!)).toBe("eigarar");
     expect(pack!.application.recommended_acquirer).toBe("swedbank");
   });
 
-  it("requires a signatory before owners is complete", async () => {
+  it("requires a signatory but gets P-tal from Samleikin later", async () => {
     const db = freshDatabase();
     seedMerchant(db);
     const app = await getOrCreateApplication(db, "m1");
     await saveOwners(db, app.id, [
-      { name: "Anna", p_tal: "010101123", is_signatory: false },
+      { name: "Anna", is_signatory: false },
     ]);
     const pack = await loadPack(db, app.id);
     expect(isStepComplete("eigarar", pack!)).toBe(false);
 
     await saveOwners(db, app.id, [
-      { name: "Anna", p_tal: "010101123", is_signatory: true },
+      { name: "Anna", is_signatory: true },
     ]);
     const next = await loadPack(db, app.id);
     expect(isStepComplete("eigarar", next!)).toBe(true);

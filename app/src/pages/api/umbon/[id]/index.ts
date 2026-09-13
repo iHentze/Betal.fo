@@ -5,11 +5,13 @@ import {
   acknowledgeReroute,
   markWetInk,
   saveBank,
+  saveBusinessProfile,
   saveCompany,
+  saveEygaCompany,
   saveFinances,
   saveOwners,
-  saveVertical,
 } from "~/lib/onboarding/application";
+import { getEygaCompany } from "~/lib/onboarding/eyga";
 import { firstIncompleteStep, isStepSlug, STEP_SLUGS } from "~/lib/onboarding/steps";
 import type { FinanceFlag } from "~/lib/onboarding/screening";
 
@@ -48,40 +50,64 @@ export const POST: APIRoute = async ({ params, request, locals, url }) => {
 
   try {
     if (step === "felag") {
-      const legal_name = String(form.get("legal_name") ?? "").trim();
       const v_tal = String(form.get("v_tal") ?? "").trim();
-      const address_line_one = String(form.get("address_line_one") ?? "").trim();
-      const postal_code = String(form.get("postal_code") ?? "").trim();
-      const city = String(form.get("city") ?? "").trim();
-      const sells = String(form.get("sells") ?? "").trim();
-      if (!legal_name || !v_tal || !address_line_one || !postal_code || !city || !sells) {
-        return fail(here(step), "Útfyll navn, V-tal, adressu og hvat tit selja");
+      const confirmed = form.get("company_confirmed") === "1";
+      if (!v_tal || !confirmed) {
+        return fail(here(step), "Vátta felagið og skriva V-tal");
       }
-      await saveCompany(env.DB, id, {
-        legal_name,
-        v_tal,
-        address_line_one,
-        address_line_two: String(form.get("address_line_two") ?? ""),
-        postal_code,
-        city,
-        website: String(form.get("website") ?? ""),
-        sells,
-      });
+
+      const registryId = String(form.get("registry_id") ?? "").trim();
+      if (registryId) {
+        const company = await getEygaCompany(env, registryId);
+        if (company.status !== "active") {
+          return fail(here(step), "Felagið stendur ikki sum virkið á Eyga");
+        }
+        if (!company.companyType || !company.address || !company.postalCode || !company.city) {
+          return fail(here(step), "Eyga manglar felagsslag ella fulla adressu");
+        }
+        await saveEygaCompany(env.DB, id, company, v_tal);
+      } else {
+        const legal_name = String(form.get("legal_name") ?? "").trim();
+        const company_type = String(form.get("company_type") ?? "").trim();
+        const address_line_one = String(form.get("address_line_one") ?? "").trim();
+        const postal_code = String(form.get("postal_code") ?? "").trim();
+        const city = String(form.get("city") ?? "").trim();
+        if (!legal_name || !company_type || !address_line_one || !postal_code || !city) {
+          return fail(here(step), "Útfyll navn, felagsslag, V-tal og adressu");
+        }
+        await saveCompany(env.DB, id, {
+          legal_name,
+          v_tal,
+          company_type,
+          address_line_one,
+          address_line_two: String(form.get("address_line_two") ?? ""),
+          postal_code,
+          city,
+        });
+      }
     } else if (step === "vinnugrein") {
       const key = String(form.get("vertical_key") ?? "").trim();
-      if (!key) return fail(here(step), "Vel eina vinnugrein");
-      await saveVertical(env.DB, id, key, actor.email);
+      const sells = String(form.get("sells") ?? "").trim();
+      if (!key || !sells) {
+        return fail(here(step), "Vel eina vinnugrein og greið stutt frá, hvat tit selja");
+      }
+      await saveBusinessProfile(
+        env.DB,
+        id,
+        key,
+        sells,
+        String(form.get("website") ?? ""),
+        actor.email,
+      );
     } else if (step === "eigarar") {
       const names = form.getAll("owner_name").map((v) => String(v));
       const emails = form.getAll("owner_email").map((v) => String(v));
-      const ptals = form.getAll("owner_p_tal").map((v) => String(v));
       const roles = form.getAll("owner_role").map((v) => String(v));
       const bps = form.getAll("owner_bps").map((v) => String(v));
       const signatory = new Set(form.getAll("owner_signatory").map((v) => String(v)));
       const owners = names.map((name, index) => ({
         name,
         email: emails[index],
-        p_tal: ptals[index],
         role: roles[index],
         ownership_bps: bps[index] ? Math.round(Number(bps[index]) * 100) : null,
         is_signatory: signatory.has(String(index)),
@@ -102,8 +128,22 @@ export const POST: APIRoute = async ({ params, request, locals, url }) => {
       const account = String(form.get("bank_account") ?? "").trim();
       if (!account) return fail(here(step), "Skriva kontunummar");
       await saveBank(env.DB, id, account);
+      if (!pack.application.bank_account) {
+        return redirectTo(`${here(step)}${here(step).includes("?") ? "&" : "?"}klárt=bankaskjal`);
+      }
+      const hasConfirmation = pack.documents.some(
+        (document) => document.kind === "bank_confirmation" && document.byte_size,
+      );
+      if (!hasConfirmation) {
+        return fail(here(step), "Tak bankaskjalið niður og legg stemplaða skjalið upp");
+      }
     } else if (step === "skjol") {
-      // Documents upload on their own route; continue just advances.
+      const required = ["company_registration", "owners_book"];
+      if (pack.application.extra_docs_required) required.push("annual_accounts");
+      const missing = required.some(
+        (kind) => !pack.documents.some((document) => document.kind === kind && document.byte_size),
+      );
+      if (missing) return fail(here(step), "Legg øll kravdu skjølini upp, áðrenn tú heldur fram");
     } else if (step === "undirskriva") {
       const mode = String(form.get("mode") ?? "");
       if (mode === "acknowledge") {

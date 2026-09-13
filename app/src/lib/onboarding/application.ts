@@ -4,6 +4,7 @@ import { upsertAcquiringApplication } from "../ops";
 import { screenApplication, type Acquirer, type FinanceFlag } from "./screening";
 import { verticalByKey } from "./verticals";
 import { firstIncompleteStep, missingDocKinds, type StepSlug } from "./steps";
+import type { EygaCompany } from "./eyga";
 
 export interface OnboardingApplication {
   id: string;
@@ -19,6 +20,13 @@ export interface OnboardingApplication {
   address_line_two: string | null;
   postal_code: string | null;
   city: string | null;
+  company_type: string | null;
+  registry_source: string | null;
+  registry_id: string | null;
+  registry_status: string | null;
+  registry_checked_at_ms: number | null;
+  registry_snapshot: string | null;
+  company_details_confirmed: number;
   website: string | null;
   sells: string | null;
   vertical_key: string | null;
@@ -309,12 +317,11 @@ export async function saveCompany(
   fields: {
     legal_name: string;
     v_tal: string;
+    company_type: string;
     address_line_one: string;
     address_line_two?: string;
     postal_code: string;
     city: string;
-    website?: string;
-    sells: string;
   },
   now: () => number = () => Date.now(),
 ): Promise<void> {
@@ -322,8 +329,10 @@ export async function saveCompany(
     .prepare(
       `UPDATE onboarding_application
           SET legal_name = ?2, v_tal = ?3, address_line_one = ?4, address_line_two = ?5,
-              postal_code = ?6, city = ?7, website = ?8, sells = ?9, country_code = 'FO',
-              updated_at_ms = ?10
+              postal_code = ?6, city = ?7, company_type = ?8, country_code = 'FO',
+              registry_source = 'manual', registry_id = NULL, registry_status = NULL,
+              registry_checked_at_ms = NULL, registry_snapshot = NULL,
+              company_details_confirmed = 1, updated_at_ms = ?9
         WHERE id = ?1`,
     )
     .bind(
@@ -334,17 +343,53 @@ export async function saveCompany(
       fields.address_line_two?.trim() || null,
       fields.postal_code.trim(),
       fields.city.trim(),
-      fields.website?.trim() || null,
-      fields.sells.trim(),
+      fields.company_type.trim(),
       now(),
     )
     .run();
 }
 
-export async function saveVertical(
+/** Persist the public registry record exactly as it was confirmed. */
+export async function saveEygaCompany(
+  db: Database,
+  id: string,
+  company: EygaCompany,
+  vTal: string,
+  now: () => number = () => Date.now(),
+): Promise<void> {
+  await db
+    .prepare(
+      `UPDATE onboarding_application
+          SET legal_name = ?2, v_tal = ?3, address_line_one = ?4,
+              address_line_two = NULL, postal_code = ?5, city = ?6,
+              company_type = ?7, country_code = 'FO',
+              registry_source = 'eyga', registry_id = ?8, registry_status = ?9,
+              registry_checked_at_ms = ?10, registry_snapshot = ?11,
+              company_details_confirmed = 1, updated_at_ms = ?10
+        WHERE id = ?1`,
+    )
+    .bind(
+      id,
+      company.name,
+      vTal.trim(),
+      company.address || null,
+      company.postalCode,
+      company.city,
+      company.companyType,
+      company.id,
+      company.status,
+      now(),
+      JSON.stringify(company),
+    )
+    .run();
+}
+
+export async function saveBusinessProfile(
   db: Database,
   id: string,
   verticalKey: string,
+  sells: string,
+  website: string,
   actorEmail: string | null,
   now: () => number = () => Date.now(),
 ): Promise<void> {
@@ -354,13 +399,42 @@ export async function saveVertical(
   await db
     .prepare(
       `UPDATE onboarding_application
-          SET vertical_key = ?2, vertical_sector = ?3, updated_at_ms = ?4
+          SET vertical_key = ?2, vertical_sector = ?3, sells = ?4, website = ?5,
+              updated_at_ms = ?6
         WHERE id = ?1`,
     )
-    .bind(id, vertical.key, vertical.sector, now())
+    .bind(
+      id,
+      vertical.key,
+      vertical.sector,
+      sells.trim(),
+      website.trim() || null,
+      now(),
+    )
     .run();
 
   await applyScreening(db, id, actorEmail, now);
+}
+
+/** Kept for staff/tests that only change the screening category. */
+export async function saveVertical(
+  db: Database,
+  id: string,
+  verticalKey: string,
+  actorEmail: string | null,
+  now: () => number = () => Date.now(),
+): Promise<void> {
+  const app = await getApplication(db, id);
+  if (!app) throw new Error("Umsókn ikki funnin");
+  await saveBusinessProfile(
+    db,
+    id,
+    verticalKey,
+    app.sells ?? "",
+    app.website ?? "",
+    actorEmail,
+    now,
+  );
 }
 
 export async function saveOwners(

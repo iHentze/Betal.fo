@@ -16,6 +16,7 @@ import {
   financeStatus,
   sectorStatus,
 } from "~/lib/status";
+import { parseEygaSnapshot } from "~/lib/onboarding/eyga";
 
 export const prerender = false;
 
@@ -31,6 +32,7 @@ const nav = navFor(actor);
 const missing = missingDocKinds(pack);
 const error = Astro.url.searchParams.get("feilur");
 const wizard = wizardPath(id, "felag", actor, app.merchant_id);
+const registry = parseEygaSnapshot(app.registry_snapshot);
 const merchant = await env.DB
   .prepare(`SELECT name FROM merchant WHERE id = ?1`)
   .bind(app.merchant_id)
@@ -101,13 +103,48 @@ const merchant = await env.DB
 
     <Settings title="Felag">
       <div style="padding:.875rem; display:grid; gap:.35rem; font-size: var(--text-sm)">
-        <div>{app.legal_name} · V-tal <span class="tnum">{app.v_tal ?? "—"}</span></div>
+        <div>
+          {app.legal_name}
+          {app.company_type ? ` · ${app.company_type}` : ""}
+          · V-tal <span class="tnum">{app.v_tal ?? "—"}</span>
+        </div>
         <div style="color: var(--color-ink-muted)">
           {app.address_line_one}, {app.postal_code} {app.city}
         </div>
         <div style="color: var(--color-ink-muted)">{app.sells}</div>
+        {registry && (
+          <div style="margin-top:.5rem; display:flex; gap:.5rem; align-items:center">
+            <span class="source-badge">eyga.fo</span>
+            <a href={registry.sourceUrl} target="_blank" rel="noreferrer">
+              Skrásetingarnr. <span class="tnum">{registry.registryNumber}</span> ↗
+            </a>
+          </div>
+        )}
       </div>
     </Settings>
+
+    {registry && (
+      <Settings
+        title="Alment eigarayvirlit"
+        description="Snapshot frá Eyga, tá ið handilin váttaði felagið."
+      >
+        <div style="padding:0 .875rem .875rem">
+          {(registry.beneficialOwners.length > 0
+            ? registry.beneficialOwners
+            : registry.owners).map((owner) => (
+            <div class="registry-person">
+              <span>
+                <strong>{owner.name}</strong>
+                {owner.description && <small>{owner.description}</small>}
+              </span>
+              {owner.ownershipBps != null && (
+                <span class="tnum">{(owner.ownershipBps / 100).toLocaleString("fo-FO")} %</span>
+              )}
+            </div>
+          ))}
+        </div>
+      </Settings>
+    )}
 
     <Settings title="Eigarar">
       {pack.owners.length === 0 ? (
@@ -118,8 +155,8 @@ const merchant = await env.DB
             <div>
               <div class="settings-row-title">{owner.name}</div>
               <div class="settings-row-description tnum">
-                {owner.p_tal ?? "—"} · {owner.email ?? "—"}
-                {owner.is_signatory ? " · undirskrivari" : ""}
+                {owner.email ?? "Eingin teldupostur"}
+                {owner.is_signatory ? " · undirskrivari · P-tal frá Samleikanum" : ""}
               </div>
             </div>
           </div>

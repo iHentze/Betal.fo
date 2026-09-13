@@ -79,8 +79,10 @@ Onboarding states reuse those tones. They do not add hues.
 
 ## Wizard chrome
 
-`.wizard` / `.wizard-rail` / `.wizard-main` / `.wizard-foot` — dedicated document, no
-app sidebar. On `max-width: 48rem` the rail hides and the top bar shows `3/8 · Eigarar`.
+`.wizard` / `.wizard-main` / `.wizard-foot` — dedicated document, no app sidebar and
+no permanent step rail. Like Revolut Business, one task sits in a centered column;
+the header carries quiet `3/8 · Eigarar` progress and the portal checklist is the
+overview. The fixed footer lines up with the form instead of spanning an empty canvas.
 
 Astro wrappers: `WizardLayout`, `StepNav`, `Field`, `ChoiceCard`, `Dropzone`,
 `Checklist`. Pages do not paste inline label styles.

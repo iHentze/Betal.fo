@@ -26,6 +26,11 @@ export interface QueueProducer<T> {
   send(message: T, options?: { contentType?: string }): Promise<void>;
 }
 
+/** Structural type shared by Cloudflare service bindings and test doubles. */
+export interface ServiceFetcher {
+  fetch(input: Request | string, init?: RequestInit): Promise<Response>;
+}
+
 export interface IngestMessage {
   deliveryId: string;
 }
@@ -45,4 +50,9 @@ export interface Env {
   SKRIVA_EMAIL?: string;
   SKRIVA_PASSWORD?: string;
   SKRIVA_TENANT_ID?: string;
+  /** Private Worker-to-Worker binding to the Eyga v1 company API. */
+  EYGA_API?: ServiceFetcher;
+  /** URL fallback for local/staging only. */
+  EYGA_API_BASE_URL?: string;
+  EYGA_API_TOKEN?: string;
 }

@@ -477,11 +477,12 @@ VALUES (${q(sha256(ONBOARD_TOKEN))}, ${q(ONBOARD_USER)}, ${farFuture}, ${TODAY})
 
 add(`INSERT INTO onboarding_application (
   id, merchant_id, state, country_code, legal_name, v_tal, address_line_one,
-  postal_code, city, website, sells, created_at_ms, updated_at_ms
+  postal_code, city, company_type, registry_source, company_details_confirmed,
+  website, sells, created_at_ms, updated_at_ms
 ) VALUES (
   ${q(ONBOARD_APP)}, ${q(ONBOARD_ID)}, 'draft', 'FO',
   'Handilin við Bryggjuni Sp/f', '654321', 'Bryggjubakki 4', '100', 'Tórshavn',
-  'https://handilin.fo', 'Góðar vørur av bryggjuni',
+  'Sp/f', 'manual', 1, 'https://handilin.fo', 'Góðar vørur av bryggjuni',
   ${Date.UTC(2026, 8, 10)}, ${Date.UTC(2026, 8, 12)}
 );`);
 
