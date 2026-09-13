@@ -82,10 +82,20 @@ const merchant = await env.DB
   <div style="padding:1.25rem .875rem; max-width:44rem">
     <Settings title="Skoðan" description="Sama regla hvørja ferð. Starvsfólk kunnu skriva yvir, men tað verður skrásett.">
       <div style="padding:.875rem; display:flex; flex-wrap:wrap; gap:.5rem">
-        <StatusBadge status={sectorStatus(app.vertical_sector)} variant="pill" />
-        <StatusBadge status={financeStatus(app.equity)} variant="pill" />
-        <StatusBadge status={financeStatus(app.operations)} variant="pill" />
-        <StatusBadge status={acquirerStatus(app.chosen_acquirer ?? app.recommended_acquirer)} variant="pill" />
+        {app.vertical_sector != null && (
+          <StatusBadge status={sectorStatus(app.vertical_sector)} variant="pill" />
+        )}
+        {app.equity && <StatusBadge status={financeStatus(app.equity)} variant="pill" />}
+        {app.operations && <StatusBadge status={financeStatus(app.operations)} variant="pill" />}
+        {(app.chosen_acquirer || app.recommended_acquirer) && (
+          <StatusBadge
+            status={acquirerStatus(app.chosen_acquirer ?? app.recommended_acquirer)}
+            variant="pill"
+          />
+        )}
+        {!app.equity && !app.operations && app.vertical_sector == null && (
+          <span class="field-hint">Skoðan ikki koyrd — vinnugrein og roknskapur vantar</span>
+        )}
       </div>
     </Settings>
 
@@ -140,7 +150,7 @@ const merchant = await env.DB
         {pack.events.map((event) => (
           <div class="timeline-item">
             <span class="timeline-label">
-              {event.kind}
+              {fo.onboarding.events[event.kind as keyof typeof fo.onboarding.events] ?? event.kind}
               {event.actor_email ? ` · ${event.actor_email}` : ""}
             </span>
             <span class="timeline-meta tnum">{formatDateTime(event.at_ms)}</span>

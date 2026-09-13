@@ -413,7 +413,9 @@ const hideContinue = stig === "bida";
         <div class="timeline" style="margin-top:1.5rem">
           {pack.events.map((event) => (
             <div class="timeline-item">
-              <span class="timeline-label">{event.kind}</span>
+              <span class="timeline-label">
+                {fo.onboarding.events[event.kind as keyof typeof fo.onboarding.events] ?? event.kind}
+              </span>
               <span class="timeline-meta tnum">{formatDateTime(event.at_ms)}</span>
             </div>
           ))}

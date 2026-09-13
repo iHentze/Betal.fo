@@ -1549,6 +1549,10 @@
     display: block;
   }
 
+  .wizard-kicker {
+    display: none;
+  }
+
   .wizard-main {
     padding: 1.25rem 0.875rem 2rem;
   }

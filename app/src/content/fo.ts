@@ -214,6 +214,19 @@ export const fo = {
     waitSwedbank: "Swedbank hevur pakkan. Vit siga tær, tá ið teir hava tikið støðu.",
     waitClearhaus: "Vit rætta hetta móti Clearhaus. Tú skalt ikki senda nakað til Swedbank.",
     waitStaff: "Starvsfólk hjá Betal lesa pakkan. Vit skriva, um okkurt vantar.",
+    events: {
+      created: "Umsókn stovnað",
+      screened: "Skoðan",
+      document_uploaded: "Skjal lagt upp",
+      acknowledged_reroute: "Clearhaus-leið váttað",
+      wet_ink: "Undirskrivað á pappír",
+      submitted: "Sent til innloysara",
+      rerouted: "Flutt innloysara",
+      rejected: "Avvíst",
+      docs_requested: "Fleiri skjøl biðið um",
+      staff_sector: "Geiri sett við hond",
+      skriva_blocked_no_tenant: "Skriva ikki tøkt",
+    },
   },
 } as const;
 
