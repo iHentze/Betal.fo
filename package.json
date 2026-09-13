@@ -10,6 +10,7 @@
     "preview": "astro preview",
     "spell": "cspell --no-progress \"src/**/*.{astro,ts,css}\" \"*.{md,mjs,json}\"",
     "spell:build": "node scripts/build-fo-dictionary.mjs",
+    "spell:audit": "node scripts/audit-fo-copy.mjs",
     "deploy": "astro build && wrangler deploy"
   },
   "dependencies": {
