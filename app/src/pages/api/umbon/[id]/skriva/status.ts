@@ -5,6 +5,7 @@ import { putDocument } from "~/lib/onboarding/documents";
 import { recordEvent } from "~/lib/onboarding/application";
 import { SkrivaClient, SkrivaError, skrivaConfig } from "~/lib/onboarding/skriva";
 import { storeSignedDocumentInstance } from "~/lib/onboarding/document-instances";
+import { encryptPersonalIdentificationNumber } from "~/lib/onboarding/identity-crypto";
 
 export const prerender = false;
 
@@ -48,17 +49,29 @@ export const POST: APIRoute = async ({ params, locals, url }) => {
     for (const row of rows) {
       const status = await client.signingStatus(row.signer_token!);
       statuses.push({ row, status });
+      let identity: { ciphertext: string; last4: string } | null = null;
+      if (status.personalIdentificationNumber) {
+        if (!env.IDENTITY_ENCRYPTION_KEY) {
+          throw new Error("Dátulykil til Samleikan manglar");
+        }
+        identity = await encryptPersonalIdentificationNumber(
+          status.personalIdentificationNumber,
+          env.IDENTITY_ENCRYPTION_KEY,
+        );
+      }
       await env.DB
         .prepare(
           `UPDATE onboarding_signing
-           SET status = ?2, p_tal = COALESCE(?3, p_tal), last_polled_at_ms = ?4,
-               provider_status_json = ?5
+           SET status = ?2, p_tal = NULL, p_tal_ciphertext = COALESCE(?3, p_tal_ciphertext),
+               p_tal_last4 = COALESCE(?4, p_tal_last4), last_polled_at_ms = ?5,
+               provider_status_json = ?6
            WHERE id = ?1`,
         )
         .bind(
           row.id,
           status.state,
-          status.personalIdentificationNumber,
+          identity?.ciphertext,
+          identity?.last4,
           Date.now(),
           JSON.stringify(status.raw),
         )
@@ -98,6 +111,7 @@ export const POST: APIRoute = async ({ params, locals, url }) => {
         contentType: "application/pdf",
         bytes: pdf,
         uploadedBy: "skriva",
+        scanStatus: "provider_verified",
       }, { bucket: env.DOCUMENTS });
       const at = Date.now();
       await env.DB

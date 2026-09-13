@@ -131,6 +131,8 @@ ALTER TABLE onboarding_signing ADD COLUMN signing_person_id INTEGER;
 ALTER TABLE onboarding_signing ADD COLUMN document_instance_id TEXT REFERENCES document_instance (id);
 ALTER TABLE onboarding_signing ADD COLUMN provider_status_json TEXT;
 ALTER TABLE onboarding_signing ADD COLUMN expires_at_ms INTEGER;
+ALTER TABLE onboarding_signing ADD COLUMN p_tal_ciphertext TEXT;
+ALTER TABLE onboarding_signing ADD COLUMN p_tal_last4 TEXT;
 
 CREATE INDEX idx_onboarding_signing_owner
   ON onboarding_signing (application_id, owner_id, created_at_ms DESC);

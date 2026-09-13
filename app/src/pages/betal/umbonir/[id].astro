@@ -33,6 +33,21 @@ const missing = missingDocKinds(pack);
 const error = Astro.url.searchParams.get("feilur");
 const wizard = wizardPath(id, "felag", actor, app.merchant_id);
 const registry = parseEygaSnapshot(app.registry_snapshot);
+const bankEmails = await env.DB
+  .prepare(
+    `SELECT bank_email, cc_email, status, sent_at_ms, delivered_at_ms, failure_reason
+     FROM onboarding_bank_email
+     WHERE application_id = ?1 ORDER BY sent_at_ms DESC`,
+  )
+  .bind(id)
+  .all<{
+    bank_email: string;
+    cc_email: string;
+    status: string;
+    sent_at_ms: number;
+    delivered_at_ms: number | null;
+    failure_reason: string | null;
+  }>();
 const merchant = await env.DB
   .prepare(`SELECT name FROM merchant WHERE id = ?1`)
   .bind(app.merchant_id)
@@ -142,6 +157,12 @@ const merchant = await env.DB
               )}
             </div>
           ))}
+          {registry.signingRules && (
+            <div class="registry-signing-rules">
+              <strong>Tekningarregla</strong>
+              <span>{registry.signingRules}</span>
+            </div>
+          )}
         </div>
       </Settings>
     )}
@@ -157,6 +178,51 @@ const merchant = await env.DB
               <div class="settings-row-description tnum">
                 {owner.email ?? "Eingin teldupostur"}
                 {owner.is_signatory ? " · undirskrivari · P-tal frá Samleikanum" : ""}
+              </div>
+            </div>
+          </div>
+        ))
+      )}
+    </Settings>
+
+    <Settings title="Undirskriftir">
+      {pack.signings.filter((signing) => signing.provider === "skriva").length === 0 ? (
+        <div class="empty">Eingin Klintra-undirskrift stovnað</div>
+      ) : (
+        pack.signings.filter((signing) => signing.provider === "skriva").map((signing) => {
+          const owner = pack.owners.find((candidate) => candidate.id === signing.owner_id);
+          return (
+            <div class="settings-row">
+              <div>
+                <div class="settings-row-title">{owner?.name ?? "Undirskrivari"}</div>
+                <div class="settings-row-description">
+                  {signing.status}
+                  {signing.p_tal_ciphertext
+                    ? ` · P-tal váttað við Samleikanum · ••••${signing.p_tal_last4 ?? ""}`
+                    : ""}
+                </div>
+              </div>
+              {signing.signing_url && signing.status !== "signed" && (
+                <a class="btn" href={signing.signing_url} target="_blank" rel="noreferrer">
+                  Opna
+                </a>
+              )}
+            </div>
+          );
+        })
+      )}
+    </Settings>
+
+    <Settings title="Bankafyrispurningar">
+      {bankEmails.results.length === 0 ? (
+        <div class="empty">Eingin fyrispurningur sendur</div>
+      ) : (
+        bankEmails.results.map((email) => (
+          <div class="settings-row">
+            <div>
+              <div class="settings-row-title">{email.bank_email}</div>
+              <div class="settings-row-description">
+                {email.status} · CC {email.cc_email} · {formatDateTime(email.sent_at_ms)}
               </div>
             </div>
           </div>

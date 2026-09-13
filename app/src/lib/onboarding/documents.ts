@@ -20,6 +20,56 @@ export function isDocumentKind(value: string): value is DocumentKind {
   return (DOCUMENT_KINDS as readonly string[]).includes(value);
 }
 
+export type AllowedDocumentContentType =
+  | "application/pdf"
+  | "image/jpeg"
+  | "image/png";
+
+export function detectDocumentContentType(
+  value: Uint8Array,
+): AllowedDocumentContentType | null {
+  if (
+    value.byteLength >= 5 &&
+    new TextDecoder().decode(value.slice(0, 5)) === "%PDF-"
+  ) return "application/pdf";
+  if (
+    value.byteLength >= 8 &&
+    [137, 80, 78, 71, 13, 10, 26, 10].every((byte, index) => value[index] === byte)
+  ) return "image/png";
+  if (
+    value.byteLength >= 3 &&
+    value[0] === 0xff &&
+    value[1] === 0xd8 &&
+    value[2] === 0xff
+  ) return "image/jpeg";
+  return null;
+}
+
+export function validateDocumentUpload(
+  fileName: string,
+  claimedContentType: string,
+  value: Uint8Array,
+): AllowedDocumentContentType {
+  const detected = detectDocumentContentType(value);
+  if (!detected) throw new Error("Fílan er ikki ein PDF-, JPG- ella PNG-fíla");
+  const extensions: Record<AllowedDocumentContentType, RegExp> = {
+    "application/pdf": /\.pdf$/i,
+    "image/jpeg": /\.(jpe?g)$/i,
+    "image/png": /\.png$/i,
+  };
+  if (!extensions[detected].test(fileName)) {
+    throw new Error("Fílunavn og innihald samsvara ikki");
+  }
+  if (
+    claimedContentType &&
+    claimedContentType !== "application/octet-stream" &&
+    claimedContentType !== detected
+  ) {
+    throw new Error("Fíluslag og innihald samsvara ikki");
+  }
+  return detected;
+}
+
 function bytes(value: ArrayBuffer | Uint8Array): Uint8Array {
   return value instanceof Uint8Array ? value : new Uint8Array(value);
 }
@@ -46,6 +96,7 @@ export async function putDocument(
     bytes: Uint8Array;
     uploadedBy: string;
     required?: boolean;
+    scanStatus?: "basic_validated" | "provider_verified";
   },
   options: {
     now?: () => number;
@@ -92,7 +143,7 @@ export async function putDocument(
           `UPDATE onboarding_document
            SET file_name = ?2, content_type = ?3, byte_size = ?4, bytes = ?5,
                uploaded_by = ?6, uploaded_at_ms = ?7, required = ?8,
-               storage = ?9, r2_key = ?10, sha256 = ?11, scan_status = 'pending',
+               storage = ?9, r2_key = ?10, sha256 = ?11, scan_status = ?12,
                quarantined_at_ms = NULL
            WHERE id = ?1`,
         )
@@ -108,6 +159,7 @@ export async function putDocument(
           options.bucket ? "r2" : "d1",
           r2Key,
           digest,
+          input.scanStatus ?? "basic_validated",
         )
         .run();
     } else {
@@ -116,7 +168,7 @@ export async function putDocument(
           `INSERT INTO onboarding_document (
              id, application_id, kind, required, file_name, content_type, byte_size,
              bytes, uploaded_by, uploaded_at_ms, storage, r2_key, sha256, scan_status
-           ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, 'pending')`,
+           ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14)`,
         )
         .bind(
           id,
@@ -132,6 +184,7 @@ export async function putDocument(
           options.bucket ? "r2" : "d1",
           r2Key,
           digest,
+          input.scanStatus ?? "basic_validated",
         )
         .run();
     }

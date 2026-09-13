@@ -93,6 +93,19 @@ export async function createFinalSnapshot(
   if (requiredSteps.some((step) => !isStepComplete(step, input.pack))) {
     throw new Error("Umsóknin manglar upplýsingar ella skjøl");
   }
+  if (
+    input.pack.documents.some(
+      (document) =>
+        document.required &&
+        (
+          !document.sha256 ||
+          !["basic_validated", "provider_verified"].includes(document.scan_status) ||
+          document.quarantined_at_ms
+        ),
+    )
+  ) {
+    throw new Error("Eitt kravt skjal er ikki góðkent í skjalagoymsluni");
+  }
 
   const signers = input.pack.owners
     .filter((owner) => owner.is_signatory)

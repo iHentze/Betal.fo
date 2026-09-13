@@ -5,6 +5,9 @@ import {
   cleanEmailAddress,
   type BankEmailInput,
 } from "~/lib/onboarding/bank-email";
+import { applyBankEmailDeliveryEvent } from "~/lib/onboarding/email-delivery";
+import { getOrCreateApplication } from "~/lib/onboarding/application";
+import { freshDatabase, seedMerchant } from "./helpers/sqlite";
 
 const input = (overrides: Partial<BankEmailInput> = {}): BankEmailInput => ({
   from: "Betal <banki@betal.fo>",
@@ -50,5 +53,36 @@ describe("bank request transactional email", () => {
     expect(await bankRequestIdempotencyKey(input())).toBe(first);
     expect(await bankRequestIdempotencyKey(input({ to: "annar@banki.fo" }))).not.toBe(first);
     expect(first).toMatch(/^bank-request\/66666666-6666-4666-8666-666666666666\/[a-f0-9]{32}$/);
+  });
+
+  it("tracks delivered webhooks once", async () => {
+    const db = freshDatabase();
+    seedMerchant(db);
+    const app = await getOrCreateApplication(db, "m1");
+    db.raw.prepare(
+      `INSERT INTO onboarding_bank_email (
+         idempotency_key, application_id, bank_email, cc_email, provider_id,
+         sent_at_ms
+       ) VALUES ('bank-request/a1/hash', ?, 'bank@example.fo', 'owner@example.fo',
+                 'email_123', 1)`,
+    ).run(app.id);
+
+    expect(await applyBankEmailDeliveryEvent(db, {
+      eventId: "evt_1",
+      type: "email.delivered",
+      providerEmailId: "email_123",
+      receivedAtMs: 2,
+    })).toBe("applied");
+    expect(await applyBankEmailDeliveryEvent(db, {
+      eventId: "evt_1",
+      type: "email.delivered",
+      providerEmailId: "email_123",
+      receivedAtMs: 3,
+    })).toBe("duplicate");
+
+    const row = db.query<{ status: string; delivered_at_ms: number }>(
+      "SELECT status, delivered_at_ms FROM onboarding_bank_email",
+    )[0]!;
+    expect(row).toEqual({ status: "delivered", delivered_at_ms: 2 });
   });
 });

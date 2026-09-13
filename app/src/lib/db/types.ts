@@ -74,7 +74,9 @@ export interface Env {
   EYGA_API_TOKEN?: string;
   /** Resend transactional email configuration. */
   RESEND_API_KEY?: string;
+  RESEND_WEBHOOK_SECRET?: string;
   RESEND_BASE_URL?: string;
   BANK_EMAIL_FROM?: string;
   DOCUMENTS?: ObjectBucket;
+  IDENTITY_ENCRYPTION_KEY?: string;
 }

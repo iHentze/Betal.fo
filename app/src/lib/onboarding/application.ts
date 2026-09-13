@@ -93,6 +93,8 @@ export interface OnboardingSigning {
   document_instance_id: string | null;
   provider_status_json: string | null;
   expires_at_ms: number | null;
+  p_tal_ciphertext: string | null;
+  p_tal_last4: string | null;
 }
 
 export interface OnboardingEvent {

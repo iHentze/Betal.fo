@@ -21,6 +21,7 @@ APP_URL="http://localhost:4321"
 
 # Transactional bank requests. Verify betal.fo in Resend before using this sender.
 # RESEND_API_KEY=""
+# RESEND_WEBHOOK_SECRET=""
 # RESEND_BASE_URL="https://api.resend.com"
 # BANK_EMAIL_FROM="Betal <banki@betal.fo>"
 
@@ -30,3 +31,7 @@ APP_URL="http://localhost:4321"
 # SKRIVA_EMAIL=""
 # SKRIVA_PASSWORD=""
 # SKRIVA_TENANT_ID="" # optional when the user belongs to exactly one tenant
+
+# Base64-encoded 32-byte AES key for verified P-tal returned by Samleikin.
+# Generate with: openssl rand -base64 32
+# IDENTITY_ENCRYPTION_KEY=""
