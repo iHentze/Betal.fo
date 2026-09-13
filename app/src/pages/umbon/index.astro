@@ -21,3 +21,6 @@ const pack = await loadPack(env.DB, application.id);
 if (!pack) return Astro.redirect("/");
 
 return Astro.redirect(wizardPath(application.id, firstIncompleteStep(pack), actor, merchantId));
+---
+
+<p>Far til umsóknina…</p>
