@@ -701,6 +701,9 @@ export async function staffAction(
   const at = now();
 
   if (input.action === "submit") {
+    if (app.state !== "pack_ready") {
+      throw new Error("Pakkin er ikki klárur at senda");
+    }
     const acquirer = (input.acquirer ?? app.chosen_acquirer ?? app.recommended_acquirer ??
       "swedbank") as string;
     await db
@@ -764,8 +767,17 @@ export async function staffAction(
   } else {
     await db
       .prepare(
+        `UPDATE onboarding_submission_snapshot
+         SET state = 'superseded'
+         WHERE application_id = ?1 AND state = 'final'`,
+      )
+      .bind(input.applicationId)
+      .run();
+    await db
+      .prepare(
         `UPDATE onboarding_application
-            SET state = 'collecting', request_note = ?2, updated_at_ms = ?3
+            SET state = 'collecting', request_note = ?2, updated_at_ms = ?3,
+                final_snapshot_id = NULL, locked_at_ms = NULL
           WHERE id = ?1`,
       )
       .bind(input.applicationId, input.reason ?? null, at)

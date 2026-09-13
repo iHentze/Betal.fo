@@ -33,9 +33,48 @@ describe("business schema", () => {
       "onboarding_signing",
       "onboarding_event",
       "acquiring_price_list",
+      "onboarding_answer",
+      "onboarding_policy",
+      "onboarding_sector_rule",
+      "onboarding_submission_snapshot",
+      "document_template",
+      "document_instance",
+      "onboarding_bank_email",
+      "email_delivery_event",
     ]) {
       expect(tables).toContain(expected);
     }
+  });
+
+  it("seeds the hash-pinned Swedbank FO policy without inventing rates", () => {
+    const db = freshDatabase();
+    const policy = db.query<{
+      id: string;
+      active: number;
+      prohibited_source_sha256: string;
+    }>("SELECT id, active, prohibited_source_sha256 FROM onboarding_policy")[0]!;
+    expect(policy).toEqual({
+      id: "swedbank-fo-2025-12-08",
+      active: 1,
+      prohibited_source_sha256:
+        "5aee60f343b8f7322009d9ca0ec9a5f5a26c1b28770277a9ea75b8a7c83a3e22",
+    });
+    expect(db.query("SELECT * FROM onboarding_sector_rule")).toHaveLength(38);
+    expect(db.query("SELECT * FROM acquiring_price_list")).toHaveLength(0);
+  });
+
+  it("registers the exact official PDF hashes and R2 keys", () => {
+    const db = freshDatabase();
+    const templates = db.query<{ kind: string; source_sha256: string; r2_key: string }>(
+      "SELECT kind, source_sha256, r2_key FROM document_template ORDER BY kind",
+    );
+    expect(templates).toHaveLength(3);
+    expect(templates.find((template) => template.kind === "agreement"))
+      .toMatchObject({
+        source_sha256:
+          "06cfdbdb6d7d2ea023cc811d1e5b919d2686a02305f62a584e2f9a01c567fc60",
+        r2_key: "templates/swedbank/Kortindlosning-Online-FO.pdf",
+      });
   });
 
   it("extends merchant with the Faroese business fields", () => {

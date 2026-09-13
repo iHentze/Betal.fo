@@ -18,7 +18,8 @@ import {
   isStepComplete,
 } from "~/lib/onboarding/steps";
 import { canFillAgreement, canSendToSkriva, fillAgreementPdf, fillBankFormPdf } from "~/lib/onboarding/pdf";
-import { putDocument } from "~/lib/onboarding/documents";
+import { getDocumentBytes, putDocument } from "~/lib/onboarding/documents";
+import type { ObjectBucket } from "~/lib/db/types";
 import { readFileSync } from "node:fs";
 import { PRICE_CATEGORIES } from "~/lib/onboarding/swedbank";
 import type { PriceList } from "~/lib/onboarding/application";
@@ -328,6 +329,49 @@ describe("FO agreement fill", () => {
     const pack = await loadPack(db, app.id);
     expect(pack!.documents[0]?.kind).toBe("company_registration");
     expect(pack!.documents[0]?.byte_size).toBe(4);
+  });
+
+  it("stores large private documents in R2 and verifies their hash", async () => {
+    const db = freshDatabase();
+    seedMerchant(db);
+    const app = await getOrCreateApplication(db, "m1");
+    const objects = new Map<string, Uint8Array>();
+    const bucket: ObjectBucket = {
+      async put(key, value) {
+        objects.set(key, new Uint8Array(value));
+      },
+      async get(key) {
+        const value = objects.get(key);
+        return value
+          ? { async arrayBuffer() { return value.slice().buffer; } }
+          : null;
+      },
+      async delete(key) {
+        objects.delete(key);
+      },
+    };
+    const value = new Uint8Array(2_000_000).fill(7);
+    await putDocument(db, {
+      applicationId: app.id,
+      kind: "owners_book",
+      fileName: "eigarabok.pdf",
+      contentType: "application/pdf",
+      bytes: value,
+      uploadedBy: "anna@example.fo",
+    }, { bucket });
+
+    const row = db.query<{
+      storage: string;
+      bytes: Uint8Array | null;
+      r2_key: string;
+      sha256: string;
+    }>("SELECT storage, bytes, r2_key, sha256 FROM onboarding_document")[0]!;
+    expect(row.storage).toBe("r2");
+    expect(row.bytes).toBeNull();
+    expect(row.r2_key).toContain(`/owners_book/`);
+    const loaded = await getDocumentBytes(db, app.id, "owners_book", bucket);
+    expect(loaded?.bytes).toEqual(value);
+    expect(loaded?.sha256).toBe(row.sha256);
   });
 });
 

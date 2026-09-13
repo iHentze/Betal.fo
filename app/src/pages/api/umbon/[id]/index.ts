@@ -49,6 +49,13 @@ export const POST: APIRoute = async ({ params, request, locals, url }) => {
   const here = (slug: string) => wizardPath(id, slug, actor, merchantId);
 
   if (!isStepSlug(step)) return fail(here("felag"), "Ókent stig");
+  if (
+    pack.application.locked_at_ms &&
+    pack.application.state !== "collecting" &&
+    step !== "undirskriva"
+  ) {
+    return fail(here(step), "Umsóknin er læst, meðan hon verður viðgjørd");
+  }
 
   try {
     if (step === "felag") {

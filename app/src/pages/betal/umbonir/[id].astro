@@ -203,7 +203,13 @@ const merchant = await env.DB
         <Field label="Uttanveltar tilvísing" name="external_ref" />
         <Field label="Viðmerking" name="reason" type="textarea" />
         <div style="display:flex; flex-wrap:wrap; gap:.5rem">
-          <button class="btn btn-primary" type="submit" onclick="document.getElementById('staff-action').value='submit'">
+          <button
+            class="btn btn-primary"
+            type="submit"
+            disabled={app.state !== "pack_ready"}
+            title={app.state !== "pack_ready" ? "Pakkin er ikki klárur" : undefined}
+            onclick="document.getElementById('staff-action').value='submit'"
+          >
             Merk sent
           </button>
           <button class="btn" type="submit" onclick="document.getElementById('staff-action').value='reroute'">

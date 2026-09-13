@@ -12,7 +12,6 @@ import { priceListKind, screenApplication } from "~/lib/onboarding/screening";
 import { skrivaConfigured } from "~/lib/onboarding/skriva";
 import {
   STEP_SLUGS,
-  firstIncompleteStep,
   hasDocument,
   isStepComplete,
   isStepSlug,
@@ -49,16 +48,6 @@ try {
 const merchantId = pack.application.merchant_id;
 const q = handilQuery(actor, merchantId);
 const href = (slug: string) => wizardPath(id, slug, actor, merchantId);
-const first = firstIncompleteStep(pack);
-
-// Merchants may open a completed step or the first gap. Staff may open any step.
-if (actor.kind !== "staff") {
-  const requested = STEP_SLUGS.indexOf(stig);
-  const allowed = STEP_SLUGS.indexOf(first);
-  if (requested > allowed) {
-    return Astro.redirect(href(first));
-  }
-}
 
 const currentIndex = STEP_SLUGS.indexOf(stig);
 const steps = STEP_SLUGS.map((slug) => ({
@@ -76,6 +65,10 @@ const error = Astro.url.searchParams.get("feilur");
 const bankEmailSent = Astro.url.searchParams.get("sent") === "banki";
 const app = pack.application;
 const formAction = `/api/umbon/${id}${q}`;
+const autosaveAction = ["felag", "vinnugrein", "eigarar", "roknskapur", "banki"]
+  .includes(stig)
+  ? `/api/umbon/${id}/autosave${q}`
+  : undefined;
 const uploadAction = `/api/umbon/${id}/skjol${q}`;
 const backHref = currentIndex > 0 ? href(STEP_SLUGS[currentIndex - 1]!) : `/${q}`;
 const savedLabel = fo.onboarding.saved;
@@ -175,6 +168,12 @@ const owners = pack.owners.length > 0 ? pack.owners : registryOwnerSuggestions.l
 const docChip = (kind: string) => pack.documents.find((d) => d.kind === kind && d.byte_size);
 
 const hideContinue = stig === "bida";
+const applicationLocked = Boolean(
+  app.locked_at_ms &&
+  app.state !== "collecting" &&
+  stig !== "undirskriva" &&
+  stig !== "bida",
+);
 const companyFormReady = manualCompany || Boolean(selectedCompany);
 const selectedCompanyActive = selectedCompany?.status === "active";
 const selectedCompanyComplete = Boolean(
@@ -183,7 +182,7 @@ const selectedCompanyComplete = Boolean(
   selectedCompany.postalCode &&
   selectedCompany.city,
 );
-const pageFormAction = hideContinue || stig === "undirskriva"
+const pageFormAction = hideContinue || applicationLocked || stig === "undirskriva"
   || (stig === "felag" && !companyFormReady)
   || (stig === "felag" && Boolean(selectedCompany) && !selectedCompanyActive)
   || (stig === "felag" && Boolean(selectedCompany) && !selectedCompanyComplete)
@@ -237,12 +236,20 @@ if (stig === "banki" && actor.kind === "staff") {
   savedLabel={savedLabel}
   backHref={backHref}
   formAction={pageFormAction}
+  autosaveAction={autosaveAction}
   continueLabel={continueLabel}
   hideContinue={hideContinue}
 >
   {
     error && (
       <div class="wizard-alert is-error">{error}</div>
+    )
+  }
+  {
+    applicationLocked && (
+      <div class="wizard-alert">
+        Umsóknin er læst, meðan hon verður undirskrivað ella viðgjørd.
+      </div>
     )
   }
 
@@ -1182,6 +1189,15 @@ if (stig === "banki" && actor.kind === "staff") {
     )
   }
 </WizardLayout>
+
+{
+  applicationLocked && (
+    <script is:inline>
+      document.querySelectorAll("#wizard-form input, #wizard-form textarea, #wizard-form select, #wizard-form button")
+        .forEach((control) => control.disabled = true);
+    </script>
+  )
+}
 
 {
   stig === "vinnugrein" && (

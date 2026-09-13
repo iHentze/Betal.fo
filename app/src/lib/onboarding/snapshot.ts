@@ -6,6 +6,7 @@ import {
 } from "./application";
 import { sha256 } from "./documents";
 import type { DocumentTemplate } from "./swedbank";
+import { isStepComplete, type StepSlug } from "./steps";
 
 export interface SubmissionSnapshot {
   id: string;
@@ -80,6 +81,17 @@ export async function createFinalSnapshot(
   if (existing) return existing;
   if (!priceListHasRates(input.priceList)) {
     throw new Error("Príslistin er ikki góðkendur");
+  }
+  const requiredSteps: StepSlug[] = [
+    "felag",
+    "vinnugrein",
+    "eigarar",
+    "roknskapur",
+    "banki",
+    "skjol",
+  ];
+  if (requiredSteps.some((step) => !isStepComplete(step, input.pack))) {
+    throw new Error("Umsóknin manglar upplýsingar ella skjøl");
   }
 
   const signers = input.pack.owners

@@ -99,9 +99,7 @@ const checklistItems = onboardingPack
       const current = slug === resumeSlug;
       return {
         label: stepLabel(slug),
-        href: done || current
-          ? wizardPath(onboardingPack.application.id, slug, actor, merchantId)
-          : undefined,
+        href: wizardPath(onboardingPack.application.id, slug, actor, merchantId),
         state: (done ? "done" : current ? "current" : "todo") as
           | "todo"
           | "current"
