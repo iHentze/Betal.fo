@@ -1,0 +1,450 @@
+---
+import WizardLayout from "~/components/ui/WizardLayout.astro";
+import Field from "~/components/ui/Field.astro";
+import ChoiceCard from "~/components/ui/ChoiceCard.astro";
+import Dropzone from "~/components/ui/Dropzone.astro";
+import { env } from "~/lib/env";
+import { fo } from "~/content/fo";
+import { requirePack, wizardPath, handilQuery } from "~/lib/onboarding/access";
+import { getActivePriceList } from "~/lib/onboarding/application";
+import { canFillAgreement, canSendToSkriva } from "~/lib/onboarding/pdf";
+import { priceListKind, screenApplication } from "~/lib/onboarding/screening";
+import { skrivaConfigured } from "~/lib/onboarding/skriva";
+import {
+  STEP_SLUGS,
+  firstIncompleteStep,
+  hasDocument,
+  isStepComplete,
+  isStepSlug,
+  stepLabel,
+  stepWhy,
+  type StepSlug,
+} from "~/lib/onboarding/steps";
+import { VERTICALS } from "~/lib/onboarding/verticals";
+import { formatDateTime } from "~/lib/nav";
+
+export const prerender = false;
+
+const actor = Astro.locals.actor!;
+const id = Astro.params.id!;
+const stig = Astro.params.stig ?? "";
+
+if (!isStepSlug(stig)) return Astro.redirect("/umbon");
+
+let pack;
+try {
+  pack = await requirePack(env.DB, actor, id, Astro.url.searchParams.get("handil"));
+} catch {
+  return Astro.redirect("/umbon");
+}
+
+const merchantId = pack.application.merchant_id;
+const q = handilQuery(actor, merchantId);
+const href = (slug: string) => wizardPath(id, slug, actor, merchantId);
+const first = firstIncompleteStep(pack);
+
+// Merchants may open a completed step or the first gap. Staff may open any step.
+if (actor.kind !== "staff") {
+  const requested = STEP_SLUGS.indexOf(stig);
+  const allowed = STEP_SLUGS.indexOf(first);
+  if (requested > allowed) {
+    return Astro.redirect(href(first));
+  }
+}
+
+const currentIndex = STEP_SLUGS.indexOf(stig);
+const steps = STEP_SLUGS.map((slug) => ({
+  slug,
+  label: stepLabel(slug),
+  href: href(slug),
+  state: (slug === stig
+    ? "current"
+    : isStepComplete(slug as StepSlug, pack)
+      ? "done"
+      : "todo") as "todo" | "current" | "done",
+}));
+
+const error = Astro.url.searchParams.get("feilur");
+const app = pack.application;
+const formAction = `/api/umbon/${id}${q}`;
+const uploadAction = `/api/umbon/${id}/skjol${q}`;
+const backHref = currentIndex > 0 ? href(STEP_SLUGS[currentIndex - 1]!) : `/${q}`;
+const savedLabel = `${fo.onboarding.saved} · ${formatDateTime(app.updated_at_ms)}`;
+
+const screening = screenApplication({
+  sector: app.vertical_sector,
+  equity: app.equity as "positive" | "negative" | "unknown" | null,
+  operations: app.operations as "positive" | "negative" | "unknown" | null,
+});
+const priceList = await getActivePriceList(env.DB, priceListKind(screening));
+const fill = canFillAgreement(pack);
+const send = canSendToSkriva(pack, priceList, skrivaConfigured(env));
+const swedbank = app.recommended_acquirer === "swedbank" || !app.recommended_acquirer;
+const owners = pack.owners.length > 0 ? pack.owners : [
+  {
+    id: "",
+    application_id: id,
+    name: "",
+    email: "",
+    p_tal: "",
+    role: "",
+    ownership_bps: null,
+    is_signatory: 1,
+    sort_order: 0,
+  },
+];
+
+const docChip = (kind: string) => pack.documents.find((d) => d.kind === kind && d.byte_size);
+
+const hideContinue = stig === "bida";
+---
+
+<WizardLayout
+  title={stepLabel(stig)}
+  why={stepWhy(stig)}
+  steps={steps}
+  currentIndex={currentIndex}
+  savedLabel={savedLabel}
+  backHref={backHref}
+  formAction={hideContinue ? undefined : formAction}
+  hideContinue={hideContinue}
+>
+  {
+    error && (
+      <p class="field-error" style="margin-bottom:1rem">{error}</p>
+    )
+  }
+
+  {
+    stig !== "bida" && stig !== "banki" && stig !== "skjol" && stig !== "undirskriva" && (
+      <form id="wizard-form" method="POST" action={formAction}>
+        <input type="hidden" name="step" value={stig} />
+
+        {stig === "felag" && (
+          <>
+            <Field label="Lógligt navn" name="legal_name" value={app.legal_name} required />
+            <Field label="V-tal" name="v_tal" value={app.v_tal} required inputmode="numeric" hint="Seks siffer hjá TAKS" />
+            <Field label="Adressa" name="address_line_one" value={app.address_line_one} required />
+            <Field label="Adressa 2" name="address_line_two" value={app.address_line_two} />
+            <div class="field-row">
+              <Field label="Postnr." name="postal_code" value={app.postal_code} required inputmode="numeric" />
+              <Field label="Býur" name="city" value={app.city} required />
+            </div>
+            <Field label="Heimasíða" name="website" value={app.website} placeholder="https://" />
+            <Field
+              label="Hvat selja tit"
+              name="sells"
+              type="textarea"
+              value={app.sells}
+              required
+              hint="Ein setningur. Innloysarin lesur hetta."
+            />
+          </>
+        )}
+
+        {stig === "vinnugrein" && (
+          <div class="choice-grid" data-cols="2">
+            {VERTICALS.map((vertical) => (
+              <ChoiceCard
+                name="vertical_key"
+                value={vertical.key}
+                title={vertical.label}
+                hint={vertical.hint}
+                checked={app.vertical_key === vertical.key}
+              />
+            ))}
+          </div>
+        )}
+
+        {stig === "vinnugrein" && app.vertical_sector === 1 && (
+          <p class="field-error" style="margin-top:1rem">{fo.onboarding.sector1}</p>
+        )}
+        {stig === "vinnugrein" && app.vertical_sector === 2 && (
+          <p class="field-hint" style="margin-top:1rem">{fo.onboarding.sector2}</p>
+        )}
+
+        {stig === "eigarar" && (
+          <div id="owners">
+            {owners.map((owner, index) => (
+              <div class="owner-card">
+                <Field label="Navn" name="owner_name" value={owner.name} required={index === 0} />
+                <div class="field-row">
+                  <Field label="P-tal" name="owner_p_tal" value={owner.p_tal} inputmode="numeric" />
+                  <Field label="Teldupostur" name="owner_email" type="email" value={owner.email} />
+                </div>
+                <div class="field-row">
+                  <Field label="Lutur %" name="owner_bps" value={owner.ownership_bps == null ? "" : String(owner.ownership_bps / 100)} inputmode="decimal" />
+                  <Field label="Leiklutur" name="owner_role" value={owner.role} placeholder="Stjóri" />
+                </div>
+                <Field
+                  label="Kann undirskriva fyri felagið"
+                  name="owner_signatory"
+                  type="checkbox"
+                  value={String(index)}
+                  checked={Boolean(owner.is_signatory)}
+                />
+              </div>
+            ))}
+          </div>
+        )}
+
+        {stig === "roknskapur" && (
+          <>
+            <p class="field-label" style="margin-bottom:.5rem">Eginogn</p>
+            <div class="choice-grid" data-cols="2">
+              <ChoiceCard name="equity" value="positive" title="Positiv" hint="Eginognin er ikki negativ" checked={app.equity === "positive"} />
+              <ChoiceCard name="equity" value="negative" title="Negativ" hint="Fer ikki til Swedbank" checked={app.equity === "negative"} />
+              <ChoiceCard name="equity" value="unknown" title="Vit vita ikki" hint="Krevur ársroknskap" checked={app.equity === "unknown"} />
+            </div>
+            <p class="field-label" style="margin:1.25rem 0 .5rem">Rakstur</p>
+            <div class="choice-grid" data-cols="2">
+              <ChoiceCard name="operations" value="positive" title="Positiv drift" checked={app.operations === "positive"} />
+              <ChoiceCard name="operations" value="negative" title="Negativ drift" hint="Fer ikki til Swedbank" checked={app.operations === "negative"} />
+              <ChoiceCard name="operations" value="unknown" title="Vit vita ikki" checked={app.operations === "unknown"} />
+            </div>
+          </>
+        )}
+      </form>
+    )
+  }
+
+  {
+    stig === "eigarar" && (
+      <button slot="foot" class="btn" type="button" id="add-owner">
+        Legg eigara afturat
+      </button>
+    )
+  }
+
+  {
+    stig === "banki" && (
+      <>
+        <form id="wizard-form" method="POST" action={formAction}>
+          <input type="hidden" name="step" value="banki" />
+          <Field
+            label="Kontunummar"
+            name="bank_account"
+            value={app.bank_account}
+            required
+            hint="Føroyskt kontunummar. Bankin stemplar restina."
+          />
+        </form>
+
+        <div style="margin:1.25rem 0 .75rem">
+          <a class="btn" href={`/api/umbon/${id}/bankaskjal.pdf${q}`}>
+            Tak niður bankaskjalið
+          </a>
+        </div>
+
+        <div class="req-list">
+          <div class:list={["req-item", hasDocument(pack, "bank_confirmation") && "is-done"]}>
+            <span class="req-tick" />
+            <span>Swedbank-formularin, stemplaður av bankanum</span>
+          </div>
+        </div>
+
+        {docChip("bank_confirmation") ? (
+          <div class="file-chip">
+            <span class="file-chip-name">{docChip("bank_confirmation")?.file_name}</span>
+            <span class="file-chip-meta tnum">{docChip("bank_confirmation")?.byte_size} B</span>
+          </div>
+        ) : null}
+
+        <form method="POST" action={uploadAction} enctype="multipart/form-data" style="margin-top:.75rem">
+          <input type="hidden" name="kind" value="bank_confirmation" />
+          <input type="hidden" name="step" value="banki" />
+          <Dropzone title="Stemplað bankaskjal" />
+          <button class="btn" type="submit" style="margin-top:.75rem">
+            Legg upp
+          </button>
+        </form>
+      </>
+    )
+  }
+
+  {
+    stig === "skjol" && (
+      <>
+        <form id="wizard-form" method="POST" action={formAction}>
+          <input type="hidden" name="step" value="skjol" />
+        </form>
+
+        <p class="field-label" style="margin-bottom:.5rem">Skásetingar prógv</p>
+        <div class="req-list">
+          <div class="req-item">
+            <span class="req-tick" />
+            <span>Útskrift frá TAKS / Vinnuskránni, ikki eldri enn tríggir mánaðir</span>
+          </div>
+        </div>
+        {docChip("company_registration") && (
+          <div class="file-chip" style="margin-bottom:.75rem">
+            <span class="file-chip-name">{docChip("company_registration")?.file_name}</span>
+            <span class="file-chip-meta tnum">{docChip("company_registration")?.byte_size} B</span>
+          </div>
+        )}
+        <form method="POST" action={uploadAction} enctype="multipart/form-data">
+          <input type="hidden" name="kind" value="company_registration" />
+          <input type="hidden" name="step" value="skjol" />
+          <Dropzone title="Skásetingar prógv" />
+          <button class="btn" type="submit" style="margin-top:.75rem">Legg upp</button>
+        </form>
+
+        <p class="field-label" style="margin:1.5rem 0 .5rem">Eigarabók</p>
+        <div class="req-list">
+          <div class="req-item">
+            <span class="req-tick" />
+            <span>Eigarabók ella samsvarandi yvirlit yvir eigarar</span>
+          </div>
+        </div>
+        {docChip("owners_book") && (
+          <div class="file-chip" style="margin-bottom:.75rem">
+            <span class="file-chip-name">{docChip("owners_book")?.file_name}</span>
+            <span class="file-chip-meta tnum">{docChip("owners_book")?.byte_size} B</span>
+          </div>
+        )}
+        <form method="POST" action={uploadAction} enctype="multipart/form-data">
+          <input type="hidden" name="kind" value="owners_book" />
+          <input type="hidden" name="step" value="skjol" />
+          <Dropzone title="Eigarabók" />
+          <button class="btn" type="submit" style="margin-top:.75rem">Legg upp</button>
+        </form>
+
+        {app.extra_docs_required === 1 && (
+          <>
+            <p class="field-label" style="margin:1.5rem 0 .5rem">Ársroknskapur</p>
+            <div class="req-list">
+              <div class="req-item">
+                <span class="req-tick" />
+                <span>Seinasti ársroknskapur ella YTD — geiri 2</span>
+              </div>
+            </div>
+            {docChip("annual_accounts") && (
+              <div class="file-chip" style="margin-bottom:.75rem">
+                <span class="file-chip-name">{docChip("annual_accounts")?.file_name}</span>
+              </div>
+            )}
+            <form method="POST" action={uploadAction} enctype="multipart/form-data">
+              <input type="hidden" name="kind" value="annual_accounts" />
+              <input type="hidden" name="step" value="skjol" />
+              <Dropzone title="Ársroknskapur" />
+              <button class="btn" type="submit" style="margin-top:.75rem">Legg upp</button>
+            </form>
+          </>
+        )}
+      </>
+    )
+  }
+
+  {
+    stig === "undirskriva" && (
+      <>
+        {!swedbank && app.recommended_acquirer && (
+          <form id="wizard-form" method="POST" action={formAction}>
+            <input type="hidden" name="step" value="undirskriva" />
+            <input type="hidden" name="mode" value="acknowledge" />
+            <p class="wizard-why">{fo.onboarding.noSwedbankPdf}</p>
+            <p class="field-hint">{app.screening_reason}</p>
+          </form>
+        )}
+
+        {swedbank && (
+          <>
+            {!fill.ok && <p class="field-error">{fill.reason}</p>}
+            {fill.ok && (
+              <iframe
+                title="FO-avtalan"
+                src={`/api/umbon/${id}/avtalan.pdf${q}`}
+                style="width:100%; height:22rem; border:1px solid var(--color-line); border-radius: var(--radius-panel); background: var(--color-surface-1); margin-bottom:1rem"
+              />
+            )}
+            {!send.ok && <p class="field-hint" style="margin-bottom:1rem">{send.reason}</p>}
+
+            <form method="POST" action={`/api/umbon/${id}/skriva${q}`} style="margin-bottom:1.25rem">
+              <button class="btn btn-primary" type="submit" disabled={!send.ok}>
+                Send til Samleikin
+              </button>
+            </form>
+
+            <p class="field-label">{fo.onboarding.wetInk}</p>
+            {docChip("agreement") && (
+              <div class="file-chip" style="margin:.5rem 0">
+                <span class="file-chip-name">{docChip("agreement")?.file_name}</span>
+              </div>
+            )}
+            <form method="POST" action={uploadAction} enctype="multipart/form-data">
+              <input type="hidden" name="kind" value="agreement" />
+              <input type="hidden" name="step" value="undirskriva" />
+              <Dropzone title="Undirskrivað avtalan" />
+              <button class="btn" type="submit" style="margin-top:.5rem">Legg avtalu upp</button>
+            </form>
+            {docChip("photo_id") && (
+              <div class="file-chip" style="margin:.75rem 0 .5rem">
+                <span class="file-chip-name">{docChip("photo_id")?.file_name}</span>
+              </div>
+            )}
+            <form method="POST" action={uploadAction} enctype="multipart/form-data" style="margin-top:.75rem">
+              <input type="hidden" name="kind" value="photo_id" />
+              <input type="hidden" name="step" value="undirskriva" />
+              <Dropzone title="Persónsprógv" accept="image/jpeg,image/png,application/pdf" />
+              <button class="btn" type="submit" style="margin-top:.5rem">Legg persónsprógv upp</button>
+            </form>
+
+            <form id="wizard-form" method="POST" action={formAction}>
+              <input type="hidden" name="step" value="undirskriva" />
+              <input type="hidden" name="mode" value="wet_ink" />
+            </form>
+          </>
+        )}
+      </>
+    )
+  }
+
+  {
+    stig === "bida" && (
+      <>
+        <p class="wizard-why">
+          {app.recommended_acquirer === "clearhaus" || app.recommended_acquirer === "shift4"
+            ? fo.onboarding.waitClearhaus
+            : app.state === "submitted"
+              ? fo.onboarding.waitSwedbank
+              : fo.onboarding.waitStaff}
+        </p>
+        {app.screening_reason && <p class="field-hint">{app.screening_reason}</p>}
+        <div class="timeline" style="margin-top:1.5rem">
+          {pack.events.map((event) => (
+            <div class="timeline-item">
+              <span class="timeline-label">{event.kind}</span>
+              <span class="timeline-meta tnum">{formatDateTime(event.at_ms)}</span>
+            </div>
+          ))}
+        </div>
+        <p style="margin-top:1.5rem">
+          <a class="btn" href={`/${q}`}>Til yvirlitið</a>
+        </p>
+      </>
+    )
+  }
+</WizardLayout>
+
+{
+  stig === "eigarar" && (
+    <script is:inline>
+      document.getElementById("add-owner")?.addEventListener("click", () => {
+        const list = document.getElementById("owners");
+        const cards = list?.querySelectorAll(".owner-card");
+        const first = cards?.[0];
+        if (!list || !first) return;
+        const clone = first.cloneNode(true);
+        clone.querySelectorAll("input").forEach((input) => {
+          if (input.type === "checkbox") {
+            input.checked = false;
+            input.value = String(cards.length);
+          } else {
+            input.value = "";
+          }
+        });
+        list.appendChild(clone);
+      });
+    </script>
+  )
+}

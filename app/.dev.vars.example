@@ -13,3 +13,10 @@ EPAY_PARTNER_KEY="..."
 # Where ePay should send webhooks. Must be a domain approved on the merchant's point
 # of sale, so for local testing this needs a tunnel rather than localhost.
 APP_URL="http://localhost:4321"
+
+# Klintra Skriva. Empty means the Undirskriva step can preview a filled FO PDF
+# but will not create a signing request. Do not put a real password here.
+# SKRIVA_BASE_URL="https://klintraelectronicsigningapi.azurewebsites.net"
+# SKRIVA_EMAIL=""
+# SKRIVA_PASSWORD=""
+# SKRIVA_TENANT_ID=""

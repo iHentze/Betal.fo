@@ -30,7 +30,8 @@ export type AuditAction =
   | "create_payment_link"
   | "login"
   | "invite_user"
-  | "change_role";
+  | "change_role"
+  | "review_application";
 
 export interface AuditEntry {
   actorUserId?: string | null;

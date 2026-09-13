@@ -982,6 +982,467 @@
     font-family: var(--font-brand);
     font-weight: 700;
   }
+
+  /* ---- Wizard --------------------------------------------------------- */
+
+  /*
+   * Full-screen KYB chrome. No app sidebar: eight steps cannot sit inside a
+   * settings dump. Left rail + one form column + sticky foot, navy throughout.
+   */
+  .wizard {
+    min-height: 100dvh;
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    background: var(--color-surface-0);
+  }
+
+  .wizard-top {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    height: 2.75rem;
+    padding: 0 1.25rem;
+    border-bottom: 1px solid var(--color-line);
+    background: var(--color-surface-0);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+
+  .wizard-top-wordmark {
+    color: var(--color-accent);
+  }
+
+  .wizard-top-status {
+    margin-left: auto;
+    font-size: var(--text-2xs);
+    color: var(--color-ink-faint);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .wizard-top-progress {
+    display: none;
+    font-size: var(--text-xs);
+    color: var(--color-ink-secondary);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .wizard-body {
+    display: grid;
+    grid-template-columns: 16.5rem minmax(0, 1fr);
+    min-height: 0;
+  }
+
+  .wizard-rail {
+    padding: 1.25rem 0.875rem 2rem;
+    border-right: 1px solid var(--color-line);
+    background: var(--color-surface-1);
+  }
+
+  .wizard-main {
+    padding: 1.75rem 1.5rem 2rem;
+    max-width: 36rem;
+  }
+
+  .wizard-kicker {
+    font-size: var(--text-xs);
+    color: var(--color-ink-muted);
+    margin-bottom: 0.375rem;
+  }
+
+  .wizard-title {
+    font-size: var(--text-lg);
+    font-weight: 500;
+    color: var(--color-ink);
+    letter-spacing: -0.01em;
+    margin-bottom: 0.375rem;
+  }
+
+  .wizard-why {
+    font-size: var(--text-sm);
+    color: var(--color-ink-muted);
+    margin-bottom: 1.25rem;
+  }
+
+  .wizard-foot {
+    position: sticky;
+    bottom: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    border-top: 1px solid var(--color-line);
+    background: color-mix(in oklch, var(--color-surface-0) 92%, transparent);
+    backdrop-filter: blur(8px);
+  }
+
+  .wizard-foot .btn {
+    min-height: 2.25rem;
+    padding: 0.5rem 0.875rem;
+  }
+
+  .wizard-foot-spacer {
+    margin-left: auto;
+  }
+
+  /* Step list. Current is ink, not a lime bar. Done ticks use accent once. */
+  .step-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.125rem;
+  }
+
+  .step {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.375rem 0.5rem;
+    border-radius: var(--radius-control);
+    color: var(--color-ink-muted);
+    font-size: var(--text-xs);
+    text-decoration: none;
+  }
+
+  .step:hover {
+    background: var(--color-surface-2);
+    color: var(--color-ink);
+  }
+
+  .step-index {
+    width: 1.125rem;
+    font-variant-numeric: tabular-nums;
+    color: var(--color-ink-faint);
+  }
+
+  .step.is-current {
+    color: var(--color-ink);
+    font-weight: 500;
+    background: var(--color-surface-3);
+  }
+
+  .step.is-current .step-index {
+    color: var(--color-ink);
+  }
+
+  .step.is-done {
+    color: var(--color-ink-secondary);
+  }
+
+  .step-tick {
+    width: 0.875rem;
+    height: 0.875rem;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    background: var(--color-accent);
+    color: var(--color-accent-ink);
+    font-size: 0.5625rem;
+    font-weight: 700;
+    line-height: 1;
+  }
+
+  /* ---- Fields --------------------------------------------------------- */
+
+  .field {
+    display: grid;
+    gap: 0.25rem;
+  }
+
+  .field + .field,
+  .field + .choice-grid,
+  .choice-grid + .field,
+  .field + .dropzone,
+  .dropzone + .field {
+    margin-top: 0.875rem;
+  }
+
+  .field-label {
+    font-size: var(--text-xs);
+    color: var(--color-ink-muted);
+  }
+
+  .field-hint {
+    font-size: var(--text-2xs);
+    color: var(--color-ink-faint);
+  }
+
+  .field-error {
+    font-size: var(--text-2xs);
+    color: var(--color-state-failed);
+  }
+
+  .field.is-error .input,
+  .field.is-error .field-input {
+    border-color: var(--color-state-failed);
+  }
+
+  .field-input,
+  textarea.input {
+    width: 100%;
+  }
+
+  textarea.input {
+    min-height: 5.5rem;
+    resize: vertical;
+  }
+
+  .field-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+  }
+
+  /* ---- Choice cards --------------------------------------------------- */
+
+  .choice-grid {
+    display: grid;
+    gap: 0.5rem;
+  }
+
+  .choice-grid[data-cols="2"] {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .choice-card {
+    display: block;
+    padding: 0.75rem 0.875rem;
+    border-radius: var(--radius-panel);
+    border: 1px solid var(--color-line);
+    background: var(--color-surface-1);
+    color: inherit;
+    text-align: left;
+    cursor: pointer;
+    text-decoration: none;
+    width: 100%;
+  }
+
+  .choice-card:hover {
+    background: var(--color-surface-2);
+  }
+
+  /* Selected is a raised surface and a lime hairline — never a lime fill. */
+  .choice-card.is-selected,
+  .choice-card:has(:checked) {
+    background: var(--color-surface-3);
+    border-color: var(--color-accent);
+  }
+
+  .choice-card.is-disabled,
+  .choice-card:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+
+  .choice-card-title {
+    font-size: var(--text-sm);
+    color: var(--color-ink);
+    font-weight: 500;
+  }
+
+  .choice-card-hint {
+    font-size: var(--text-2xs);
+    color: var(--color-ink-muted);
+    margin-top: 0.125rem;
+  }
+
+  .choice-card input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  /* ---- Uploads -------------------------------------------------------- */
+
+  .req-list {
+    display: grid;
+    gap: 0.375rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .req-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    font-size: var(--text-xs);
+    color: var(--color-ink-secondary);
+  }
+
+  .req-tick {
+    width: 0.875rem;
+    height: 0.875rem;
+    border-radius: 50%;
+    border: 1px solid var(--color-line-strong);
+    flex-shrink: 0;
+    margin-top: 0.125rem;
+  }
+
+  .req-item.is-done .req-tick {
+    border-color: transparent;
+    background: var(--color-accent);
+    box-shadow: inset 0 0 0 2px var(--color-surface-0);
+  }
+
+  .dropzone {
+    display: grid;
+    place-items: center;
+    gap: 0.375rem;
+    min-height: 8rem;
+    padding: 1.25rem;
+    border-radius: var(--radius-panel);
+    border: 1px dashed var(--color-line-strong);
+    background: var(--color-surface-1);
+    text-align: center;
+    cursor: pointer;
+    color: var(--color-ink-muted);
+    font-size: var(--text-xs);
+  }
+
+  .dropzone:hover {
+    background: var(--color-surface-2);
+  }
+
+  .dropzone.is-error {
+    border-color: var(--color-state-failed);
+    color: var(--color-state-failed);
+  }
+
+  .dropzone input[type="file"] {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+  }
+
+  .dropzone-title {
+    color: var(--color-ink);
+    font-size: var(--text-sm);
+    font-weight: 500;
+  }
+
+  .file-chip {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    border-radius: var(--radius-control);
+    background: var(--color-surface-2);
+    border: 1px solid var(--color-line);
+    font-size: var(--text-xs);
+    color: var(--color-ink);
+  }
+
+  .file-chip-name {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .file-chip-meta {
+    margin-left: auto;
+    color: var(--color-ink-faint);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
+  /* ---- Checklist ------------------------------------------------------ */
+
+  .checklist {
+    display: grid;
+    gap: 0.125rem;
+  }
+
+  .checklist-item {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    padding: 0.5rem 0.125rem;
+    color: var(--color-ink-secondary);
+    font-size: var(--text-sm);
+    text-decoration: none;
+    border-bottom: 1px solid color-mix(in oklch, var(--color-line) 40%, transparent);
+  }
+
+  a.checklist-item:hover {
+    color: var(--color-ink);
+  }
+
+  .checklist-item:last-child {
+    border-bottom: 0;
+  }
+
+  .checklist-mark {
+    width: 1rem;
+    height: 1rem;
+    border-radius: 50%;
+    border: 1px solid var(--color-line-strong);
+    flex-shrink: 0;
+  }
+
+  .checklist-item.is-done .checklist-mark {
+    border-color: transparent;
+    background: var(--color-accent);
+  }
+
+  .checklist-item.is-current {
+    color: var(--color-ink);
+    font-weight: 500;
+  }
+
+  .checklist-item.is-current .checklist-mark {
+    border-color: var(--color-ink);
+  }
+
+  .owner-card {
+    padding: 0.875rem;
+    border: 1px solid var(--color-line);
+    border-radius: var(--radius-panel);
+    background: var(--color-surface-1);
+    margin-bottom: 0.75rem;
+  }
+
+  .ds-swatches {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(9.5rem, 1fr));
+    gap: 0.5rem;
+  }
+
+  .ds-swatch {
+    border-radius: var(--radius-panel);
+    border: 1px solid var(--color-line);
+    overflow: hidden;
+    background: var(--color-surface-1);
+  }
+
+  .ds-swatch-chip {
+    height: 3rem;
+  }
+
+  .ds-swatch-meta {
+    padding: 0.5rem 0.625rem 0.625rem;
+    font-size: var(--text-2xs);
+  }
+
+  .ds-section {
+    margin: 2rem 0;
+  }
+
+  .ds-section h2 {
+    font-size: var(--text-sm);
+    font-weight: 500;
+    color: var(--color-ink-secondary);
+    margin-bottom: 0.75rem;
+  }
+
+  .ds-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+  }
 }
 
 @layer utilities {
@@ -1074,6 +1535,35 @@
 
   .topbar {
     padding: 0 0.875rem;
+  }
+
+  .wizard-body {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .wizard-rail {
+    display: none;
+  }
+
+  .wizard-top-progress {
+    display: block;
+  }
+
+  .wizard-main {
+    padding: 1.25rem 0.875rem 2rem;
+  }
+
+  .wizard-foot {
+    padding: 0.75rem 0.875rem calc(0.75rem + env(safe-area-inset-bottom, 0));
+  }
+
+  .wizard-foot .btn {
+    min-height: 2.75rem;
+  }
+
+  .choice-grid[data-cols="2"],
+  .field-row {
+    grid-template-columns: 1fr;
   }
 }
 

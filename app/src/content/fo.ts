@@ -27,6 +27,8 @@ export const fo = {
     margin: "Vinningur",
     leads: "Áhugaðir",
     support: "Stuðul",
+    applications: "Umsóknir",
+    design: "Snið",
     backToApp: "Aftur til skipanina",
   },
 
@@ -169,6 +171,49 @@ export const fo = {
     generic: "Okkurt gekk galið. Royn aftur.",
     // Surfaced when a money operation returned HTTP 200 but failed.
     operationFailed: "Gerðin miseydnaðist",
+  },
+
+  onboarding: {
+    title: "Umsókn",
+    saved: "Goymt",
+    back: "Aftur",
+    continue: "Halt áfram",
+    resume: "Halt áfram við umsóknini",
+    bannerTitle: "Gjaldingar eru ikki tøkar enn",
+    bannerDetail:
+      "Innloysarin hevur ikki góðkent pakkan. Tú kanst sitja í skipanini — vit siga tær, tá ið tú kanst taka ímóti korti.",
+    checklistTitle: "Hvat vantar",
+    steps: {
+      felag: "Felag",
+      vinnugrein: "Vinnugrein",
+      eigarar: "Eigarar",
+      roknskapur: "Roknskapur",
+      banki: "Banki",
+      skjol: "Skjøl",
+      undirskriva: "Undirskriva",
+      bida: "Bíða",
+    },
+    why: {
+      felag: "Innloysarin skal síggja, hvør ið søkir, við røttum V-tali og adressu.",
+      vinnugrein: "Nakrar greinar fara ikki til Swedbank. Vit siga tær tað her, ikki eftir undirskrift.",
+      eigarar: "Eigarabókin og teir ið kunnu binda felagið. Í minsta lagi ein undirskrivari.",
+      roknskapur: "Swedbank rindar brutto, so negativ eginogn ella drift stongir ta leiðina.",
+      banki: "Bankin stemplar staðfestingina. Vit fylla navn, V-tal og kontu; tú lastar skannað skjal upp.",
+      skjol: "Skásetingar prógv og eigarabók. Geiri 2 læsir eisini ársroknskap upp.",
+      undirskriva: "Vit fylla FO-avtaluna. Samleikin er undirskriftin — tú skrivar ikki á einum lørifti.",
+      bida: "Eingin falskur framgongur, meðan pakkin er hjá innloysaranum.",
+    },
+    sector1:
+      "Hendan greinin fer ikki til Swedbank. Vit mæla til Clearhaus, og starvsfólk taka støðu.",
+    sector2: "Hendan greinin kann fara til Swedbank, men krevur hægri prís og eyka skjøl.",
+    noSwedbankPdf: "Vit gera ikki eina Swedbank-avtalu, tá ið tilmælið er ein annar innloysari.",
+    skrivaBlocked:
+      "Skriva er stongt, til FO-avtalan er fylt og príslistin settur. Staging bíðar eisini eftir Klintra-brúkara.",
+    priceListMissing: "Príslistin er ikki settur. Vit senda ikki eina avtalu uttan FO-prísir.",
+    wetInk: "Undirskriva á pappír og send mynd av undirskrift og persónsprovi.",
+    waitSwedbank: "Swedbank hevur pakkan. Vit siga tær, tá ið teir hava tikið støðu.",
+    waitClearhaus: "Vit rætta hetta móti Clearhaus. Tú skalt ikki senda nakað til Swedbank.",
+    waitStaff: "Starvsfólk hjá Betal lesa pakkan. Vit skriva, um okkurt vantar.",
   },
 } as const;
 

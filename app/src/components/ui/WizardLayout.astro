@@ -1,0 +1,101 @@
+---
+import "~/styles/app.css";
+import Wordmark from "./Wordmark.astro";
+import StepNav, { type StepItem } from "./StepNav.astro";
+import { fo } from "~/content/fo";
+
+/**
+ * Dedicated KYB document. No sidebar, no tab bar. Wordmark + "Goymt" in the corner,
+ * left step list on desktop, `n/m · Stig` in the top bar on a phone.
+ */
+interface Props {
+  title: string;
+  why?: string;
+  steps: StepItem[];
+  currentIndex: number;
+  savedLabel?: string;
+  backHref?: string | null;
+  continueLabel?: string;
+  formAction?: string;
+  hideContinue?: boolean;
+  extraActions?: boolean;
+}
+
+const {
+  title,
+  why,
+  steps,
+  currentIndex,
+  savedLabel = fo.onboarding.saved,
+  backHref,
+  continueLabel = fo.onboarding.continue,
+  formAction,
+  hideContinue = false,
+} = Astro.props;
+
+const current = steps[currentIndex];
+const progress = `${currentIndex + 1}/${steps.length} · ${current?.label ?? title}`;
+---
+
+<!doctype html>
+<html lang="fo">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title} · {fo.brand}</title>
+    <meta name="theme-color" content="#0d0033" />
+    <meta name="robots" content="noindex" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  </head>
+  <body>
+    <div class="wizard">
+      <header class="wizard-top">
+        <a href="/" aria-label="betal" class="wizard-top-wordmark">
+          <Wordmark width="4.25rem" />
+        </a>
+        <span class="wizard-top-progress tnum">{progress}</span>
+        <span class="wizard-top-status">{savedLabel}</span>
+      </header>
+
+      <div class="wizard-body">
+        <aside class="wizard-rail">
+          <div
+            class="tnum"
+            style="font-size: var(--text-2xs); color: var(--color-ink-faint); padding: 0 .5rem .75rem"
+          >
+            {currentIndex + 1}/{steps.length}
+          </div>
+          <StepNav steps={steps} />
+        </aside>
+
+        <div class="wizard-main">
+          <div class="wizard-kicker tnum">{progress}</div>
+          <h1 class="wizard-title">{title}</h1>
+          {why && <p class="wizard-why">{why}</p>}
+          <slot />
+        </div>
+      </div>
+
+      <footer class="wizard-foot">
+        {
+          backHref ? (
+            <a class="btn" href={backHref}>
+              {fo.onboarding.back}
+            </a>
+          ) : (
+            <span />
+          )
+        }
+        <div class="wizard-foot-spacer"></div>
+        <slot name="foot" />
+        {
+          !hideContinue && formAction && (
+            <button class="btn btn-primary" type="submit" form="wizard-form">
+              {continueLabel}
+            </button>
+          )
+        }
+      </footer>
+    </div>
+  </body>
+</html>

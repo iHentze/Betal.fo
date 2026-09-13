@@ -1,0 +1,268 @@
+---
+import AppLayout from "~/layouts/AppLayout.astro";
+import Amount from "~/components/ui/Amount.astro";
+import Banner from "~/components/ui/Banner.astro";
+import Badge from "~/components/ui/Badge.astro";
+import Checklist from "~/components/ui/Checklist.astro";
+import ChoiceCard from "~/components/ui/ChoiceCard.astro";
+import Dropzone from "~/components/ui/Dropzone.astro";
+import Field from "~/components/ui/Field.astro";
+import StatusBadge from "~/components/ui/StatusBadge.astro";
+import StepNav from "~/components/ui/StepNav.astro";
+import Wordmark from "~/components/ui/Wordmark.astro";
+import { fo } from "~/content/fo";
+import { navFor } from "~/lib/nav";
+import {
+  applicationStatus,
+  financeStatus,
+  sectorStatus,
+  acquirerStatus,
+  toneColor,
+  type StatusTone,
+} from "~/lib/status";
+
+export const prerender = false;
+
+const actor = Astro.locals.actor!;
+if (actor.kind !== "staff") return Astro.redirect("/");
+
+const nav = navFor(actor);
+
+const surfaces = [
+  ["surface-0", "var(--color-surface-0)", "Bakgrund"],
+  ["surface-1", "var(--color-surface-1)", "Rail, kort"],
+  ["surface-2", "var(--color-surface-2)", "Hover, input"],
+  ["surface-3", "var(--color-surface-3)", "Valt"],
+  ["surface-4", "var(--color-surface-4)", "Modal"],
+] as const;
+
+const inks = [
+  ["ink", "var(--color-ink)", "Høvuðstekstur"],
+  ["ink-secondary", "var(--color-ink-secondary)", "Røð"],
+  ["ink-muted", "var(--color-ink-muted)", "Merking"],
+  ["ink-faint", "var(--color-ink-faint)", "Meta"],
+] as const;
+
+const tones: StatusTone[] = [
+  "success",
+  "pending",
+  "processing",
+  "failed",
+  "refunded",
+  "voided",
+  "expired",
+  "paused",
+  "discrepancy",
+];
+
+const demoSteps = [
+  { slug: "felag", label: "Felag", href: "#", state: "done" as const },
+  { slug: "vinnugrein", label: "Vinnugrein", href: "#", state: "current" as const },
+  { slug: "eigarar", label: "Eigarar", href: "#", state: "todo" as const },
+];
+---
+
+<AppLayout
+  title={fo.nav.design}
+  crumbs={[{ label: "Betal" }, { label: fo.nav.design }]}
+  nav={nav}
+  context="Betal"
+>
+  <div style="max-width:48rem; padding:1.25rem .875rem 3rem">
+    <p style="font-size: var(--text-sm); color: var(--color-ink-muted); margin-bottom:1.5rem">
+      Levandi sniðskipan. Nýggjur stýringur er ólógligur, fyrr enn hann stendur her.
+      Lime eina ferð á skíggjanum. Øll tøl í Inter + tnum. Poppins bert hjá brand.
+    </p>
+
+    <section class="ds-section">
+      <h2>Yvirflatir</h2>
+      <div class="ds-swatches">
+        {
+          surfaces.map(([name, color, role]) => (
+            <div class="ds-swatch">
+              <div class="ds-swatch-chip" style={`background:${color}`} />
+              <div class="ds-swatch-meta">
+                <div class="tnum">{name}</div>
+                <div style="color: var(--color-ink-faint)">{role}</div>
+              </div>
+            </div>
+          ))
+        }
+      </div>
+    </section>
+
+    <section class="ds-section">
+      <h2>Tekstur</h2>
+      <div class="ds-swatches">
+        {
+          inks.map(([name, color, role]) => (
+            <div class="ds-swatch">
+              <div class="ds-swatch-chip" style={`background:${color}`} />
+              <div class="ds-swatch-meta">
+                <div class="tnum">{name}</div>
+                <div style="color: var(--color-ink-faint)">{role}</div>
+              </div>
+            </div>
+          ))
+        }
+      </div>
+    </section>
+
+    <section class="ds-section">
+      <h2>Lime — eina ferð</h2>
+      <div class="ds-row">
+        <div class="ds-swatch" style="width:9.5rem">
+          <div class="ds-swatch-chip" style="background: var(--color-accent)" />
+          <div class="ds-swatch-meta">accent · knøttur, focus, tik, virkin nav</div>
+        </div>
+        <button class="btn btn-primary" type="button">Halt áfram</button>
+        <button class="btn btn-primary" type="button" disabled>Óvirkin</button>
+      </div>
+    </section>
+
+    <section class="ds-section">
+      <h2>Støða — bert gjøgnum StatusTone</h2>
+      <div class="ds-row">
+        {tones.map((tone) => (
+          <span class="status-pill" style={`--status-color: ${toneColor[tone]}`}>
+            <span class="status-dot" />
+            {tone}
+          </span>
+        ))}
+      </div>
+      <div class="ds-row">
+        <StatusBadge status={applicationStatus("draft")} variant="pill" />
+        <StatusBadge status={applicationStatus("collecting")} variant="pill" />
+        <StatusBadge status={applicationStatus("routed")} variant="pill" />
+        <StatusBadge status={financeStatus("negative")} variant="pill" />
+        <StatusBadge status={sectorStatus(1)} variant="pill" />
+        <StatusBadge status={acquirerStatus("swedbank")} variant="pill" />
+      </div>
+    </section>
+
+    <section class="ds-section">
+      <h2>Knøttar</h2>
+      <div class="ds-row">
+        <button class="btn" type="button">Aftur</button>
+        <button class="btn" type="button" disabled>Óvirkin</button>
+        <button class="btn btn-primary" type="button">Halt áfram</button>
+        <button class="btn btn-danger" type="button">Avvís</button>
+      </div>
+    </section>
+
+    <section class="ds-section">
+      <h2>Field</h2>
+      <Field label="V-tal" name="demo-vtal" value="123456" hint="Seks siffer" />
+      <Field label="Navn" name="demo-name" placeholder="Handil P/F" />
+      <Field
+        label="Teldupostur"
+        name="demo-error"
+        value="ikki-teldupostur"
+        error="Skriva ein gildugan teldupost"
+      />
+      <Field label="Óvirkin" name="demo-off" value="Ikki at rætta" disabled />
+    </section>
+
+    <section class="ds-section">
+      <h2>Choice cards</h2>
+      <div class="choice-grid" data-cols="2">
+        <ChoiceCard name="demo-choice" value="a" title="Kaffihús" hint="Matur og drykkur" checked />
+        <ChoiceCard name="demo-choice" value="b" title="Handil" hint="Vanlig søla" />
+        <ChoiceCard
+          name="demo-choice"
+          value="c"
+          title="Spæl"
+          hint="Geiri 1 — Swedbank tekur ikki ímóti"
+        />
+        <ChoiceCard name="demo-off" value="d" title="Óvirkin" hint="Ikki tøk" disabled />
+      </div>
+    </section>
+
+    <section class="ds-section">
+      <h2>Krøv og dropzone</h2>
+      <div class="req-list">
+        <div class="req-item is-done">
+          <span class="req-tick" />
+          <span>PDF, ikki ein mynd av einum skjái</span>
+        </div>
+        <div class="req-item">
+          <span class="req-tick" />
+          <span>Nýggjari enn 3 mánaðir</span>
+        </div>
+      </div>
+      <Dropzone title="Skásetingar prógv" />
+      <div class="file-chip" style="margin-top:.75rem">
+        <span class="file-chip-name">skasetan.pdf</span>
+        <span class="file-chip-meta tnum">184 KB</span>
+        <button class="btn" type="button">Skift</button>
+      </div>
+      <div style="margin-top:.75rem">
+        <Dropzone title="Við feili" error="Fílan er ov stór" />
+      </div>
+    </section>
+
+    <section class="ds-section">
+      <h2>Stig og checklista</h2>
+      <div style="display:grid; grid-template-columns:14rem minmax(0,1fr); gap:1.5rem">
+        <StepNav steps={demoSteps} />
+        <Checklist
+          items={[
+            { label: "Felag", state: "done", href: "#" },
+            { label: "Vinnugrein", state: "current", href: "#" },
+            { label: "Eigarar", state: "todo" },
+          ]}
+        />
+      </div>
+    </section>
+
+    <section class="ds-section">
+      <h2>Banner</h2>
+      <Banner
+        tone="paused"
+        title={fo.onboarding.bannerTitle}
+        detail={fo.onboarding.bannerDetail}
+        href="/umbon"
+        actionLabel={fo.onboarding.resume}
+      />
+    </section>
+
+    <section class="ds-section">
+      <h2>Upphædd og brand</h2>
+      <div class="ds-row">
+        <Amount minor={24950} currency="DKK" />
+        <Amount minor={-1200} currency="DKK" />
+        <span style="color: var(--color-accent)"><Wordmark width="5rem" /></span>
+        <Badge size="1.5rem" />
+      </div>
+      <p style="font-size: var(--text-2xs); color: var(--color-ink-faint); margin-top:.5rem">
+        Poppins er ikki á hesum skígginum uttan í orðamerkinum.
+      </p>
+    </section>
+
+    <section class="ds-section">
+      <h2>Talva og tíðarleið</h2>
+      <div class="table" style="--cols: minmax(0,1fr) 6rem 6rem">
+        <div class="group-header">
+          <span class="group-title">Handil</span>
+          <span class="group-count">Geiri</span>
+          <span class="group-count">Innloysari</span>
+        </div>
+        <div class="trow">
+          <span class="cell-primary">Handilin við Bryggjuni</span>
+          <StatusBadge status={sectorStatus(0)} variant="pill" />
+          <span class="cell-quiet">Swedbank</span>
+        </div>
+      </div>
+      <div class="timeline" style="margin-top:1rem">
+        <div class="timeline-item" style="--dot: var(--color-state-success)">
+          <span class="timeline-label">Umsókn stovnað</span>
+          <span class="timeline-meta tnum">12.09. 09:14</span>
+        </div>
+        <div class="timeline-item" style="--dot: var(--color-state-pending)">
+          <span class="timeline-label">Bíðar eftir skjølum</span>
+          <span class="timeline-meta tnum">12.09. 10:02</span>
+        </div>
+      </div>
+    </section>
+  </div>
+</AppLayout>

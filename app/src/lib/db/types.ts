@@ -41,4 +41,8 @@ export interface Env {
   EPAY_PARTNER_KEY: string;
   /** Base URL this app is reachable at, used when registering webhooks with ePay. */
   APP_URL: string;
+  SKRIVA_BASE_URL?: string;
+  SKRIVA_EMAIL?: string;
+  SKRIVA_PASSWORD?: string;
+  SKRIVA_TENANT_ID?: string;
 }

@@ -27,6 +27,12 @@ describe("business schema", () => {
       "invoice_line_input",
       "app_user",
       "audit_log",
+      "onboarding_application",
+      "onboarding_owner",
+      "onboarding_document",
+      "onboarding_signing",
+      "onboarding_event",
+      "acquiring_price_list",
     ]) {
       expect(tables).toContain(expected);
     }

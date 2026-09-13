@@ -1,0 +1,34 @@
+---
+export interface ChecklistItem {
+  label: string;
+  href?: string;
+  state: "todo" | "current" | "done";
+}
+
+interface Props {
+  items: ChecklistItem[];
+}
+
+const { items } = Astro.props;
+---
+
+<div class="checklist">
+  {
+    items.map((item) => {
+      const Tag = item.href ? "a" : "div";
+      return (
+        <Tag
+          class:list={[
+            "checklist-item",
+            item.state === "done" && "is-done",
+            item.state === "current" && "is-current",
+          ]}
+          href={item.href}
+        >
+          <span class="checklist-mark" aria-hidden="true" />
+          <span>{item.label}</span>
+        </Tag>
+      );
+    })
+  }
+</div>

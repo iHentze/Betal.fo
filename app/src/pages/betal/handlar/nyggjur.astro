@@ -1,5 +1,6 @@
 ---
 import AppLayout from "~/layouts/AppLayout.astro";
+import Field from "~/components/ui/Field.astro";
 import Settings from "~/components/ui/Settings.astro";
 import { env } from "~/lib/env";
 import { fo } from "~/content/fo";
@@ -50,39 +51,22 @@ const nav = navFor(actor);
         description="Vit stovna eina ePay-konta og seta sølustað og hendingar upp."
       >
         <div style="padding:.875rem; display:grid; gap:.75rem">
-          <label>
-            <span style="display:block; font-size: var(--text-xs); color: var(--color-ink-muted)">
-              Navn
-            </span>
-            <input class="input" type="text" name="name" required placeholder="Handil P/F" />
-          </label>
-
-          <label>
-            <span style="display:block; font-size: var(--text-xs); color: var(--color-ink-muted)">
-              Teldupostur hjá eigaranum
-            </span>
-            <input class="input" type="email" name="email" required />
-            <span style="font-size: var(--text-2xs); color: var(--color-ink-faint)">
-              ePay sendur eina innbjóðing higar. Tað kann ikki sláast frá.
-            </span>
-          </label>
-
-          <label>
-            <span style="display:block; font-size: var(--text-xs); color: var(--color-ink-muted)">
-              Økisnavn
-            </span>
-            <input class="input" type="text" name="domain" required placeholder="handil.fo" />
-            <span style="font-size: var(--text-2xs); color: var(--color-ink-faint)">
-              Brúka høvuðsøkisnavnið, ikki eitt undirøkisnavn.
-            </span>
-          </label>
-
-          <label>
-            <span style="display:block; font-size: var(--text-xs); color: var(--color-ink-muted)">
-              {fo.merchants.vTal}
-            </span>
-            <input class="input tnum" type="text" name="vTal" placeholder="123456" />
-          </label>
+          <Field label="Navn" name="name" required placeholder="Handil P/F" />
+          <Field
+            label="Teldupostur hjá eigaranum"
+            name="email"
+            type="email"
+            required
+            hint="ePay sendur eina innbjóðing higar. Tað kann ikki sláast frá."
+          />
+          <Field
+            label="Økisnavn"
+            name="domain"
+            required
+            placeholder="handil.fo"
+            hint="Brúka høvuðsøkisnavnið, ikki eitt undirøkisnavn."
+          />
+          <Field label={fo.merchants.vTal} name="vTal" placeholder="123456" inputmode="numeric" />
 
           {
             templates.results.length > 0 && (

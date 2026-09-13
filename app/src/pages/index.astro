@@ -2,6 +2,7 @@
 import AppLayout from "~/layouts/AppLayout.astro";
 import Amount from "~/components/ui/Amount.astro";
 import Banner from "~/components/ui/Banner.astro";
+import Checklist from "~/components/ui/Checklist.astro";
 import StatusBadge from "~/components/ui/StatusBadge.astro";
 import { env } from "~/lib/env";
 import { fo } from "~/content/fo";
@@ -9,6 +10,15 @@ import { navFor, formatDateTime, formatDate } from "~/lib/nav";
 import { merchantScopeOrNull } from "~/lib/auth";
 import { transactionTotals, pausedWebhooks, listTransactions } from "~/lib/db/queries";
 import { settlementStatus, invoiceStatus } from "~/lib/status";
+import { getApplicationForMerchant, loadPack } from "~/lib/onboarding/application";
+import { wizardPath } from "~/lib/onboarding/access";
+import {
+  STEP_SLUGS,
+  firstIncompleteStep,
+  isStepComplete,
+  stepLabel,
+  type StepSlug,
+} from "~/lib/onboarding/steps";
 
 export const prerender = false;
 
@@ -69,6 +79,36 @@ const [today, month, recent, dailyRows, transfers, invoices, allPaused, failedTo
 const paused = allPaused.filter((w) => w.merchant_id === merchantId);
 const nav = navFor(actor, merchantId);
 
+const merchantRow = await db
+  .prepare(`SELECT acquiring_status FROM merchant WHERE id = ?1`)
+  .bind(merchantId)
+  .first<{ acquiring_status: string }>();
+
+const acquiringOpen = merchantRow?.acquiring_status !== "approved";
+const existingApp = acquiringOpen
+  ? await getApplicationForMerchant(db, merchantId)
+  : null;
+const onboardingPack = existingApp ? await loadPack(db, existingApp.id) : null;
+const resumeSlug = onboardingPack ? firstIncompleteStep(onboardingPack) : "felag";
+const resumeHref = onboardingPack
+  ? wizardPath(onboardingPack.application.id, resumeSlug, actor, merchantId)
+  : `/umbon${actor.kind === "staff" ? `?handil=${merchantId}` : ""}`;
+const checklistItems = onboardingPack
+  ? STEP_SLUGS.filter((slug) => slug !== "bida").map((slug) => ({
+      label: stepLabel(slug),
+      href: wizardPath(onboardingPack.application.id, slug, actor, merchantId),
+      state: (isStepComplete(slug as StepSlug, onboardingPack)
+        ? "done"
+        : slug === resumeSlug
+          ? "current"
+          : "todo") as "todo" | "current" | "done",
+    }))
+  : STEP_SLUGS.filter((slug) => slug !== "bida").map((slug, index) => ({
+      label: stepLabel(slug),
+      href: resumeHref,
+      state: (index === 0 ? "current" : "todo") as "todo" | "current" | "done",
+    }));
+
 // Fill the missing days so the chart shows quiet days rather than skipping them.
 const byBucket = new Map(dailyRows.results.map((r) => [r.bucket, r.total]));
 const days = Array.from({ length: 14 }, (_, i) => byBucket.get(i) ?? 0);
@@ -87,16 +127,43 @@ const outstanding = invoices.results.reduce(
   context={actor.kind === "staff" ? "Betal" : ""}
 >
   {
-    paused.length > 0 && (
+    (paused.length > 0 || acquiringOpen) && (
       <Fragment slot="banner">
-        <Banner
-          tone="paused"
-          title={fo.webhooks.paused}
-          detail={fo.webhooks.pausedExplainer}
-          href={`/stillingar?handil=${merchantId}`}
-          actionLabel={fo.nav.settings}
-        />
+        {acquiringOpen && (
+          <Banner
+            tone="paused"
+            title={fo.onboarding.bannerTitle}
+            detail={fo.onboarding.bannerDetail}
+            href={resumeHref}
+            actionLabel={fo.onboarding.resume}
+          />
+        )}
+        {paused.length > 0 && (
+          <Banner
+            tone="paused"
+            title={fo.webhooks.paused}
+            detail={fo.webhooks.pausedExplainer}
+            href={`/stillingar?handil=${merchantId}`}
+            actionLabel={fo.nav.settings}
+          />
+        )}
       </Fragment>
+    )
+  }
+
+  {
+    acquiringOpen && (
+      <section class="card" style="margin:1rem .875rem 0">
+        <div class="card-head">
+          <span class="card-title">{fo.onboarding.checklistTitle}</span>
+          <a class="card-link" href={resumeHref}>
+            {fo.onboarding.resume} →
+          </a>
+        </div>
+        <div class="card-body">
+          <Checklist items={checklistItems} />
+        </div>
+      </section>
     )
   }
 

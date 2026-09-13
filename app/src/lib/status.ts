@@ -157,3 +157,55 @@ export function webhookStatus(pausedAt: string | null): StatusDescriptor {
     ? { tone: "paused", label: "Steðgað" }
     : { tone: "success", label: "Virkin" };
 }
+
+/**
+ * Onboarding application lifecycle.
+ *
+ * `collecting` and `routed` are aliases of existing tones. New KYC states do not
+ * get new hues — they pick from the map above.
+ */
+const applicationStates: Record<string, StatusDescriptor> = {
+  draft: { tone: "pending", label: "Uppskot" },
+  screening: { tone: "processing", label: "Skoðan" },
+  collecting: { tone: "paused", label: "Skjøl vantar" },
+  signing: { tone: "processing", label: "Undirskriva" },
+  pack_ready: { tone: "success", label: "Pakkin er tilbúgvin" },
+  submitted: { tone: "processing", label: "Sent" },
+  approved: { tone: "success", label: "Góðkent" },
+  rejected: { tone: "failed", label: "Avvíst" },
+  routed: { tone: "refunded", label: "Flutt" },
+};
+
+const financeFlags: Record<string, StatusDescriptor> = {
+  positive: { tone: "success", label: "Positiv" },
+  negative: { tone: "failed", label: "Negativ" },
+  unknown: { tone: "pending", label: "Ókent" },
+};
+
+const acquirers: Record<string, StatusDescriptor> = {
+  swedbank: { tone: "success", label: "Swedbank" },
+  clearhaus: { tone: "processing", label: "Clearhaus" },
+  shift4: { tone: "processing", label: "Shift4" },
+  decline: { tone: "failed", label: "Avvís" },
+};
+
+export function applicationStatus(state: string): StatusDescriptor {
+  return applicationStates[state] ?? unknown;
+}
+
+export function financeStatus(flag: string | null | undefined): StatusDescriptor {
+  if (!flag) return { tone: "voided", label: "—" };
+  return financeFlags[flag] ?? unknown;
+}
+
+export function acquirerStatus(acquirer: string | null | undefined): StatusDescriptor {
+  if (!acquirer) return { tone: "voided", label: "—" };
+  return acquirers[acquirer] ?? { tone: "voided", label: acquirer };
+}
+
+export function sectorStatus(sector: number | null | undefined): StatusDescriptor {
+  if (sector === 1) return { tone: "failed", label: "Geiri 1" };
+  if (sector === 2) return { tone: "pending", label: "Geiri 2" };
+  if (sector === 0) return { tone: "success", label: "Vanlig" };
+  return { tone: "voided", label: "—" };
+}

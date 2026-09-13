@@ -43,8 +43,10 @@ export function navFor(
       { label: fo.nav.merchants, href: "/betal/handlar", icon: "merchants" },
       { label: fo.nav.periods, href: "/betal/tidarskeid", icon: "periods" },
       { label: fo.nav.margin, href: "/betal/vinningur", icon: "margin" },
+      { label: fo.nav.applications, href: "/betal/umbonir", icon: "applications" },
       { label: fo.nav.leads, href: "/betal/ahugadir", icon: "leads" },
       { label: fo.nav.support, href: "/betal/studul", icon: "support" },
+      { label: fo.nav.design, href: "/betal/snid", icon: "design" },
     ],
   };
 
@@ -81,6 +83,16 @@ export function formatDate(value: string | null): string {
   if (Number.isNaN(date.getTime())) return value;
   const pad = (n: number) => String(n).padStart(2, "0");
   return `${pad(date.getUTCDate())}.${pad(date.getUTCMonth() + 1)}.${date.getUTCFullYear()}`;
+}
+
+/** Age for a queue row: "3 t" / "2 dagar", always tabular. */
+export function formatAge(fromMs: number, nowMs: number = Date.now()): string {
+  const delta = Math.max(0, nowMs - fromMs);
+  const minutes = Math.floor(delta / 60_000);
+  if (minutes < 60) return `${Math.max(1, minutes)} min`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 48) return `${hours} t`;
+  return `${Math.floor(hours / 24)} dagar`;
 }
 
 /** Groups rows by calendar day, which is how a merchant reads their takings. */
