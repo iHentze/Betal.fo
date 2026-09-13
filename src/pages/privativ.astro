@@ -1,6 +1,11 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
 import { fo } from "../content/fo";
+import { site } from "../content/site";
+
+// The copy carries an {email} placeholder so the contact address lives in one
+// place instead of being spelled out again in the privacy text.
+const paragraphs = fo.privacy.body.map((paragraph) => paragraph.split("{email}"));
 ---
 
 <BaseLayout title="Privatlív — betal" description={fo.privacy.lead}>
@@ -29,7 +34,22 @@ import { fo } from "../content/fo";
           class="mt-10 max-w-2xl space-y-5 rounded-[2rem] border border-white/10 bg-white/[0.03] p-7 text-sm leading-relaxed text-white/65 backdrop-blur-xl sm:p-10 sm:text-base"
           data-reveal
         >
-          {fo.privacy.body.map((paragraph) => <p>{paragraph}</p>)}
+          {
+            paragraphs.map((parts) => (
+              <p>
+                {parts.map((part, index) => (
+                  <>
+                    {index > 0 && (
+                      <a href={`mailto:${site.email}`} class="text-green underline decoration-green/40 underline-offset-4 transition-colors hover:decoration-green">
+                        {site.email}
+                      </a>
+                    )}
+                    {part}
+                  </>
+                ))}
+              </p>
+            ))
+          }
         </div>
       </div>
     </div>
