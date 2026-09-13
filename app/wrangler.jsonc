@@ -18,6 +18,13 @@
       "id": "2107b17ae3904d09812fc0368463b7ea"
     }
   ],
+  "r2_buckets": [
+    {
+      // Private onboarding uploads, generated templates and signed agreements.
+      "binding": "DOCUMENTS",
+      "bucket_name": "betal-documents"
+    }
+  ],
   // Producer only. The consumer lives in workers/ingest so webhook projection is not
   // affected by app deploys or app traffic.
   "queues": {

@@ -31,6 +31,23 @@ export interface ServiceFetcher {
   fetch(input: Request | string, init?: RequestInit): Promise<Response>;
 }
 
+export interface ObjectBucket {
+  put(
+    key: string,
+    value: ArrayBuffer | Uint8Array,
+    options?: {
+      httpMetadata?: { contentType?: string };
+      customMetadata?: Record<string, string>;
+    },
+  ): Promise<unknown>;
+  get(key: string): Promise<{
+    arrayBuffer(): Promise<ArrayBuffer>;
+    httpMetadata?: { contentType?: string };
+    customMetadata?: Record<string, string>;
+  } | null>;
+  delete(key: string): Promise<void>;
+}
+
 export interface IngestMessage {
   deliveryId: string;
 }
@@ -59,4 +76,5 @@ export interface Env {
   RESEND_API_KEY?: string;
   RESEND_BASE_URL?: string;
   BANK_EMAIL_FROM?: string;
+  DOCUMENTS?: ObjectBucket;
 }
