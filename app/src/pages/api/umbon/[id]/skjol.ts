@@ -43,7 +43,7 @@ export const POST: APIRoute = async ({ params, request, locals, url }) => {
       contentType: file.type || "application/octet-stream",
       bytes,
       uploadedBy: actor.email,
-    });
+    }, { bucket: env.DOCUMENTS });
   } catch (error) {
     return fail(error instanceof Error ? error.message : String(error));
   }

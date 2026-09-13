@@ -15,7 +15,7 @@ export const GET: APIRoute = async ({ params, locals }) => {
   const docId = params.docId;
   if (!id || !docId) return new Response("not found", { status: 404 });
 
-  const doc = await getDocumentById(env.DB, id, docId);
+  const doc = await getDocumentById(env.DB, id, docId, env.DOCUMENTS);
   if (!doc?.bytes) return new Response("not found", { status: 404 });
 
   const body = doc.bytes instanceof Uint8Array ? doc.bytes : new Uint8Array(doc.bytes);
@@ -23,6 +23,7 @@ export const GET: APIRoute = async ({ params, locals }) => {
     headers: {
       "Content-Type": doc.content_type || "application/octet-stream",
       "Content-Disposition": `inline; filename="${doc.file_name ?? "skjal"}"`,
+      "Cache-Control": "private, no-store",
     },
   });
 };

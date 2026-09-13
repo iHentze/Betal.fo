@@ -27,6 +27,9 @@ export interface OnboardingApplication {
   registry_checked_at_ms: number | null;
   registry_snapshot: string | null;
   company_details_confirmed: number;
+  policy_id: string | null;
+  final_snapshot_id: string | null;
+  locked_at_ms: number | null;
   website: string | null;
   sells: string | null;
   vertical_key: string | null;
@@ -66,6 +69,11 @@ export interface OnboardingDocumentMeta {
   byte_size: number | null;
   uploaded_by: string | null;
   uploaded_at_ms: number | null;
+  storage: string;
+  r2_key: string | null;
+  sha256: string | null;
+  scan_status: string;
+  quarantined_at_ms: number | null;
 }
 
 export interface OnboardingSigning {
@@ -80,6 +88,11 @@ export interface OnboardingSigning {
   status: string;
   last_polled_at_ms: number | null;
   created_at_ms: number;
+  owner_id: string | null;
+  signing_person_id: number | null;
+  document_instance_id: string | null;
+  provider_status_json: string | null;
+  expires_at_ms: number | null;
 }
 
 export interface OnboardingEvent {
@@ -91,12 +104,22 @@ export interface OnboardingEvent {
   at_ms: number;
 }
 
+export interface OnboardingAnswer {
+  application_id: string;
+  key: string;
+  value_json: string;
+  source: string;
+  confirmed_at_ms: number | null;
+  updated_at_ms: number;
+}
+
 export interface ApplicationPack {
   application: OnboardingApplication;
   owners: OnboardingOwner[];
   documents: OnboardingDocumentMeta[];
   signings: OnboardingSigning[];
   events: OnboardingEvent[];
+  answers: OnboardingAnswer[];
 }
 
 export interface PriceList {
@@ -132,7 +155,7 @@ export async function loadPack(db: Database, id: string): Promise<ApplicationPac
   const application = await getApplication(db, id);
   if (!application) return null;
 
-  const [owners, documents, signings, events] = await Promise.all([
+  const [owners, documents, signings, events, answers] = await Promise.all([
     db
       .prepare(
         `SELECT * FROM onboarding_owner WHERE application_id = ?1 ORDER BY sort_order, name`,
@@ -142,7 +165,8 @@ export async function loadPack(db: Database, id: string): Promise<ApplicationPac
     db
       .prepare(
         `SELECT id, application_id, kind, required, file_name, content_type, byte_size,
-                uploaded_by, uploaded_at_ms
+                uploaded_by, uploaded_at_ms, storage, r2_key, sha256, scan_status,
+                quarantined_at_ms
            FROM onboarding_document WHERE application_id = ?1`,
       )
       .bind(id)
@@ -159,6 +183,13 @@ export async function loadPack(db: Database, id: string): Promise<ApplicationPac
       )
       .bind(id)
       .all<OnboardingEvent>(),
+    db
+      .prepare(
+        `SELECT application_id, key, value_json, source, confirmed_at_ms, updated_at_ms
+         FROM onboarding_answer WHERE application_id = ?1 ORDER BY key`,
+      )
+      .bind(id)
+      .all<OnboardingAnswer>(),
   ]);
 
   return {
@@ -167,7 +198,47 @@ export async function loadPack(db: Database, id: string): Promise<ApplicationPac
     documents: documents.results,
     signings: signings.results,
     events: events.results,
+    answers: answers.results,
   };
+}
+
+export function answerValue<T>(
+  pack: Pick<ApplicationPack, "answers">,
+  key: string,
+): T | null {
+  const row = pack.answers.find((answer) => answer.key === key);
+  if (!row) return null;
+  try {
+    return JSON.parse(row.value_json) as T;
+  } catch {
+    return null;
+  }
+}
+
+export async function saveAnswers(
+  db: Database,
+  applicationId: string,
+  values: Record<string, unknown>,
+  source = "merchant",
+  now: () => number = () => Date.now(),
+): Promise<void> {
+  const at = now();
+  const statements = Object.entries(values).map(([key, value]) =>
+    db
+      .prepare(
+        `INSERT INTO onboarding_answer (
+           application_id, key, value_json, source, confirmed_at_ms, updated_at_ms
+         ) VALUES (?1, ?2, ?3, ?4, ?5, ?5)
+         ON CONFLICT(application_id, key) DO UPDATE SET
+           value_json = excluded.value_json,
+           source = excluded.source,
+           confirmed_at_ms = excluded.confirmed_at_ms,
+           updated_at_ms = excluded.updated_at_ms`,
+      )
+      .bind(applicationId, key, JSON.stringify(value), source, at)
+  );
+  if (statements.length > 0) await db.batch(statements);
+  await touch(db, applicationId, now);
 }
 
 export async function recordEvent(
@@ -734,7 +805,14 @@ export function priceListHasRates(list: PriceList | null): boolean {
   if (!list) return false;
   try {
     const rates = JSON.parse(list.rates_json) as unknown;
-    return Array.isArray(rates) && rates.length > 0;
+    if (Array.isArray(rates)) return rates.length > 0;
+    if (!rates || typeof rates !== "object") return false;
+    const cardRates = (rates as Record<string, unknown>).cardRates;
+    return Boolean(
+      cardRates &&
+      typeof cardRates === "object" &&
+      Object.keys(cardRates as Record<string, unknown>).length > 0,
+    );
   } catch {
     return false;
   }

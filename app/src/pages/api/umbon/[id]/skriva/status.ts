@@ -4,6 +4,7 @@ import { requirePack, wizardPath } from "~/lib/onboarding/access";
 import { putDocument } from "~/lib/onboarding/documents";
 import { recordEvent } from "~/lib/onboarding/application";
 import { SkrivaClient, SkrivaError, skrivaConfig } from "~/lib/onboarding/skriva";
+import { storeSignedDocumentInstance } from "~/lib/onboarding/document-instances";
 
 export const prerender = false;
 
@@ -50,20 +51,46 @@ export const POST: APIRoute = async ({ params, locals, url }) => {
       await env.DB
         .prepare(
           `UPDATE onboarding_signing
-           SET status = ?2, p_tal = COALESCE(?3, p_tal), last_polled_at_ms = ?4
+           SET status = ?2, p_tal = COALESCE(?3, p_tal), last_polled_at_ms = ?4,
+               provider_status_json = ?5
            WHERE id = ?1`,
         )
-        .bind(row.id, status.state, status.personalIdentificationNumber, Date.now())
+        .bind(
+          row.id,
+          status.state,
+          status.personalIdentificationNumber,
+          Date.now(),
+          JSON.stringify(status.raw),
+        )
         .run();
     }
 
-    const fullySigned = statuses.every(({ status }) => status.state === "signed");
+    const selectedOwnerIds = new Set(
+      pack.owners.filter((owner) => owner.is_signatory).map((owner) => owner.id),
+    );
+    const fullySigned =
+      statuses.length === selectedOwnerIds.size &&
+      statuses.every(
+        ({ row, status }) =>
+          status.state === "signed" &&
+          Boolean(row.owner_id) &&
+          selectedOwnerIds.has(row.owner_id!),
+      );
     const alreadyStored = pack.events.some((event) => event.kind === "skriva_signed");
     if (fullySigned && !alreadyStored) {
       const first = rows[0]!;
       const requestId = Number(first.signing_request_id);
       if (!Number.isInteger(requestId)) throw new SkrivaError("Ógilt Skriva-nummar");
       const pdf = await client.downloadSignedPdf(requestId, first.signer_token!);
+      if (!first.document_instance_id) {
+        throw new SkrivaError("Skjalatilvísingin hjá Skriva manglar");
+      }
+      await storeSignedDocumentInstance(
+        env.DB,
+        env.DOCUMENTS,
+        first.document_instance_id,
+        pdf,
+      );
       await putDocument(env.DB, {
         applicationId: id,
         kind: "agreement",
@@ -71,7 +98,7 @@ export const POST: APIRoute = async ({ params, locals, url }) => {
         contentType: "application/pdf",
         bytes: pdf,
         uploadedBy: "skriva",
-      });
+      }, { bucket: env.DOCUMENTS });
       const at = Date.now();
       await env.DB
         .prepare(
