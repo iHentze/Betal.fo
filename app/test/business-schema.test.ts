@@ -73,7 +73,7 @@ describe("business schema", () => {
       .toMatchObject({
         source_sha256:
           "06cfdbdb6d7d2ea023cc811d1e5b919d2686a02305f62a584e2f9a01c567fc60",
-        r2_key: "templates/swedbank/Kortindlosning-Online-FO.pdf",
+        r2_key: "templates/swedbank/agreement-online-fo-v1.pdf",
       });
   });
 
