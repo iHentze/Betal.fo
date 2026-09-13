@@ -26,7 +26,7 @@ import {
   isFeaturedVertical,
   verticalByKey,
 } from "~/lib/onboarding/verticals";
-import { parseOfficialRates } from "~/lib/onboarding/official-rates";
+import { isDummyOfficialRates, parseOfficialRates } from "~/lib/onboarding/official-rates";
 import { formatDateTime, formatFileSize } from "~/lib/nav";
 import {
   getEygaCompany,
@@ -119,7 +119,9 @@ const screening = screenApplication({
 const priceList = await getActivePriceList(env.DB, priceListKind(screening));
 const fill = canFillAgreement(pack);
 const skrivaReady = skrivaConfigured(env);
-const ratesReady = Boolean(parseOfficialRates(priceList?.rates_json));
+const officialRates = parseOfficialRates(priceList?.rates_json);
+const ratesReady = Boolean(officialRates);
+const dummyRates = isDummyOfficialRates(officialRates);
 const send = canSendToSkriva(pack, priceList, skrivaReady);
 const signers = pack.owners.filter((owner) => owner.is_signatory);
 const swedbank = app.recommended_acquirer === "swedbank" || !app.recommended_acquirer;
@@ -1253,6 +1255,7 @@ if (stig === "banki" && actor.kind === "staff") {
                   <h2>Avtalan hjá tykkum</h2>
                   <p>
                     {fo.onboarding.agreementReady}
+                    {dummyRates && ` ${fo.onboarding.dummyRatesNote}`}
                     {!ratesReady && ` ${fo.onboarding.agreementRatesPending}`}
                   </p>
                 </div>
@@ -1306,7 +1309,7 @@ if (stig === "banki" && actor.kind === "staff") {
                 <>
                   <div class="wizard-alert is-success">
                     {skrivaMessage === "skriva"
-                      ? "Undirskriftin er stovnað, og Klintra hevur sent leinkjurnar."
+                      ? "Undirskriftin er stovnað. Far til Samleikan at vátta."
                       : skrivaPending.length === 1
                         ? "Ein undirskrift bíðar."
                         : `${skrivaPending.length} undirskriftir bíða.`}
@@ -1316,15 +1319,25 @@ if (stig === "banki" && actor.kind === "staff") {
                       Far til Samleikan
                     </a>
                   )}
-                  <form method="POST" action={`/api/umbon/${id}/skriva/status${q}`}>
+                  <form
+                    id="skriva-status"
+                    method="POST"
+                    action={`/api/umbon/${id}/skriva/status${q}`}
+                  >
                     <button class="btn signing-action" type="submit">
                       Dagfør støðuna
                     </button>
                   </form>
+                  {Astro.url.searchParams.has("token") && (
+                    <script is:inline>
+                      document.getElementById("skriva-status")?.submit();
+                    </script>
+                  )}
                 </>
               ) : (
                 <>
                   {!ratesReady && <p class="signing-note">{fo.onboarding.skrivaRatesPending}</p>}
+                  {dummyRates && <p class="signing-note">{fo.onboarding.dummyRatesNote}</p>}
                   {ratesReady && !skrivaReady && (
                     <p class="signing-note">{fo.onboarding.skrivaNotConfigured}</p>
                   )}

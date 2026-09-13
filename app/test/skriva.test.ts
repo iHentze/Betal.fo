@@ -4,6 +4,8 @@ import {
   SkrivaClient,
   skrivaConfig,
   skrivaConfigured,
+  skrivaEnvironment,
+  trustedSigningUrl,
   type SkrivaConfig,
 } from "~/lib/onboarding/skriva";
 import { refreshSkrivaApplication } from "~/lib/onboarding/signing-service";
@@ -30,6 +32,20 @@ describe("Klintra Skriva client", () => {
     };
     expect(skrivaConfigured(env)).toBe(true);
     expect(skrivaConfig(env).tenantId).toBeNull();
+  });
+
+  it("trusts HTTPS and loopback HTTP signing URLs", () => {
+    expect(trustedSigningUrl("https://sign.klintra.fo/samleikin/a")).toBe(
+      "https://sign.klintra.fo/samleikin/a",
+    );
+    expect(trustedSigningUrl("http://127.0.0.1:8790/samleikin/a")).toBe(
+      "http://127.0.0.1:8790/samleikin/a",
+    );
+    expect(() => trustedSigningUrl("http://sign.klintra.fo/samleikin/a")).toThrow(
+      /ógylduga/,
+    );
+    expect(skrivaEnvironment("http://127.0.0.1:8790")).toBe("staging");
+    expect(skrivaEnvironment("https://skrivaapi.klintra.fo")).toBe("production");
   });
 
   it("logs in and creates a request with P-tal delegated to Samleikin", async () => {

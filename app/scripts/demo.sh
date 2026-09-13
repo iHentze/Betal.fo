@@ -31,6 +31,20 @@ if [ ! -d .wrangler ]; then
   npm run seed >/dev/null 2>&1
 fi
 
+# ---- local Skriva / Samleikin fixture --------------------------------------
+
+if curl -sf -o /dev/null --max-time 3 "http://127.0.0.1:8790/health"; then
+  say "skriva fixture: already running"
+else
+  say "skriva fixture: starting"
+  $TMUX has-session -t "=betal-skriva" 2>/dev/null || \
+    $TMUX new-session -d -s betal-skriva -c "$APP_DIR" -- "${SHELL:-bash}" -l
+  $TMUX send-keys -t "betal-skriva:0.0" C-c 2>/dev/null
+  sleep 1
+  $TMUX send-keys -t "betal-skriva:0.0" \
+    "cd '$APP_DIR' && npm run fixtures:skriva" C-m
+fi
+
 # ---- dev server -------------------------------------------------------------
 
 if curl -sf -o /dev/null --max-time 5 "http://localhost:$PORT/innrita"; then

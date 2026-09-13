@@ -27,9 +27,10 @@ APP_URL="http://localhost:4321"
 
 # Klintra Skriva. Empty means the Undirskriva step can preview a filled FO PDF
 # but will not create a signing request. Do not put a real password here.
-# SKRIVA_BASE_URL="https://klintraelectronicsigningapi.azurewebsites.net"
-# SKRIVA_EMAIL=""
-# SKRIVA_PASSWORD=""
+# Local fixture: npm run fixtures:skriva
+# SKRIVA_BASE_URL="http://127.0.0.1:8790"
+# SKRIVA_EMAIL="skriva-local@betal.fo"
+# SKRIVA_PASSWORD="local-skriva"
 # SKRIVA_TENANT_ID="" # optional when the user belongs to exactly one tenant
 
 # Base64-encoded 32-byte AES key for verified P-tal returned by Samleikin.

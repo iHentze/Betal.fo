@@ -213,8 +213,9 @@ export async function fillAgreementPdf(
   ];
   for (const [name, value] of values) setText(form, name, value);
 
-  // Preview may run before staff enter commercially supplied FO rates. Leave those
-  // cells empty — never invent a Swedbank number. Skriva still requires an approved list.
+  // Preview may run before any approved list exists. Leave commercial cells empty
+  // in that case. Dummy TEST lists are allowed for now so Skriva/Samleikin can run;
+  // staff replace them with Swedbank numbers when those arrive.
   if (rates) {
     setText(form, AGREEMENT_TEXT_FIELDS.establishmentFee, formatMinor(rates.establishmentFeeMinor));
     setText(form, AGREEMENT_TEXT_FIELDS.monthlyFee, formatMinor(rates.monthlyFeeMinor));

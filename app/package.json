@@ -12,6 +12,7 @@
     "test:watch": "NODE_OPTIONS=--experimental-sqlite vitest",
     "typecheck": "astro check --minimumSeverity error",
     "seed": "node scripts/seed.mjs > .seed.sql && wrangler d1 execute betal --local --file=.seed.sql",
+    "fixtures:skriva": "node scripts/fixtures/skriva.mjs",
     "db:migrate:local": "wrangler d1 migrations apply betal --local",
     "db:migrate": "wrangler d1 migrations apply betal --remote",
     "templates:upload": "node scripts/upload-swedbank-templates.mjs"

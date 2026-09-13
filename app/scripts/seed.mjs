@@ -447,16 +447,73 @@ add(`INSERT INTO acquiring_application (
   ${Date.UTC(2026, 1, 5)}, ${Date.UTC(2026, 1, 12)}
 );`);
 
+// --- Dummy FO price lists -------------------------------------------------
+// Temporary stand-ins so the official PDF and Samleikin can run locally.
+// Staff replace these at /betal/prislistar. Never treat them as Swedbank commercial.
+
+const PRICE_CATEGORIES = [
+  "dk_debit",
+  "dk_credit",
+  "dk_corporate",
+  "eu_debit",
+  "eu_credit",
+  "eu_corporate",
+  "non_eu_debit",
+  "non_eu_credit",
+  "non_eu_corporate",
+];
+const DUMMY_RATES_NOTE =
+  "TEST dummy FO-prísir — ikki Swedbank-kelda. Broytist tá starvsfólk seta almennu tølini.";
+
+const dummyOfficialRates = (kind) => {
+  const bump = kind === "sector2" ? 40 : 0;
+  return {
+    establishmentFeeMinor: kind === "sector2" ? 25_000 : 15_000,
+    monthlyFeeMinor: kind === "sector2" ? 9_900 : 4_900,
+    minimumMonthlyPaymentMinor: kind === "sector2" ? 5_000 : 2_500,
+    priceCategory: kind === "sector2" ? "TEST FO dummy geiri 2" : "TEST FO dummy",
+    cardRates: Object.fromEntries(
+      PRICE_CATEGORIES.map((category) => [
+        category,
+        {
+          visa: { transactionMinor: 25 + bump, basisPoints: 89 + bump },
+          mastercard: { transactionMinor: 29 + bump, basisPoints: 95 + bump },
+          diners: { transactionMinor: 50 + bump, basisPoints: 149 + bump },
+        },
+      ]),
+    ),
+  };
+};
+
+for (const [kind, id] of [
+  ["standard", "dummy-standard"],
+  ["sector2", "dummy-sector2"],
+]) {
+  add(`INSERT INTO acquiring_price_list (
+    id, kind, version, currency, country_code, rates_json, effective_from,
+    created_at_ms, status, created_by, approved_by, approved_at_ms, source_note
+  ) VALUES (
+    ${q(id)}, ${q(kind)}, 1, 'DKK', 'FO',
+    ${q(JSON.stringify(dummyOfficialRates(kind)))},
+    '2026-09-13', ${Date.UTC(2026, 8, 13)}, 'approved',
+    'seed@betal.fo', 'seed@betal.fo', ${Date.UTC(2026, 8, 13)},
+    ${q(DUMMY_RATES_NOTE)}
+  );`);
+}
+
 // --- Onboarding merchant --------------------------------------------------
 // The coffee shop is already approved and must not see the payouts-paused banner.
-// This second shop is mid-application so the wizard, staff queue and resume
-// banner have something real to open.
+// This second shop is signing-ready so dummy rates + Samleikin can be exercised.
 
 const ONBOARD_ID = "44444444-4444-4444-8444-444444444444";
 const ONBOARD_ACCOUNT = "55555555-5555-4555-8555-555555555555";
 const ONBOARD_APP = "66666666-6666-4666-8666-666666666666";
+const ONBOARD_OWNER = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
 const ONBOARD_TOKEN = "dev-onboarding-session-token";
 const ONBOARD_USER = randomUUID();
+const SAMPLE_PDF = "%PDF-1.4\n1 0 obj<<>>endobj\ntrailer<<>>\n%%EOF\n";
+const SAMPLE_PDF_SHA = sha256(SAMPLE_PDF);
+const SAMPLE_PDF_HEX = Buffer.from(SAMPLE_PDF).toString("hex");
 
 add(`INSERT INTO merchant (
   id, epay_account_id, name, legal_name, environment, epay_status, status,
@@ -483,13 +540,76 @@ VALUES (${q(sha256(ONBOARD_TOKEN))}, ${q(ONBOARD_USER)}, ${farFuture}, ${TODAY})
 add(`INSERT INTO onboarding_application (
   id, merchant_id, state, country_code, legal_name, v_tal, address_line_one,
   postal_code, city, company_type, registry_source, company_details_confirmed,
-  website, sells, created_at_ms, updated_at_ms
+  website, sells, vertical_key, vertical_sector, equity, operations,
+  bank_account, recommended_acquirer, extra_docs_required, screening_reason,
+  created_at_ms, updated_at_ms
 ) VALUES (
-  ${q(ONBOARD_APP)}, ${q(ONBOARD_ID)}, 'draft', 'FO',
+  ${q(ONBOARD_APP)}, ${q(ONBOARD_ID)}, 'ready_for_signing', 'FO',
   'Handilin við Bryggjuni Sp/f', '654321', 'Bryggjubakki 4', '100', 'Tórshavn',
-  'Sp/f', 'manual', 1, 'https://handilin.fo', 'Góðar vørur av bryggjuni',
+  'Sp/f', 'manual', 1, 'https://handilin.fo', 'Vørur til hús og heim',
+  'retail', 2, 'positive', 'positive', '64601234567890', 'swedbank', 1,
+  'Geiri 2 — Swedbank við hægri prísi og eyka skjølum',
   ${Date.UTC(2026, 8, 10)}, ${Date.UTC(2026, 8, 12)}
 );`);
+
+add(`INSERT INTO onboarding_owner (
+  id, application_id, name, email, role, ownership_bps, is_signatory, sort_order
+) VALUES (
+  ${q(ONBOARD_OWNER)}, ${q(ONBOARD_APP)}, 'Anna Eigari', 'eigari@handilin.fo',
+  'Eigari', 10000, 1, 0
+);`);
+
+const onboardAnswers = {
+  annual_card_turnover_dkk: 1_000_000,
+  average_transaction_dkk: 500,
+  market_name: "Betal UX Test",
+  contact_name: "Anna Eigari",
+  contact_phone: "+298 123456",
+  contact_email: "eigari@handilin.fo",
+  invoice_email: "rokning@handilin.fo",
+  product_type: "physical",
+  inventory: "yes",
+  delivery_method: "Postur og heintan",
+  delivery_days: 2,
+  subscriptions: false,
+  donations: false,
+  gift_cards: true,
+  primary_customers: "consumers",
+  payment_link_mode: "digital",
+  save_card: false,
+  wallets: ["applepay"],
+  other_mit: false,
+  website_terms: true,
+  made_to_order: false,
+  sales_regions: { denmark: 0, nordics: 100, eu: 0, usa: 0, other: 0 },
+};
+
+for (const [key, value] of Object.entries(onboardAnswers)) {
+  add(`INSERT INTO onboarding_answer (
+    application_id, key, value_json, source, confirmed_at_ms, updated_at_ms
+  ) VALUES (
+    ${q(ONBOARD_APP)}, ${q(key)}, ${q(JSON.stringify(value))}, 'merchant',
+    ${Date.UTC(2026, 8, 12)}, ${Date.UTC(2026, 8, 12)}
+  );`);
+}
+
+for (const kind of [
+  "bank_confirmation",
+  "company_registration",
+  "owners_book",
+  "industry_answers",
+  "annual_accounts",
+]) {
+  add(`INSERT INTO onboarding_document (
+    id, application_id, kind, required, file_name, content_type, byte_size, bytes,
+    uploaded_by, uploaded_at_ms, storage, sha256, scan_status
+  ) VALUES (
+    ${q(randomUUID())}, ${q(ONBOARD_APP)}, ${q(kind)}, 1, ${q(`${kind}.pdf`)},
+    'application/pdf', ${SAMPLE_PDF.length}, X'${SAMPLE_PDF_HEX}',
+    'eigari@handilin.fo', ${Date.UTC(2026, 8, 12)}, 'd1', ${q(SAMPLE_PDF_SHA)},
+    'basic_validated'
+  );`);
+}
 
 add(`INSERT INTO onboarding_event (
   id, application_id, kind, actor_email, payload, at_ms

@@ -25,7 +25,7 @@ import { canFillAgreement, canSendToSkriva, fillAgreementPdf, fillBankFormPdf } 
 import { getDocumentBytes, putDocument } from "~/lib/onboarding/documents";
 import type { ObjectBucket } from "~/lib/db/types";
 import { readFileSync } from "node:fs";
-import { PRICE_CATEGORIES } from "~/lib/onboarding/swedbank";
+import { dummyOfficialRates } from "~/lib/onboarding/official-rates";
 import type { PriceList } from "~/lib/onboarding/application";
 
 const completeBusinessAnswers = {
@@ -66,20 +66,7 @@ const officialPriceList: PriceList = {
   version: 1,
   currency: "DKK",
   country_code: "FO",
-  rates_json: JSON.stringify({
-    establishmentFeeMinor: 10000,
-    monthlyFeeMinor: 5000,
-    minimumMonthlyPaymentMinor: 0,
-    priceCategory: "FO standard test",
-    cardRates: Object.fromEntries(PRICE_CATEGORIES.map((category) => [
-      category,
-      {
-        visa: { transactionMinor: 50, basisPoints: 150 },
-        mastercard: { transactionMinor: 50, basisPoints: 150 },
-        diners: { transactionMinor: 75, basisPoints: 200 },
-      },
-    ])),
-  }),
+  rates_json: JSON.stringify(dummyOfficialRates("standard")),
 };
 
 function emptyPack(overrides: Partial<ApplicationPack["application"]> = {}): ApplicationPack {

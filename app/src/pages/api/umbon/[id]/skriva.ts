@@ -4,7 +4,13 @@ import { requirePack, wizardPath } from "~/lib/onboarding/access";
 import { getActivePriceList, recordEvent } from "~/lib/onboarding/application";
 import { canSendToSkriva, fillAgreementPdf } from "~/lib/onboarding/pdf";
 import { priceListKind, screenApplication } from "~/lib/onboarding/screening";
-import { SkrivaClient, SkrivaError, skrivaConfig, skrivaConfigured } from "~/lib/onboarding/skriva";
+import {
+  SkrivaClient,
+  SkrivaError,
+  skrivaConfig,
+  skrivaConfigured,
+  skrivaEnvironment,
+} from "~/lib/onboarding/skriva";
 import { getOfficialTemplate } from "~/lib/onboarding/swedbank";
 import { createFinalSnapshot, getActivePolicy } from "~/lib/onboarding/snapshot";
 import { createDocumentInstance } from "~/lib/onboarding/document-instances";
@@ -147,7 +153,7 @@ export const POST: APIRoute = async ({ params, locals, url }) => {
         .bind(
           crypto.randomUUID(),
           id,
-          env.SKRIVA_BASE_URL?.includes("azurewebsites.net") ? "staging" : "production",
+          skrivaEnvironment(env.SKRIVA_BASE_URL),
           String(request.signingRequestId),
           signer.token,
           signer.signingUrl,

@@ -7,6 +7,9 @@ import {
   saveOwners,
 } from "~/lib/onboarding/application";
 import {
+  DUMMY_RATES_SOURCE_NOTE,
+  dummyOfficialRates,
+  isDummyOfficialRates,
   officialRatesFromForm,
   parseOfficialRates,
 } from "~/lib/onboarding/official-rates";
@@ -36,6 +39,13 @@ function completeRates() {
 }
 
 describe("official FO price lists", () => {
+  it("parses the dummy FO matrix used until Swedbank numbers arrive", () => {
+    const dummy = dummyOfficialRates("sector2");
+    expect(parseOfficialRates(dummy)).toEqual(dummy);
+    expect(isDummyOfficialRates(dummy)).toBe(true);
+    expect(DUMMY_RATES_SOURCE_NOTE).toMatch(/ikki Swedbank/);
+  });
+
   it("rejects incomplete rate JSON", () => {
     expect(parseOfficialRates("{}")).toBeNull();
     expect(parseOfficialRates("[]")).toBeNull();

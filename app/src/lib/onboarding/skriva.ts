@@ -105,15 +105,31 @@ async function responseJson(response: Response, fallback: string): Promise<unkno
   }
 }
 
-function trustedSigningUrl(value: unknown): string {
+function isLoopbackHost(hostname: string): boolean {
+  return hostname === "127.0.0.1" || hostname === "localhost" || hostname === "[::1]";
+}
+
+export function trustedSigningUrl(value: unknown): string {
   const url = string(value);
   try {
     const parsed = new URL(url);
-    if (parsed.protocol !== "https:") throw new Error("not https");
-    return parsed.toString();
+    const localHttp = parsed.protocol === "http:" && isLoopbackHost(parsed.hostname);
+    if (parsed.protocol === "https:" || localHttp) return parsed.toString();
   } catch {
-    throw new SkrivaError("Skriva sendi eina ógylduga undirskriftarleinkju");
+    // Fall through to the same error as a missing URL.
   }
+  throw new SkrivaError("Skriva sendi eina ógylduga undirskriftarleinkju");
+}
+
+export function skrivaEnvironment(baseUrl?: string): "staging" | "production" {
+  const url = baseUrl ?? "";
+  if (
+    url.includes("azurewebsites.net") ||
+    /localhost|127\.0\.0\.1|\[::1\]/.test(url)
+  ) {
+    return "staging";
+  }
+  return "production";
 }
 
 function nestedString(value: unknown, names: string[]): string | null {

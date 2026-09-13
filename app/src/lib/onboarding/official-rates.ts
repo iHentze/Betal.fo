@@ -36,6 +36,36 @@ export const PRICE_CATEGORY_LABELS: Record<PriceCategory, string> = {
   non_eu_corporate: "Utan EU fyritøka",
 };
 
+/** Local / staging stand-in until staff paste commercially supplied Swedbank numbers. */
+export const DUMMY_RATES_SOURCE_NOTE =
+  "TEST dummy FO-prísir — ikki Swedbank-kelda. Broytist tá starvsfólk seta almennu tølini.";
+
+export function dummyOfficialRates(
+  kind: "standard" | "sector2" = "standard",
+): OfficialRateSet {
+  const bump = kind === "sector2" ? 40 : 0;
+  return {
+    establishmentFeeMinor: kind === "sector2" ? 25_000 : 15_000,
+    monthlyFeeMinor: kind === "sector2" ? 9_900 : 4_900,
+    minimumMonthlyPaymentMinor: kind === "sector2" ? 5_000 : 2_500,
+    priceCategory: kind === "sector2" ? "TEST FO dummy geiri 2" : "TEST FO dummy",
+    cardRates: Object.fromEntries(
+      PRICE_CATEGORIES.map((category) => [
+        category,
+        {
+          visa: { transactionMinor: 25 + bump, basisPoints: 89 + bump },
+          mastercard: { transactionMinor: 29 + bump, basisPoints: 95 + bump },
+          diners: { transactionMinor: 50 + bump, basisPoints: 149 + bump },
+        },
+      ]),
+    ) as OfficialRateSet["cardRates"],
+  };
+}
+
+export function isDummyOfficialRates(rates: OfficialRateSet | null | undefined): boolean {
+  return Boolean(rates?.priceCategory.startsWith("TEST FO dummy"));
+}
+
 function isSchemeRate(value: unknown): value is SchemeRate {
   if (!value || typeof value !== "object") return false;
   const rate = value as SchemeRate;

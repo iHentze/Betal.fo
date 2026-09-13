@@ -248,8 +248,9 @@ export const fo = {
     agreementReady: "Almenna Swedbank-skjalið, fylt við tykkara upplýsingum.",
     agreementRatesPending:
       "Prísfeltið er tómt, til Betal hevur sett tølini frá Swedbank. Vit uppfinna tey ikki.",
+    dummyRatesNote: "Hetta eru roynsluprísir, ikki tøl frá Swedbank.",
     skrivaRatesPending:
-      "Samleikin letur ikki upp, fyrr enn FO-prísirnir frá Swedbank eru settir.",
+      "Samleikin letur ikki upp, fyrr enn FO-prísirnir eru settir.",
     skrivaNotConfigured: "Samleikin er ikki knýttur enn. Tú kanst lesa avtaluna.",
     signersTitle: "Tey, ið skulu undirskriva",
     waitSwedbank: "Swedbank hevur pakkan. Vit siga tær, tá ið teir hava tikið støðu.",
