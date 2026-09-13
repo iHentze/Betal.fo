@@ -8,10 +8,10 @@
     {
       "binding": "DB",
       "database_name": "betal",
-      "database_id": "00000000-0000-0000-0000-000000000000"
+      "database_id": "b7f1450c-c93b-4eea-ad53-0f694a8cf2de"
     }
   ],
-  "kv_namespaces": [{ "binding": "TOKENS", "id": "00000000000000000000000000000000" }],
+  "kv_namespaces": [{ "binding": "TOKENS", "id": "2107b17ae3904d09812fc0368463b7ea" }],
   "queues": {
     "consumers": [
       {
