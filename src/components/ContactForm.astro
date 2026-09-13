@@ -3,7 +3,13 @@ import { fo, products } from "../content/fo";
 import { site } from "../content/site";
 ---
 
-<form class="grid gap-6" data-contact-form>
+<!--
+  novalidate suppresses the browser's built-in validation bubbles, which appear
+  in the browser's own language rather than Faroese. The fields keep `required`
+  so assistive technology still announces them, and the script below reports
+  problems using the Faroese copy.
+-->
+<form class="grid gap-6" novalidate data-contact-form>
   <div class="grid gap-5 sm:grid-cols-2">
     <label class="grid gap-2 text-sm font-medium text-white">
       {fo.contact.name}
@@ -97,7 +103,14 @@ import { site } from "../content/site";
   </div>
 </form>
 
-<script is:inline define:vars={{ emailTo: site.email, requiredText: fo.contact.required }}>
+<script
+  is:inline
+  define:vars={{
+    emailTo: site.email,
+    requiredText: fo.contact.required,
+    invalidEmailText: fo.contact.invalidEmail,
+  }}
+>
   const form = document.querySelector("[data-contact-form]");
   const error = document.querySelector("[data-form-error]");
   if (form instanceof HTMLFormElement) {
@@ -117,13 +130,26 @@ import { site } from "../content/site";
       const product = String(data.get("product") ?? "").trim();
       const message = String(data.get("message") ?? "").trim();
 
-      if (!name || !email || !message) {
+      const fail = (text, field) => {
         if (error instanceof HTMLElement) {
-          error.textContent = requiredText;
+          error.textContent = text;
           error.classList.remove("hidden");
         }
+        const invalid = form.querySelector(`[name=${field}]`);
+        if (invalid instanceof HTMLElement) invalid.focus();
+      };
+
+      if (!name || !email || !message) {
+        fail(requiredText, !name ? "name" : !email ? "email" : "message");
         return;
       }
+
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        fail(invalidEmailText, "email");
+        return;
+      }
+
+      if (error instanceof HTMLElement) error.classList.add("hidden");
 
       const subject = product ? `Betal: ${product}` : "Betal: samband";
       const body = [
