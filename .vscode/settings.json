@@ -1,0 +1,20 @@
+{
+  "cSpell.enabledFileTypes": {
+    "astro": true,
+    "css": true,
+    "html": true,
+    "javascript": true,
+    "json": true,
+    "jsonc": true,
+    "markdown": true,
+    "typescript": true
+  },
+  "cSpell.customDictionaries": {
+    "betal": {
+      "name": "betal",
+      "path": "${workspaceFolder}/.cspell/project-words.txt",
+      "addWords": true,
+      "scope": "workspace"
+    }
+  }
+}

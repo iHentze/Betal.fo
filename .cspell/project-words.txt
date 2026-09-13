@@ -1,0 +1,32 @@
+# Words the Faroese and English dictionaries do not know but that are correct
+# here. The editor's "Add to project dictionary" action appends to this file.
+
+# Brand and product names
+Betal
+ePay
+Softpay
+
+# Faroese loanwords and forms the upstream wordlist is missing
+appin
+avstemming
+haldarskipan
+ikoni
+integratiónir
+óbiðna
+samtvinnað
+terminalurin
+
+# Page slugs
+privativ
+
+# Code identifiers, tooling and technical terms
+backoffice
+bento
+etal
+fontsource
+nums
+sparkline
+tnum
+viewbox
+wordlist
+wordmark
