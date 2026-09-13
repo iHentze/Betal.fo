@@ -46,6 +46,16 @@ export const POST: APIRoute = async ({ params, locals, url }) => {
       ? redirect(alreadyOpen.signing_url)
       : redirect(message(back, "sent", "skriva"));
   }
+  if (pack.application.state === "signing") {
+    await env.DB
+      .prepare(
+        `UPDATE onboarding_application
+         SET state = 'ready_for_signing', updated_at_ms = ?2
+         WHERE id = ?1 AND state = 'signing'`,
+      )
+      .bind(id, Date.now())
+      .run();
+  }
 
   const signerOwners = pack.owners.filter((owner) => owner.is_signatory);
   if (signerOwners.length === 0) return fail("Í minsta lagi ein undirskrivari manglar");

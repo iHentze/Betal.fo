@@ -1,0 +1,26 @@
+{
+  "name": "betal-onboarding",
+  "main": "index.ts",
+  "compatibility_date": "2026-08-27",
+  "compatibility_flags": ["nodejs_compat"],
+  "observability": { "enabled": true },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "betal",
+      "database_id": "b7f1450c-c93b-4eea-ad53-0f694a8cf2de"
+    }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "DOCUMENTS",
+      "bucket_name": "betal-documents"
+    }
+  ],
+  "vars": {
+    "SKRIVA_BASE_URL": "https://klintraelectronicsigningapi.azurewebsites.net"
+  },
+  "triggers": {
+    "crons": ["*/2 * * * *"]
+  }
+}

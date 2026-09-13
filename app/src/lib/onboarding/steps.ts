@@ -63,10 +63,13 @@ export function isStepComplete(slug: StepSlug, pack: ApplicationPack): boolean {
     case "skjol": {
       const base =
         hasDocument(pack, "company_registration") && hasDocument(pack, "owners_book");
+      const industry = app.vertical_sector === 2
+        ? hasDocument(pack, "industry_answers")
+        : true;
       if (app.extra_docs_required) {
-        return base && hasDocument(pack, "annual_accounts");
+        return base && industry && hasDocument(pack, "annual_accounts");
       }
-      return base;
+      return base && industry;
     }
     case "undirskriva":
       if (app.recommended_acquirer && app.recommended_acquirer !== "swedbank") {
@@ -81,10 +84,18 @@ export function isStepComplete(slug: StepSlug, pack: ApplicationPack): boolean {
             row.provider === "skriva" &&
             row.signing_request_id === latestRequestId,
         );
+        const selectedOwnerIds = new Set(
+          pack.owners.filter((owner) => owner.is_signatory).map((owner) => owner.id),
+        );
+        const signedOwnerIds = new Set(
+          latestRows
+            .filter((row) => row.status === "signed" && row.owner_id)
+            .map((row) => row.owner_id),
+        );
         const everySelectedSignerSigned =
-          latestRows.length > 0 &&
-          latestRows.length === pack.owners.filter((owner) => owner.is_signatory).length &&
-          latestRows.every((row) => row.status === "signed");
+          selectedOwnerIds.size > 0 &&
+          signedOwnerIds.size === selectedOwnerIds.size &&
+          [...selectedOwnerIds].every((ownerId) => signedOwnerIds.has(ownerId));
         return everySelectedSignerSigned ||
           pack.signings.some((row) => row.status === "wet_ink") ||
           (hasDocument(pack, "agreement") && hasDocument(pack, "photo_id"));

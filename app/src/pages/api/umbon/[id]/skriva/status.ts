@@ -1,11 +1,8 @@
 import type { APIRoute } from "astro";
 import { env } from "~/lib/env";
 import { requirePack, wizardPath } from "~/lib/onboarding/access";
-import { putDocument } from "~/lib/onboarding/documents";
-import { recordEvent } from "~/lib/onboarding/application";
-import { SkrivaClient, SkrivaError, skrivaConfig } from "~/lib/onboarding/skriva";
-import { storeSignedDocumentInstance } from "~/lib/onboarding/document-instances";
-import { encryptPersonalIdentificationNumber } from "~/lib/onboarding/identity-crypto";
+import { refreshSkrivaApplication } from "~/lib/onboarding/signing-service";
+import { SkrivaError } from "~/lib/onboarding/skriva";
 
 export const prerender = false;
 
@@ -31,114 +28,25 @@ export const POST: APIRoute = async ({ params, locals, url }) => {
   }
 
   const back = wizardPath(id, "undirskriva", actor, pack.application.merchant_id);
-  const fail = (text: string) => redirect(message(back, "feilur", text));
-  const latestRequestId = pack.signings.find(
-    (row) => row.provider === "skriva" && row.signing_request_id,
-  )?.signing_request_id;
-  const rows = pack.signings.filter(
-    (row) =>
-      row.provider === "skriva" &&
-      row.signing_request_id === latestRequestId &&
-      row.signer_token,
-  );
-  if (rows.length === 0) return fail("Eingin Skriva-undirskrift er stovnað");
-
   try {
-    const client = new SkrivaClient(skrivaConfig(env));
-    const statuses = [];
-    for (const row of rows) {
-      const status = await client.signingStatus(row.signer_token!);
-      statuses.push({ row, status });
-      let identity: { ciphertext: string; last4: string } | null = null;
-      if (status.personalIdentificationNumber) {
-        if (!env.IDENTITY_ENCRYPTION_KEY) {
-          throw new Error("Dátulykil til Samleikan manglar");
-        }
-        identity = await encryptPersonalIdentificationNumber(
-          status.personalIdentificationNumber,
-          env.IDENTITY_ENCRYPTION_KEY,
-        );
-      }
-      await env.DB
-        .prepare(
-          `UPDATE onboarding_signing
-           SET status = ?2, p_tal = NULL, p_tal_ciphertext = COALESCE(?3, p_tal_ciphertext),
-               p_tal_last4 = COALESCE(?4, p_tal_last4), last_polled_at_ms = ?5,
-               provider_status_json = ?6
-           WHERE id = ?1`,
-        )
-        .bind(
-          row.id,
-          status.state,
-          identity?.ciphertext,
-          identity?.last4,
-          Date.now(),
-          JSON.stringify(status.raw),
-        )
-        .run();
-    }
-
-    const selectedOwnerIds = new Set(
-      pack.owners.filter((owner) => owner.is_signatory).map((owner) => owner.id),
+    const result = await refreshSkrivaApplication(env, id, actor.email);
+    return redirect(
+      message(back, "sent", result.state === "signed" ? "skriva_signed" : "skriva_status"),
     );
-    const fullySigned =
-      statuses.length === selectedOwnerIds.size &&
-      statuses.every(
-        ({ row, status }) =>
-          status.state === "signed" &&
-          Boolean(row.owner_id) &&
-          selectedOwnerIds.has(row.owner_id!),
-      );
-    const alreadyStored = pack.events.some((event) => event.kind === "skriva_signed");
-    if (fullySigned && !alreadyStored) {
-      const first = rows[0]!;
-      const requestId = Number(first.signing_request_id);
-      if (!Number.isInteger(requestId)) throw new SkrivaError("Ógilt Skriva-nummar");
-      const pdf = await client.downloadSignedPdf(requestId, first.signer_token!);
-      if (!first.document_instance_id) {
-        throw new SkrivaError("Skjalatilvísingin hjá Skriva manglar");
-      }
-      await storeSignedDocumentInstance(
-        env.DB,
-        env.DOCUMENTS,
-        first.document_instance_id,
-        pdf,
-      );
-      await putDocument(env.DB, {
-        applicationId: id,
-        kind: "agreement",
-        fileName: "kortinnloysing-fo-undirskrivad.pdf",
-        contentType: "application/pdf",
-        bytes: pdf,
-        uploadedBy: "skriva",
-        scanStatus: "provider_verified",
-      }, { bucket: env.DOCUMENTS });
-      const at = Date.now();
-      await env.DB
-        .prepare(
-          `UPDATE onboarding_application
-           SET state = 'pack_ready', updated_at_ms = ?2
-           WHERE id = ?1`,
-        )
-        .bind(id, at)
-        .run();
-      await recordEvent(env.DB, id, "skriva_signed", actor.email, {
-        signingRequestId: requestId,
-      }, () => at);
-      return redirect(message(back, "sent", "skriva_signed"));
-    }
-
-    return redirect(message(back, "sent", "skriva_status"));
   } catch (error) {
     console.error(JSON.stringify({
       event: "skriva_status_failed",
       applicationId: id,
       error: error instanceof Error ? error.name : "unknown",
     }));
-    return fail(
-      error instanceof SkrivaError
-        ? error.message
-        : "Støðan hjá Skriva fekst ikki. Royn aftur.",
+    return redirect(
+      message(
+        back,
+        "feilur",
+        error instanceof SkrivaError
+          ? error.message
+          : "Støðan hjá Skriva fekst ikki. Royn aftur.",
+      ),
     );
   }
 };
