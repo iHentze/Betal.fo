@@ -191,6 +191,14 @@ export const POST: APIRoute = async ({ params, locals, url }) => {
       event: "skriva_create_failed",
       applicationId: id,
       error: error instanceof Error ? error.name : "unknown",
+      message: error instanceof Error ? error.message : String(error),
+      skrivaHost: (() => {
+        try {
+          return env.SKRIVA_BASE_URL ? new URL(env.SKRIVA_BASE_URL).host : null;
+        } catch {
+          return "invalid";
+        }
+      })(),
     }));
     return fail(
       error instanceof SkrivaError

@@ -185,12 +185,21 @@ export function normalizeSkrivaStatus(raw: unknown): SkrivaStatus {
   };
 }
 
+function defaultFetcher(
+  input: Parameters<typeof fetch>[0],
+  init?: Parameters<typeof fetch>[1],
+): ReturnType<typeof fetch> {
+  // workerd's fetch is a bound host function. Passing `fetch` as a default
+  // argument loses `this` and throws Illegal invocation.
+  return fetch(input, init);
+}
+
 export class SkrivaClient {
   private token: string | null = null;
 
   constructor(
     private readonly config: SkrivaConfig,
-    private readonly fetcher: typeof fetch = fetch,
+    private readonly fetcher: typeof fetch = defaultFetcher,
   ) {}
 
   private async login(): Promise<string> {
