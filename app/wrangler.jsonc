@@ -9,6 +9,17 @@
       "database_name": "betal",
       "database_id": "b7f1450c-c93b-4eea-ad53-0f694a8cf2de",
       "migrations_dir": "migrations"
+    },
+    {
+      // Same register as eyga.fo. Read-only — never point Betal migrations here.
+      "binding": "EYGA_CORE",
+      "database_name": "eyga-core",
+      "database_id": "477f6899-52a1-4bd1-9e9b-6351be9ddb76"
+    },
+    {
+      "binding": "EYGA_SEARCH",
+      "database_name": "eyga-search",
+      "database_id": "74076e4d-946b-4195-a9da-092436ac66f8"
     }
   ],
   "kv_namespaces": [
@@ -30,8 +41,8 @@
   "queues": {
     "producers": [{ "binding": "INGEST_QUEUE", "queue": "betal-ingest" }]
   },
-  // Private company facts from api.eyga.fo. The API still requires the matching
-  // EYGA_API_TOKEN Worker secret. Local development uses EYGA_API_BASE_URL.
+  // Optional HTTP fallback to api.eyga.fo. The live register bindings above are
+  // the default. A Bearer token is still required for the HTTP API.
   "services": [
     {
       "binding": "EYGA_API",

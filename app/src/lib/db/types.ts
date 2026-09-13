@@ -69,9 +69,13 @@ export interface Env {
   SKRIVA_TENANT_ID?: string;
   /** Private Worker-to-Worker binding to the Eyga v1 company API. */
   EYGA_API?: ServiceFetcher;
-  /** URL fallback for local/staging only. */
+  /** URL fallback when a Bearer token is set. Loopback fixtures lose to EYGA_CORE. */
   EYGA_API_BASE_URL?: string;
   EYGA_API_TOKEN?: string;
+  /** Live eyga-core D1 — the same register as eyga.fo. */
+  EYGA_CORE?: Database;
+  /** Live eyga-search FTS5 index. Optional; name search falls back to LIKE. */
+  EYGA_SEARCH?: Database;
   /** Resend transactional email configuration. */
   RESEND_API_KEY?: string;
   RESEND_WEBHOOK_SECRET?: string;

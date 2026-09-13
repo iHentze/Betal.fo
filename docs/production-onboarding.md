@@ -5,7 +5,8 @@
 - D1: `betal` (`b7f1450c-c93b-4eea-ad53-0f694a8cf2de`, WEUR)
 - KV: `betal-tokens` (`2107b17ae3904d09812fc0368463b7ea`)
 - R2: `betal-documents`
-- Service binding: `EYGA_API` → `eyga-api`
+- D1: `eyga-core` + `eyga-search` (same register as eyga.fo, read-only)
+- Service binding: `EYGA_API` → `eyga-api` (optional HTTP fallback)
 - Scheduled Worker: `betal-onboarding` (deploy after secrets are configured)
 
 ## Resend DNS

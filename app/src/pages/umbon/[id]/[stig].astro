@@ -333,7 +333,7 @@ if (stig === "banki" && actor.kind === "staff") {
                       <strong>{result.name}</strong>
                       <span>{result.location} · skrásetingarnr. {result.registryNumber}</span>
                     </span>
-                    <span class:list={["registry-status", result.status !== "virkid" && "is-warning"]}>
+                    <span class:list={["registry-status", result.status !== "active" && "is-warning"]}>
                       {result.statusLabel}
                     </span>
                     <span class="registry-chevron" aria-hidden="true">›</span>
@@ -1721,7 +1721,7 @@ if (stig === "banki" && actor.kind === "staff") {
         copy.append(name, meta);
 
         const status = document.createElement("span");
-        status.className = `registry-status${result.status === "virkid" ? "" : " is-warning"}`;
+        status.className = `registry-status${result.status === "active" ? "" : " is-warning"}`;
         status.textContent = result.statusLabel;
 
         const chevron = document.createElement("span");

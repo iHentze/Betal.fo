@@ -1,13 +1,17 @@
-import type { ServiceFetcher } from "../db/types";
+import type { Database, ServiceFetcher } from "../db/types";
+import { loadEygaRegisterCompany, searchEygaRegister } from "./eyga-register";
 
 /**
- * Production uses the private `EYGA_API` service binding. A base URL is supported for
- * local/staging use. The Bearer token is always server-side.
+ * Live company facts come from the same register as eyga.fo. Production reads the
+ * `eyga-core` / `eyga-search` D1 databases. `api.eyga.fo` remains available when a
+ * Bearer token is configured.
  */
 export interface EygaApiEnv {
   EYGA_API?: ServiceFetcher;
   EYGA_API_BASE_URL?: string;
   EYGA_API_TOKEN?: string;
+  EYGA_CORE?: Database;
+  EYGA_SEARCH?: Database;
 }
 
 export interface EygaSearchResult {
@@ -79,21 +83,47 @@ const COMPANY_TYPES: Record<string, string> = {
   Fil: "Filialur",
 };
 
+function apiBaseUrl(env: EygaApiEnv): string | null {
+  const url = env.EYGA_API_BASE_URL?.trim().replace(/\/+$/, "") ?? "";
+  return url || null;
+}
+
+function isLoopbackUrl(url: string): boolean {
+  try {
+    const host = new URL(url).hostname;
+    return host === "127.0.0.1" || host === "localhost" || host === "::1";
+  } catch {
+    return false;
+  }
+}
+
+function preferLiveHttp(env: EygaApiEnv): boolean {
+  const url = apiBaseUrl(env);
+  return Boolean(url && env.EYGA_API_TOKEN && !isLoopbackUrl(url));
+}
+
+function hasRegister(env: EygaApiEnv): env is EygaApiEnv & { EYGA_CORE: Database } {
+  return Boolean(env.EYGA_CORE);
+}
+
 function apiRequest(env: EygaApiEnv, path: string): Promise<Response> {
   const headers = new Headers({ accept: "application/json" });
   if (env.EYGA_API_TOKEN) {
     headers.set("authorization", `Bearer ${env.EYGA_API_TOKEN}`);
   }
 
-  // A local URL deliberately wins over the production binding.
-  const baseUrl = env.EYGA_API_BASE_URL?.trim().replace(/\/+$/, "");
-  if (baseUrl) return fetch(`${baseUrl}${path}`, { headers });
+  const baseUrl = apiBaseUrl(env);
+  if (baseUrl && (preferLiveHttp(env) || !hasRegister(env))) {
+    return fetch(`${baseUrl}${path}`, { headers });
+  }
 
   if (env.EYGA_API) {
     return env.EYGA_API.fetch(
       new Request(`https://api.eyga.fo${path}`, { headers }),
     );
   }
+
+  if (baseUrl) return fetch(`${baseUrl}${path}`, { headers });
 
   throw new EygaApiError("Eyga API er ikki sett upp", 503);
 }
@@ -268,33 +298,17 @@ async function json(response: Response): Promise<unknown> {
   return response.json();
 }
 
-/** Maps GET /v1/leita?q=… from api.eyga.fo. */
-export async function searchEygaCompanies(
-  env: EygaApiEnv,
-  query: string,
-): Promise<EygaSearchResult[]> {
-  const clean = query.trim().slice(0, 80);
-  if (clean.length < 2 && !/^\d{1,6}$/.test(clean)) return [];
-  const payload = record(
-    await json(await apiRequest(env, `/v1/leita?q=${encodeURIComponent(clean)}&limit=8`)),
-  );
-  return Array.isArray(payload.urslit)
-    ? payload.urslit
-      .map(mapSearchResult)
-      .filter((entry): entry is EygaSearchResult => Boolean(entry))
+function mapSearchResults(value: unknown): EygaSearchResult[] {
+  return Array.isArray(value)
+    ? value.map(mapSearchResult).filter((entry): entry is EygaSearchResult => Boolean(entry))
     : [];
 }
 
-/** Combines company facts and ownership from the two read-only Eyga endpoints. */
-export async function getEygaCompany(
-  env: EygaApiEnv,
+function companyFromPayload(
+  companyPayload: unknown,
+  ownersPayload: unknown,
   id: string,
-): Promise<EygaCompany> {
-  if (!/^\d{1,6}$/.test(id)) throw new EygaApiError("Ógilt skrásetingarnummar", 400);
-  const [companyPayload, ownersPayload] = await Promise.all([
-    apiRequest(env, `/v1/felag/${encodeURIComponent(id)}`).then(json),
-    apiRequest(env, `/v1/felag/${encodeURIComponent(id)}/eigarar`).then(json),
-  ]);
+): EygaCompany {
   const company = record(companyPayload);
   const owners = record(ownersPayload);
   const home = record(company.heimstadur);
@@ -313,7 +327,9 @@ export async function getEygaCompany(
     companyType: companyType(legalForm),
     status: state.code,
     statusLabel: state.label,
-    address: string(home.adressa),
+    address: home.adressa_er_bustadur === true || home.adressa_er_bustadur === 1
+      ? ""
+      : string(home.adressa),
     postalCode: string(home.postnr),
     city: string(home.bygd),
     updatedAt: nullableString(sources.seinasta_kunngerd) ?? nullableString(sources.leidsla_dagur),
@@ -329,9 +345,47 @@ export async function getEygaCompany(
   };
 }
 
+/** Maps GET /v1/leita?q=… from api.eyga.fo, or the live D1 register. */
+export async function searchEygaCompanies(
+  env: EygaApiEnv,
+  query: string,
+): Promise<EygaSearchResult[]> {
+  const clean = query.trim().slice(0, 80);
+  if (clean.length < 2 && !/^\d{1,6}$/.test(clean)) return [];
+  if (hasRegister(env) && !preferLiveHttp(env)) {
+    return mapSearchResults(await searchEygaRegister(env, clean, 8));
+  }
+  const payload = record(
+    await json(await apiRequest(env, `/v1/leita?q=${encodeURIComponent(clean)}&limit=8`)),
+  );
+  return mapSearchResults(payload.urslit);
+}
+
+/** Combines company facts and ownership from the live register or the two API reads. */
+export async function getEygaCompany(
+  env: EygaApiEnv,
+  id: string,
+): Promise<EygaCompany> {
+  if (!/^\d{1,6}$/.test(id)) throw new EygaApiError("Ógilt skrásetingarnummar", 400);
+  if (hasRegister(env) && !preferLiveHttp(env)) {
+    const loaded = await loadEygaRegisterCompany(env, Number(id));
+    if (!loaded) throw new EygaApiError("Felagið varð ikki funnið á Eyga", 404);
+    return companyFromPayload(loaded.company, loaded.owners, id);
+  }
+  const [companyPayload, ownersPayload] = await Promise.all([
+    apiRequest(env, `/v1/felag/${encodeURIComponent(id)}`).then(json),
+    apiRequest(env, `/v1/felag/${encodeURIComponent(id)}/eigarar`).then(json),
+  ]);
+  return companyFromPayload(companyPayload, ownersPayload, id);
+}
+
 export async function checkEygaHealth(
   env: EygaApiEnv,
 ): Promise<{ ok: boolean; announcement: number | null }> {
+  if (hasRegister(env) && !preferLiveHttp(env)) {
+    const row = await env.EYGA_CORE.prepare("SELECT 1 AS ok").first<{ ok: number }>();
+    return { ok: Boolean(row?.ok), announcement: null };
+  }
   const payload = record(await json(await apiRequest(env, "/v1/heilsa")));
   return {
     ok: payload.ok === true,
