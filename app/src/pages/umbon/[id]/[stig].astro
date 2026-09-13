@@ -26,7 +26,8 @@ import {
   isFeaturedVertical,
   verticalByKey,
 } from "~/lib/onboarding/verticals";
-import { formatDateTime } from "~/lib/nav";
+import { parseOfficialRates } from "~/lib/onboarding/official-rates";
+import { formatDateTime, formatFileSize } from "~/lib/nav";
 import {
   getEygaCompany,
   parseEygaSnapshot,
@@ -117,7 +118,10 @@ const screening = screenApplication({
 });
 const priceList = await getActivePriceList(env.DB, priceListKind(screening));
 const fill = canFillAgreement(pack);
-const send = canSendToSkriva(pack, priceList, skrivaConfigured(env));
+const skrivaReady = skrivaConfigured(env);
+const ratesReady = Boolean(parseOfficialRates(priceList?.rates_json));
+const send = canSendToSkriva(pack, priceList, skrivaReady);
+const signers = pack.owners.filter((owner) => owner.is_signatory);
 const swedbank = app.recommended_acquirer === "swedbank" || !app.recommended_acquirer;
 const latestSkrivaRequestId = pack.signings.find(
   (row) => row.provider === "skriva" && row.signing_request_id,
@@ -1071,7 +1075,7 @@ if (stig === "banki" && actor.kind === "staff") {
               <div class="file-chip is-complete">
                 <span class="file-chip-check" aria-hidden="true">✓</span>
                 <span class="file-chip-name">{docChip("bank_confirmation")?.file_name}</span>
-                <span class="file-chip-meta tnum">{docChip("bank_confirmation")?.byte_size} B</span>
+                <span class="file-chip-meta tnum">{formatFileSize(docChip("bank_confirmation")?.byte_size)}</span>
               </div>
             ) : (
               <form method="POST" action={uploadAction} enctype="multipart/form-data">
@@ -1113,7 +1117,7 @@ if (stig === "banki" && actor.kind === "staff") {
             <div class="file-chip is-complete">
               <span class="file-chip-check" aria-hidden="true">✓</span>
               <span class="file-chip-name">{docChip("company_registration")?.file_name}</span>
-              <span class="file-chip-meta tnum">{docChip("company_registration")?.byte_size} B</span>
+              <span class="file-chip-meta tnum">{formatFileSize(docChip("company_registration")?.byte_size)}</span>
             </div>
           ) : (
             <form method="POST" action={uploadAction} enctype="multipart/form-data">
@@ -1137,7 +1141,7 @@ if (stig === "banki" && actor.kind === "staff") {
             <div class="file-chip is-complete">
               <span class="file-chip-check" aria-hidden="true">✓</span>
               <span class="file-chip-name">{docChip("owners_book")?.file_name}</span>
-              <span class="file-chip-meta tnum">{docChip("owners_book")?.byte_size} B</span>
+              <span class="file-chip-meta tnum">{formatFileSize(docChip("owners_book")?.byte_size)}</span>
             </div>
           ) : (
             <form method="POST" action={uploadAction} enctype="multipart/form-data">
@@ -1247,8 +1251,16 @@ if (stig === "banki" && actor.kind === "staff") {
               <div class="wizard-panel-heading">
                 <div>
                   <h2>Avtalan hjá tykkum</h2>
-                  <p>Navn, eigarar, FO og rætti príslistin eru fylt frammanundan.</p>
+                  <p>
+                    {fo.onboarding.agreementReady}
+                    {!ratesReady && ` ${fo.onboarding.agreementRatesPending}`}
+                  </p>
                 </div>
+                {fill.ok && (
+                  <a class="agreement-open" href={`/api/umbon/${id}/avtalan.pdf${q}`} target="_blank" rel="noreferrer">
+                    {fo.onboarding.openPdf} ↗
+                  </a>
+                )}
               </div>
               {!fill.ok && <div class="wizard-alert is-error">{fill.reason}</div>}
               {fill.ok && (
@@ -1265,9 +1277,20 @@ if (stig === "banki" && actor.kind === "staff") {
                 <span class="task-number" aria-hidden="true">◇</span>
                 <div>
                   <h2>Undirskriva við Samleikanum</h2>
-                  <p>Samleikin váttar bæði undirskriftina og P-talið hjá undirskrivaranum.</p>
+                  <p>Samleikin váttar undirskriftina. P-talið kemur harífrá — tú skrivar tað ikki her.</p>
                 </div>
               </div>
+
+              {signers.length > 0 && (
+                <ul class="signer-list" aria-label={fo.onboarding.signersTitle}>
+                  {signers.map((owner) => (
+                    <li>
+                      <strong>{owner.name || "Navn manglar"}</strong>
+                      <small>{owner.email || "Teldupostur manglar"}</small>
+                    </li>
+                  ))}
+                </ul>
+              )}
 
               {skrivaSigned || skrivaMessage === "skriva_signed" ? (
                 <>
@@ -1301,7 +1324,13 @@ if (stig === "banki" && actor.kind === "staff") {
                 </>
               ) : (
                 <>
-                  {!send.ok && <p class="field-hint signing-note">{send.reason}</p>}
+                  {!ratesReady && <p class="signing-note">{fo.onboarding.skrivaRatesPending}</p>}
+                  {ratesReady && !skrivaReady && (
+                    <p class="signing-note">{fo.onboarding.skrivaNotConfigured}</p>
+                  )}
+                  {ratesReady && skrivaReady && !send.ok && (
+                    <p class="signing-note">{send.reason}</p>
+                  )}
                   <form method="POST" action={`/api/umbon/${id}/skriva${q}`}>
                     <button class="btn btn-primary signing-action" type="submit" disabled={!send.ok}>
                       Stovna undirskrift

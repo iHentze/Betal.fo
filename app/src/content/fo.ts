@@ -244,6 +244,14 @@ export const fo = {
       "Skriva er stongt, til FO-avtalan er fylt og ein góðkendur FO-príslisti er settur. Staging bíðar eisini eftir Klintra-brúkara.",
     priceListMissing: "Góðkendur FO-príslisti manglar. Starvsfólk seta tølini frá Swedbank — vit uppfinna tey ikki.",
     wetInk: "Undirskriva á pappír og send mynd av undirskrift og persónsprovi.",
+    openPdf: "Opna PDF",
+    agreementReady: "Almenna Swedbank-skjalið, fylt við tykkara upplýsingum.",
+    agreementRatesPending:
+      "Prísfeltið er tómt, til Betal hevur sett tølini frá Swedbank. Vit uppfinna tey ikki.",
+    skrivaRatesPending:
+      "Samleikin letur ikki upp, fyrr enn FO-prísirnir frá Swedbank eru settir.",
+    skrivaNotConfigured: "Samleikin er ikki knýttur enn. Tú kanst lesa avtaluna.",
+    signersTitle: "Tey, ið skulu undirskriva",
     waitSwedbank: "Swedbank hevur pakkan. Vit siga tær, tá ið teir hava tikið støðu.",
     waitClearhaus: "Vit rætta hetta móti Clearhaus. Tú skalt ikki senda nakað til Swedbank.",
     waitStaff: "Starvsfólk hjá Betal lesa pakkan. Vit skriva, um okkurt vantar.",

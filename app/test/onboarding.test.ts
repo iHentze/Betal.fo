@@ -338,9 +338,11 @@ describe("FO agreement fill", () => {
     expect(canSendToSkriva(pack, officialPriceList, true).ok).toBe(true);
   });
 
-  it("blocks Skriva when the price list is empty even if fill works", () => {
+  it("blocks Skriva when the price list is empty even if fill works", async () => {
     const pack = emptyPack();
     expect(canFillAgreement(pack).ok).toBe(true);
+    const preview = await fillAgreementPdf(pack, null, agreementTemplate);
+    expect(new TextDecoder().decode(preview.slice(0, 5))).toBe("%PDF-");
     expect(
       canSendToSkriva(
         pack,

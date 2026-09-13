@@ -78,6 +78,12 @@ export function formatDateTime(ms: number): string {
   )}:${pad(date.getUTCMinutes())}`;
 }
 
+export function formatFileSize(bytes: number | null | undefined): string {
+  if (bytes == null || bytes <= 0) return "";
+  if (bytes < 1024) return `${bytes} B`;
+  return `${Math.round(bytes / 1024)} KB`;
+}
+
 export function formatDate(value: string | null): string {
   if (!value) return "—";
   const date = new Date(value);

@@ -155,7 +155,6 @@ export async function fillAgreementPdf(
   const check = canFillAgreement(pack);
   if (!check.ok) throw new Error(check.reason);
   const rates = parseOfficialRates(priceList?.rates_json);
-  if (!rates) throw new Error("Góðkendur FO-príslisti manglar");
   await assertTemplate(
     templateBytes,
     SWEDBANK_TEMPLATE_HASHES.agreement,
@@ -211,12 +210,39 @@ export async function fillAgreementPdf(
     [AGREEMENT_TEXT_FIELDS.portalUserFirstName, contactParts[0] ?? ""],
     [AGREEMENT_TEXT_FIELDS.portalUserLastName, contactParts.slice(1).join(" ")],
     [AGREEMENT_TEXT_FIELDS.portalUserEmail, answerValue<string>(pack, "contact_email")],
-    [AGREEMENT_TEXT_FIELDS.establishmentFee, formatMinor(rates.establishmentFeeMinor)],
-    [AGREEMENT_TEXT_FIELDS.monthlyFee, formatMinor(rates.monthlyFeeMinor)],
-    [AGREEMENT_TEXT_FIELDS.minimumMonthlyPayment, formatMinor(rates.minimumMonthlyPaymentMinor)],
-    [AGREEMENT_TEXT_FIELDS.priceCategory, rates.priceCategory],
   ];
   for (const [name, value] of values) setText(form, name, value);
+
+  // Preview may run before staff enter commercially supplied FO rates. Leave those
+  // cells empty — never invent a Swedbank number. Skriva still requires an approved list.
+  if (rates) {
+    setText(form, AGREEMENT_TEXT_FIELDS.establishmentFee, formatMinor(rates.establishmentFeeMinor));
+    setText(form, AGREEMENT_TEXT_FIELDS.monthlyFee, formatMinor(rates.monthlyFeeMinor));
+    setText(form, AGREEMENT_TEXT_FIELDS.minimumMonthlyPayment, formatMinor(rates.minimumMonthlyPaymentMinor));
+    setText(form, AGREEMENT_TEXT_FIELDS.priceCategory, rates.priceCategory);
+    for (const [index, category] of PRICE_CATEGORIES.entries()) {
+      const rate = rates.cardRates[category]!;
+      setText(form, PRICE_FIELD_COLUMNS.visaTransaction[index]!, formatMinor(rate.visa.transactionMinor));
+      setText(form, PRICE_FIELD_COLUMNS.visaPercent[index]!, formatBasisPoints(rate.visa.basisPoints));
+      setText(form, PRICE_FIELD_COLUMNS.mastercardTransaction[index]!, formatMinor(rate.mastercard.transactionMinor));
+      setText(form, PRICE_FIELD_COLUMNS.mastercardPercent[index]!, formatBasisPoints(rate.mastercard.basisPoints));
+      setText(form, PRICE_FIELD_COLUMNS.dinersTransaction[index]!, formatMinor(rate.diners.transactionMinor));
+      setText(form, PRICE_FIELD_COLUMNS.dinersPercent[index]!, formatBasisPoints(rate.diners.basisPoints));
+    }
+  } else {
+    setText(form, AGREEMENT_TEXT_FIELDS.establishmentFee, "");
+    setText(form, AGREEMENT_TEXT_FIELDS.monthlyFee, "");
+    setText(form, AGREEMENT_TEXT_FIELDS.minimumMonthlyPayment, "");
+    setText(form, AGREEMENT_TEXT_FIELDS.priceCategory, "");
+    for (const [index] of PRICE_CATEGORIES.entries()) {
+      setText(form, PRICE_FIELD_COLUMNS.visaTransaction[index]!, "");
+      setText(form, PRICE_FIELD_COLUMNS.visaPercent[index]!, "");
+      setText(form, PRICE_FIELD_COLUMNS.mastercardTransaction[index]!, "");
+      setText(form, PRICE_FIELD_COLUMNS.mastercardPercent[index]!, "");
+      setText(form, PRICE_FIELD_COLUMNS.dinersTransaction[index]!, "");
+      setText(form, PRICE_FIELD_COLUMNS.dinersPercent[index]!, "");
+    }
+  }
 
   const selectedCheckboxes: string[] = [];
   const checkBox = (name: string, selected: boolean) => {
@@ -237,16 +263,6 @@ export async function fillAgreementPdf(
   checkBox(AGREEMENT_CHECKBOX_FIELDS.handlesCardData, false);
   checkBox(AGREEMENT_CHECKBOX_FIELDS.threeDSecure, true);
   checkBox(AGREEMENT_CHECKBOX_FIELDS.cvvRequired, true);
-
-  for (const [index, category] of PRICE_CATEGORIES.entries()) {
-    const rate = rates.cardRates[category]!;
-    setText(form, PRICE_FIELD_COLUMNS.visaTransaction[index]!, formatMinor(rate.visa.transactionMinor));
-    setText(form, PRICE_FIELD_COLUMNS.visaPercent[index]!, formatBasisPoints(rate.visa.basisPoints));
-    setText(form, PRICE_FIELD_COLUMNS.mastercardTransaction[index]!, formatMinor(rate.mastercard.transactionMinor));
-    setText(form, PRICE_FIELD_COLUMNS.mastercardPercent[index]!, formatBasisPoints(rate.mastercard.basisPoints));
-    setText(form, PRICE_FIELD_COLUMNS.dinersTransaction[index]!, formatMinor(rate.diners.transactionMinor));
-    setText(form, PRICE_FIELD_COLUMNS.dinersPercent[index]!, formatBasisPoints(rate.diners.basisPoints));
-  }
 
   form.updateFieldAppearances(font);
   form.flatten();
