@@ -30,8 +30,14 @@ export const POST: APIRoute = async ({ params, locals, url }) => {
 
   const back = wizardPath(id, "undirskriva", actor, pack.application.merchant_id);
   const fail = (text: string) => redirect(message(back, "feilur", text));
+  const latestRequestId = pack.signings.find(
+    (row) => row.provider === "skriva" && row.signing_request_id,
+  )?.signing_request_id;
   const rows = pack.signings.filter(
-    (row) => row.provider === "skriva" && row.signer_token && row.signing_request_id,
+    (row) =>
+      row.provider === "skriva" &&
+      row.signing_request_id === latestRequestId &&
+      row.signer_token,
   );
   if (rows.length === 0) return fail("Eingin Skriva-undirskrift er stovnað");
 

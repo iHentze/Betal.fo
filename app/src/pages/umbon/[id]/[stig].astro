@@ -119,7 +119,14 @@ const priceList = await getActivePriceList(env.DB, priceListKind(screening));
 const fill = canFillAgreement(pack);
 const send = canSendToSkriva(pack, priceList, skrivaConfigured(env));
 const swedbank = app.recommended_acquirer === "swedbank" || !app.recommended_acquirer;
-const skrivaRows = pack.signings.filter((row) => row.provider === "skriva");
+const latestSkrivaRequestId = pack.signings.find(
+  (row) => row.provider === "skriva" && row.signing_request_id,
+)?.signing_request_id;
+const skrivaRows = pack.signings.filter(
+  (row) =>
+    row.provider === "skriva" &&
+    row.signing_request_id === latestSkrivaRequestId,
+);
 const skrivaSigned = skrivaRows.length > 0 &&
   skrivaRows.every((row) => row.status === "signed");
 const skrivaPending = skrivaRows.filter(
@@ -839,7 +846,9 @@ if (stig === "banki" && actor.kind === "staff") {
                   <div class="wizard-alert is-success">
                     {skrivaMessage === "skriva"
                       ? "Undirskriftin er stovnað, og Klintra hevur sent leinkjurnar."
-                      : `${skrivaPending.length} undirskrift bíðar.`}
+                      : skrivaPending.length === 1
+                        ? "Ein undirskrift bíðar."
+                        : `${skrivaPending.length} undirskriftir bíða.`}
                   </div>
                   {actor.kind === "merchant" && actorSigning?.signing_url && (
                     <a class="btn btn-primary signing-action" href={actorSigning.signing_url}>
