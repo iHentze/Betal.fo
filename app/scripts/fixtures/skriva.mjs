@@ -16,6 +16,7 @@ const EMAIL = process.env.SKRIVA_EMAIL ?? "skriva-local@betal.fo";
 const PASSWORD = process.env.SKRIVA_PASSWORD ?? "local-skriva";
 const TOKEN = "local-skriva-token";
 const ORIGIN = `http://${HOST}:${PORT}`;
+const PUBLIC_ORIGIN = (process.env.SKRIVA_PUBLIC_URL ?? ORIGIN).replace(/\/+$/, "");
 
 /** @type {Map<number, { title: string, redirectUrl: string, appendToken: boolean, pdf: Buffer, signers: Map<string, object> }>} */
 const requests = new Map();
@@ -203,7 +204,7 @@ const server = createServer(async (request, response) => {
           signingPersonId,
           token,
           personalIdentificationNumber: null,
-          signingUrl: `${ORIGIN}/samleikin/${token}`,
+          signingUrl: `${PUBLIC_ORIGIN}/samleikin/${token}`,
         });
       }
       requests.set(signingRequestId, {

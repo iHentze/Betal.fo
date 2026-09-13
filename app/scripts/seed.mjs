@@ -50,6 +50,7 @@ const TRADING_END = TODAY + 86_400_000;
 const iso = (ms) => new Date(ms).toISOString();
 
 add("PRAGMA foreign_keys = OFF;");
+add("UPDATE onboarding_application SET final_snapshot_id = NULL;");
 for (const table of [
   "invoice_line_input",
   "invoice_line",
@@ -80,11 +81,11 @@ for (const table of [
   "onboarding_step",
   "email_delivery_event",
   "onboarding_bank_email",
+  "onboarding_signing",
   "document_instance",
   "onboarding_submission_snapshot",
   "onboarding_answer",
   "onboarding_event",
-  "onboarding_signing",
   "onboarding_document",
   "onboarding_owner",
   "onboarding_application",
