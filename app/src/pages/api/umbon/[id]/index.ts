@@ -3,6 +3,8 @@ import { env } from "~/lib/env";
 import { requirePack, wizardPath } from "~/lib/onboarding/access";
 import {
   acknowledgeReroute,
+  applyScreening,
+  loadPack,
   markWetInk,
   saveBank,
   saveBusinessProfile,
@@ -14,8 +16,9 @@ import {
 } from "~/lib/onboarding/application";
 import { getEygaCompany } from "~/lib/onboarding/eyga";
 import { firstIncompleteStep, isStepSlug, STEP_SLUGS } from "~/lib/onboarding/steps";
-import type { FinanceFlag } from "~/lib/onboarding/screening";
+import { deriveSectorFromAnswers, type FinanceFlag } from "~/lib/onboarding/screening";
 import { businessAnswersFromForm } from "~/lib/onboarding/questionnaire";
+import { verticalByKey } from "~/lib/onboarding/verticals";
 
 export const prerender = false;
 
@@ -118,6 +121,31 @@ export const POST: APIRoute = async ({ params, request, locals, url }) => {
         actor.email,
       );
       await saveAnswers(env.DB, id, answers);
+      const answeredPack = await loadPack(env.DB, id);
+      if (answeredPack) {
+        const derivedSector = deriveSectorFromAnswers(
+          verticalByKey(key)?.sector ?? 0,
+          answers,
+        );
+        const changed = derivedSector !== answeredPack.application.vertical_sector;
+        await env.DB
+          .prepare(
+            `UPDATE onboarding_application
+             SET vertical_sector = ?2,
+                 policy_id = (
+                   SELECT id FROM onboarding_policy
+                   WHERE acquirer = 'swedbank' AND country_code = 'FO' AND active = 1
+                   ORDER BY version DESC LIMIT 1
+                 ),
+                 updated_at_ms = ?3
+             WHERE id = ?1`,
+          )
+          .bind(id, derivedSector, Date.now())
+          .run();
+        if (changed) {
+          await applyScreening(env.DB, id, actor.email);
+        }
+      }
     } else if (step === "eigarar") {
       const names = form.getAll("owner_name").map((v) => String(v));
       const emails = form.getAll("owner_email").map((v) => String(v));

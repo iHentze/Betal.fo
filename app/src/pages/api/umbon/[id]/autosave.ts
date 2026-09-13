@@ -2,13 +2,16 @@ import type { APIRoute } from "astro";
 import { env } from "~/lib/env";
 import { requirePack } from "~/lib/onboarding/access";
 import {
+  applyScreening,
+  answerValue,
+  loadPack,
   saveAnswers,
   saveBank,
   saveFinances,
   saveOwners,
   saveVertical,
 } from "~/lib/onboarding/application";
-import type { FinanceFlag } from "~/lib/onboarding/screening";
+import { deriveSectorFromAnswers, type FinanceFlag } from "~/lib/onboarding/screening";
 import { isStepSlug } from "~/lib/onboarding/steps";
 import { verticalByKey } from "~/lib/onboarding/verticals";
 
@@ -42,6 +45,7 @@ const NUMBER_ANSWERS = [
 const BOOLEAN_ANSWERS = [
   "subscriptions",
   "donations",
+  "donations_supervised",
   "gift_cards",
   "save_card",
   "save_card_in_app",
@@ -152,6 +156,26 @@ export const POST: APIRoute = async ({ params, request, locals, url }) => {
         };
       }
       await saveAnswers(env.DB, id, answers);
+      const saved = await loadPack(env.DB, id);
+      if (saved) {
+        const allAnswers = Object.fromEntries(
+          saved.answers.map((answer) => [answer.key, answerValue(saved, answer.key)]),
+        );
+        const baseSector = verticalByKey(
+          vertical || saved.application.vertical_key,
+        )?.sector ?? 0;
+        const derivedSector = deriveSectorFromAnswers(baseSector, allAnswers);
+        if (derivedSector !== saved.application.vertical_sector) {
+          await env.DB
+            .prepare(
+              `UPDATE onboarding_application
+               SET vertical_sector = ?2, updated_at_ms = ?3 WHERE id = ?1`,
+            )
+            .bind(id, derivedSector, Date.now())
+            .run();
+          await applyScreening(env.DB, id, actor.email);
+        }
+      }
     } else if (step === "eigarar") {
       const names = form.getAll("owner_name").map(String);
       const emails = form.getAll("owner_email").map(String);

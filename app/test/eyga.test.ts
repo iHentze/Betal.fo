@@ -78,6 +78,8 @@ describe("Eyga API client", () => {
         },
         leidsla: [{ navn: "Anna Stjóri", leiklutur: "Stjóri", bygd: "Tórshavn" }],
         nevnd: [],
+        endamal: "At reka handil.",
+        tekningarreglur: "Felagið verður teknað av stjóranum.",
         kelda: { seinasta_kunngerd: "2026-04-10" },
       });
     });
@@ -90,6 +92,7 @@ describe("Eyga API client", () => {
     expect(company.address).toBe("Oknarvegur 5");
     expect(company.owners[0]?.ownershipBps).toBe(3482);
     expect(company.management[0]?.role).toBe("Stjóri");
+    expect(company.signingRules).toContain("stjóranum");
     expect(parseEygaSnapshot(JSON.stringify(company))?.registryNumber).toBe("10");
   });
 

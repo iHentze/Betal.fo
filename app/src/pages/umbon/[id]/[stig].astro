@@ -213,6 +213,22 @@ const binaryBusinessQuestions = [
   { key: "website_terms", label: "Eru handilstreytir á heimasíðuni?" },
   { key: "made_to_order", label: "Selja tit bílagdar vørur?" },
 ] as const;
+let latestBankEmail: {
+  status: string;
+  bank_email: string;
+  sent_at_ms: number;
+} | null = null;
+if (stig === "banki") {
+  latestBankEmail = await env.DB
+    .prepare(
+      `SELECT status, bank_email, sent_at_ms
+       FROM onboarding_bank_email
+       WHERE application_id = ?1
+       ORDER BY sent_at_ms DESC LIMIT 1`,
+    )
+    .bind(id)
+    .first();
+}
 let clientEmail = actor.email;
 if (stig === "banki" && actor.kind === "staff") {
   const contact = await env.DB
@@ -349,6 +365,13 @@ if (stig === "banki" && actor.kind === "staff") {
                   </dd>
                 </div>
               </dl>
+
+              {selectedCompany.purpose && (
+                <div class="registry-signing-rules">
+                  <strong>Endamál</strong>
+                  <span>{selectedCompany.purpose}</span>
+                </div>
+              )}
 
               {selectedCompany.owners.length > 0 && (
                 <div class="registry-people-preview">
@@ -650,6 +673,16 @@ if (stig === "banki" && actor.kind === "staff") {
                 </div>
               </div>
 
+              <div id="donation-details" hidden={!answerBoolean("donations")}>
+                <p class="field-label wizard-question">
+                  Er innsavningin undir almennum ella góðkendum eftirliti?
+                </p>
+                <div class="choice-grid" data-cols="2">
+                  <ChoiceCard name="donations_supervised" value="no" title="Nei" checked={answerBoolean("donations_supervised") === false} />
+                  <ChoiceCard name="donations_supervised" value="yes" title="Ja" checked={answerBoolean("donations_supervised") === true} />
+                </div>
+              </div>
+
               <div id="made-to-order-details" hidden={!answerBoolean("made_to_order")}>
                 <div class="field-row wizard-question">
                   <Field
@@ -752,6 +785,28 @@ if (stig === "banki" && actor.kind === "staff") {
                     </div>
                   ))}
                 </div>
+                {registrySnapshot.management.length > 0 && (
+                  <div class="registry-people-preview">
+                    <div class="registry-people-title">
+                      <span>Leiðsla og nevnd</span>
+                      <span class="tnum">{registrySnapshot.management.length}</span>
+                    </div>
+                    {registrySnapshot.management.slice(0, 6).map((person) => (
+                      <div class="registry-person">
+                        <span>
+                          <strong>{person.name}</strong>
+                          {person.description && <small>{person.description}</small>}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {registrySnapshot.signingRules && (
+                  <div class="registry-signing-rules">
+                    <strong>Tekningarregla</strong>
+                    <span>{registrySnapshot.signingRules}</span>
+                  </div>
+                )}
                 <p class="field-hint">{fo.onboarding.eygaPrivate}</p>
               </section>
             )}
@@ -861,12 +916,21 @@ if (stig === "banki" && actor.kind === "staff") {
                 <p>Betal sendir ein lidnan teldupost við bankaskjalinum viðheftum.</p>
               </div>
             </div>
-            {bankEmailSent ? (
+            {bankEmailSent || (latestBankEmail && latestBankEmail.status !== "failed") ? (
               <>
                 <p class="bank-email-success" role="status">
                   <span aria-hidden="true">✓</span>
-                  Telduposturin er sendur. Tú ert sett/ur í CC og fært svarið frá bankanum.
+                  {latestBankEmail?.status === "delivered"
+                    ? "Telduposturin er komin fram til bankan."
+                    : latestBankEmail?.status === "delayed"
+                      ? "Telduposturin er seinkaður. Resend roynir aftur."
+                      : "Telduposturin er sendur. Tú ert sett/ur í CC og fært svarið frá bankanum."}
                 </p>
+                {latestBankEmail && (
+                  <p class="field-hint">
+                    Til {latestBankEmail.bank_email} · {formatDateTime(latestBankEmail.sent_at_ms)}
+                  </p>
+                )}
                 <a class="bank-email-again" href={href("banki")}>
                   Send til annan teldupost
                 </a>
@@ -1207,9 +1271,16 @@ if (stig === "banki" && actor.kind === "staff") {
 
       function showRouting() {
         const selected = verticalForm?.querySelector('input[name="vertical_key"]:checked');
-        const sector = selected?.closest("[data-sector]")?.dataset.sector ?? "0";
+        let sector = Number(selected?.closest("[data-sector]")?.dataset.sector ?? "0");
+        const donations = verticalForm?.querySelector('input[name="donations"]:checked')?.value;
+        const giftCards = verticalForm?.querySelector('input[name="gift_cards"]:checked')?.value;
+        const productType = verticalForm?.querySelector('input[name="product_type"]:checked')?.value;
+        if (donations === "yes") sector = 1;
+        else if (giftCards === "yes" || productType === "digital" || productType === "both") {
+          sector = Math.max(sector, 2);
+        }
         guidance?.querySelectorAll("[data-routing]").forEach((message) => {
-          message.hidden = message.dataset.routing !== sector;
+          message.hidden = Number(message.dataset.routing) !== sector;
         });
       }
 
@@ -1238,6 +1309,15 @@ if (stig === "banki" && actor.kind === "staff") {
         if (saveCardDetails) saveCardDetails.hidden = !saveCard;
         saveCardDetails?.querySelectorAll("input").forEach((input) => {
           input.required = saveCard;
+        });
+
+        const donations = verticalForm?.querySelector(
+          'input[name="donations"]:checked',
+        )?.value === "yes";
+        const donationDetails = document.getElementById("donation-details");
+        if (donationDetails) donationDetails.hidden = !donations;
+        donationDetails?.querySelectorAll("input").forEach((input) => {
+          input.required = donations;
         });
 
         const total = ["sales_denmark", "sales_nordics", "sales_eu", "sales_usa", "sales_other"]

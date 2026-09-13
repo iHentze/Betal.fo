@@ -48,8 +48,8 @@ export const VERTICALS: readonly Vertical[] = [
   {
     key: "gambling",
     label: "Spæl og betting",
-    hint: "Geiri 1 — Swedbank tekur ikki ímóti",
-    sector: 1,
+    hint: "Geiri 2 — hægri prísur og eyka skjalprógv",
+    sector: 2,
   },
   {
     key: "crypto",

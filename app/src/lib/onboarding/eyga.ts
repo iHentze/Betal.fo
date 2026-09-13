@@ -45,6 +45,8 @@ export interface EygaCompany {
   owners: EygaPerson[];
   beneficialOwners: EygaPerson[];
   management: EygaPerson[];
+  purpose: string | null;
+  signingRules: string | null;
   sourceUrl: string;
 }
 
@@ -237,6 +239,8 @@ function parseSnapshotCompany(value: unknown): EygaCompany {
     owners: parseSnapshotPeople(row.owners),
     beneficialOwners: parseSnapshotPeople(row.beneficialOwners),
     management: parseSnapshotPeople(row.management),
+    purpose: nullableString(row.purpose),
+    signingRules: nullableString(row.signingRules),
     sourceUrl: string(row.sourceUrl) || `https://eyga.fo/felag/${id}`,
   };
 }
@@ -319,7 +323,19 @@ export async function getEygaCompany(
       ...mapManagement(company.leidsla),
       ...mapManagement(company.nevnd),
     ],
+    purpose: nullableString(company.endamal),
+    signingRules: nullableString(company.tekningarreglur),
     sourceUrl: `https://eyga.fo/felag/${registrationNumber}`,
+  };
+}
+
+export async function checkEygaHealth(
+  env: EygaApiEnv,
+): Promise<{ ok: boolean; announcement: number | null }> {
+  const payload = record(await json(await apiRequest(env, "/v1/heilsa")));
+  return {
+    ok: payload.ok === true,
+    announcement: typeof payload.kunngerd === "number" ? payload.kunngerd : null,
   };
 }
 

@@ -45,6 +45,12 @@ export function progressForStep(slug: StepSlug, pack: ApplicationPack): StepProg
       if (answerValue<boolean>(pack, "save_card")) {
         checks.push(["save_card_in_app", answerValue(pack, "save_card_in_app") !== null]);
       }
+      if (answerValue<boolean>(pack, "donations")) {
+        checks.push([
+          "donations_supervised",
+          answerValue(pack, "donations_supervised") !== null,
+        ]);
+      }
       if (answerValue<boolean>(pack, "made_to_order")) {
         for (const key of [
           "made_to_order_days",

@@ -11,7 +11,11 @@ import {
   saveVertical,
   type ApplicationPack,
 } from "~/lib/onboarding/application";
-import { priceListKind, screenApplication } from "~/lib/onboarding/screening";
+import {
+  deriveSectorFromAnswers,
+  priceListKind,
+  screenApplication,
+} from "~/lib/onboarding/screening";
 import {
   canGenerateSwedbankAgreement,
   firstIncompleteStep,
@@ -200,6 +204,19 @@ describe("screening", () => {
     expect(result.recommended).toBe("swedbank");
     expect(result.extraDocs).toBe(true);
     expect(priceListKind(result)).toBe("standard");
+  });
+
+  it("derives official policy sectors from product answers", () => {
+    expect(deriveSectorFromAnswers(0, { gift_cards: true })).toBe(2);
+    expect(deriveSectorFromAnswers(0, { product_type: "digital" })).toBe(2);
+    expect(deriveSectorFromAnswers(0, {
+      donations: true,
+      donations_supervised: false,
+    })).toBe(1);
+    expect(deriveSectorFromAnswers(0, {
+      donations: true,
+      donations_supervised: true,
+    })).toBe(2);
   });
 });
 

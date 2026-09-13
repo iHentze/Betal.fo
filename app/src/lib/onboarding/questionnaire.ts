@@ -79,6 +79,10 @@ export function businessAnswersComplete(pack: ApplicationPack): boolean {
     answerValue<boolean>(pack, "save_card") &&
     answerValue<boolean>(pack, "save_card_in_app") === null
   ) return false;
+  if (
+    answerValue<boolean>(pack, "donations") &&
+    answerValue<boolean>(pack, "donations_supervised") === null
+  ) return false;
   return true;
 }
 
@@ -131,6 +135,11 @@ export function businessAnswersFromForm(form: FormData): Record<string, unknown>
   if (saveCard && !saveCardInAppValue) {
     throw new Error("saved-card app answer is required");
   }
+  const donations = booleanField(form, "donations");
+  const donationsSupervisedValue = String(form.get("donations_supervised") ?? "");
+  if (donations && !donationsSupervisedValue) {
+    throw new Error("donation supervision answer is required");
+  }
   const finalPaymentWhen = String(form.get("final_payment_when") ?? "").trim();
   const finalPaymentMethod = String(form.get("final_payment_method") ?? "").trim();
   if (madeToOrder && (!finalPaymentWhen || !finalPaymentMethod)) {
@@ -142,7 +151,10 @@ export function businessAnswersFromForm(form: FormData): Record<string, unknown>
     average_transaction_dkk: numberField(form, "average_transaction_dkk"),
     delivery_days: numberField(form, "delivery_days"),
     subscriptions: booleanField(form, "subscriptions"),
-    donations: booleanField(form, "donations"),
+    donations,
+    donations_supervised: donationsSupervisedValue
+      ? booleanField(form, "donations_supervised")
+      : null,
     gift_cards: booleanField(form, "gift_cards"),
     save_card: saveCard,
     save_card_in_app: saveCardInAppValue
