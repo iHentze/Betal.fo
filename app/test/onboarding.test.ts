@@ -281,6 +281,41 @@ describe("wizard resume", () => {
     expect(pack!.application.extra_docs_required).toBe(1);
     expect(pack!.application.recommended_acquirer).toBe("swedbank");
   });
+
+  it("requires every selected owner to finish the latest signing request", () => {
+    const pack = emptyPack();
+    pack.owners.push({
+      ...pack.owners[0]!,
+      id: "o2",
+      name: "Bárður",
+      email: "bardur@example.fo",
+      sort_order: 1,
+    });
+    const signing = (ownerId: string, status: string, index: number) => ({
+      id: `s${index}`,
+      application_id: "a1",
+      provider: "skriva",
+      environment: "staging",
+      signing_request_id: "42",
+      signer_token: `token-${index}`,
+      signing_url: `https://sign.klintra.fo/${index}`,
+      p_tal: null,
+      status,
+      last_polled_at_ms: null,
+      created_at_ms: 1,
+      owner_id: ownerId,
+      signing_person_id: index,
+      document_instance_id: "d1",
+      provider_status_json: null,
+      expires_at_ms: null,
+      p_tal_ciphertext: null,
+      p_tal_last4: null,
+    });
+    pack.signings = [signing("o1", "signed", 1), signing("o2", "sent", 2)];
+    expect(isStepComplete("undirskriva", pack)).toBe(false);
+    pack.signings = [signing("o1", "signed", 1), signing("o2", "signed", 2)];
+    expect(isStepComplete("undirskriva", pack)).toBe(true);
+  });
 });
 
 describe("FO agreement fill", () => {

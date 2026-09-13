@@ -73,6 +73,33 @@ export const AGREEMENT_CHECKBOX_FIELDS = {
   cvvRequired: "checkbox_122bsei",
 } as const;
 
+// Widget rectangles in the exact hash-pinned Oneflow 12465631 template. pdf-lib
+// loses this template's custom checkbox appearance while flattening, so selected
+// boxes receive a small X overlay after form flattening.
+export const AGREEMENT_CHECKBOX_PLACEMENTS: Record<
+  string,
+  { page: number; x: number; y: number }
+> = {
+  checkbox_137zffw: { page: 1, x: 68, y: 773 },
+  checkbox_136jpfj: { page: 1, x: 184, y: 773 },
+  checkbox_135wlap: { page: 1, x: 301, y: 773 },
+  checkbox_138iypg: { page: 1, x: 418, y: 774 },
+  checkbox_134waos: { page: 1, x: 68, y: 633 },
+  checkbox_133jnfg: { page: 1, x: 185, y: 633 },
+  checkbox_132riey: { page: 1, x: 301, y: 633 },
+  checkbox_131iwgd: { page: 2, x: 69, y: 200 },
+  checkbox_130qbfv: { page: 2, x: 185, y: 200 },
+  checkbox_128lajm: { page: 2, x: 301, y: 200 },
+  checkbox_129izqk: { page: 2, x: 419, y: 200 },
+  checkbox_125gujh: { page: 2, x: 68, y: 163 },
+  checkbox_126jmz: { page: 2, x: 185, y: 163 },
+  checkbox_127uz: { page: 2, x: 301, y: 163 },
+  checkbox_124zlmq: { page: 2, x: 68, y: 94 },
+  checkbox_123cfov: { page: 2, x: 68, y: 56 },
+  checkbox_121yicn: { page: 3, x: 69, y: 805 },
+  checkbox_122bsei: { page: 3, x: 68, y: 754 },
+};
+
 export const BANK_CONFIRMATION_FIELDS = {
   legalName: "Virksomhedens juridiske navn",
   vTal: "CVRnr",

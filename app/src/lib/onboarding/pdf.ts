@@ -16,6 +16,7 @@ import { canGenerateSwedbankAgreement } from "./steps";
 import { sha256 } from "./documents";
 import {
   AGREEMENT_CHECKBOX_FIELDS,
+  AGREEMENT_CHECKBOX_PLACEMENTS,
   AGREEMENT_TEXT_FIELDS,
   BANK_CONFIRMATION_FIELDS,
   PRICE_CATEGORIES,
@@ -200,6 +201,7 @@ export async function fillAgreementPdf(
   const pdf = await PDFDocument.load(templateBytes);
   const form = pdf.getForm();
   const font = await pdf.embedFont(StandardFonts.Helvetica);
+  const bold = await pdf.embedFont(StandardFonts.HelveticaBold);
   const regions = answerValue<SalesRegions>(pack, "sales_regions")!;
   const account = splitAccount(app.bank_account ?? "");
   const contactName = answerValue<string>(pack, "contact_name") ?? "";
@@ -251,20 +253,25 @@ export async function fillAgreementPdf(
   ];
   for (const [name, value] of values) setText(form, name, value);
 
+  const selectedCheckboxes: string[] = [];
+  const checkBox = (name: string, selected: boolean) => {
+    setChecked(form, name, selected);
+    if (selected) selectedCheckboxes.push(name);
+  };
   const paymentMode = answerValue<string>(pack, "payment_link_mode");
-  setChecked(form, AGREEMENT_CHECKBOX_FIELDS.paymentLinkNone, paymentMode === "none");
-  setChecked(form, AGREEMENT_CHECKBOX_FIELDS.paymentLinkHtml, paymentMode === "html");
-  setChecked(form, AGREEMENT_CHECKBOX_FIELDS.paymentLinkDigital, paymentMode === "digital");
-  setChecked(form, AGREEMENT_CHECKBOX_FIELDS.paymentLinkPhysical, paymentMode === "physical");
+  checkBox(AGREEMENT_CHECKBOX_FIELDS.paymentLinkNone, paymentMode === "none");
+  checkBox(AGREEMENT_CHECKBOX_FIELDS.paymentLinkHtml, paymentMode === "html");
+  checkBox(AGREEMENT_CHECKBOX_FIELDS.paymentLinkDigital, paymentMode === "digital");
+  checkBox(AGREEMENT_CHECKBOX_FIELDS.paymentLinkPhysical, paymentMode === "physical");
   const wallets = answerValue<string[]>(pack, "wallets") ?? [];
-  setChecked(form, AGREEMENT_CHECKBOX_FIELDS.walletMobilePay, wallets.includes("mobilepay"));
-  setChecked(form, AGREEMENT_CHECKBOX_FIELDS.walletApplePay, wallets.includes("applepay"));
-  setChecked(form, AGREEMENT_CHECKBOX_FIELDS.walletGooglePay, wallets.includes("googlepay"));
-  setChecked(form, AGREEMENT_CHECKBOX_FIELDS.pspEpay, true);
-  setChecked(form, AGREEMENT_CHECKBOX_FIELDS.hosted, true);
-  setChecked(form, AGREEMENT_CHECKBOX_FIELDS.handlesCardData, false);
-  setChecked(form, AGREEMENT_CHECKBOX_FIELDS.threeDSecure, true);
-  setChecked(form, AGREEMENT_CHECKBOX_FIELDS.cvvRequired, true);
+  checkBox(AGREEMENT_CHECKBOX_FIELDS.walletMobilePay, wallets.includes("mobilepay"));
+  checkBox(AGREEMENT_CHECKBOX_FIELDS.walletApplePay, wallets.includes("applepay"));
+  checkBox(AGREEMENT_CHECKBOX_FIELDS.walletGooglePay, wallets.includes("googlepay"));
+  checkBox(AGREEMENT_CHECKBOX_FIELDS.pspEpay, true);
+  checkBox(AGREEMENT_CHECKBOX_FIELDS.hosted, true);
+  checkBox(AGREEMENT_CHECKBOX_FIELDS.handlesCardData, false);
+  checkBox(AGREEMENT_CHECKBOX_FIELDS.threeDSecure, true);
+  checkBox(AGREEMENT_CHECKBOX_FIELDS.cvvRequired, true);
 
   for (const [index, category] of PRICE_CATEGORIES.entries()) {
     const rate = rates.cardRates[category]!;
@@ -278,6 +285,17 @@ export async function fillAgreementPdf(
 
   form.updateFieldAppearances(font);
   form.flatten();
+  for (const fieldName of selectedCheckboxes) {
+    const placement = AGREEMENT_CHECKBOX_PLACEMENTS[fieldName];
+    if (!placement) throw new Error(`${fieldName}: checkbox placement is not mapped`);
+    pdf.getPages()[placement.page]!.drawText("X", {
+      x: placement.x - 0.25,
+      y: placement.y - 0.75,
+      size: 6.5,
+      font: bold,
+      color: rgb(0, 0, 0),
+    });
+  }
 
   // The supplied FO filename still has a static “Danmark” in Swedbank’s notes.
   // This coordinate is hash-pinned to Oneflow ID 12465631 and must never be reused
@@ -315,6 +333,10 @@ export async function fillBankFormPdf(
   const font = await pdf.embedFont(StandardFonts.Helvetica);
   const account = splitAccount(app.bank_account);
 
+  for (const name of Object.values(BANK_CONFIRMATION_FIELDS)) {
+    const field = form.getField(name);
+    if (field instanceof PDFTextField) field.setFontSize(10);
+  }
   setText(form, BANK_CONFIRMATION_FIELDS.legalName, app.legal_name);
   setText(form, BANK_CONFIRMATION_FIELDS.vTal, app.v_tal);
   setText(form, BANK_CONFIRMATION_FIELDS.registrationNumber, account.registration);
