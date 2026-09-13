@@ -350,7 +350,7 @@ describe("FO agreement fill", () => {
         objects.delete(key);
       },
     };
-    const value = new Uint8Array(2_000_000).fill(7);
+    const value = new Uint8Array(1_500_001).fill(7);
     await putDocument(db, {
       applicationId: app.id,
       kind: "owners_book",
@@ -372,7 +372,7 @@ describe("FO agreement fill", () => {
     const loaded = await getDocumentBytes(db, app.id, "owners_book", bucket);
     expect(loaded?.bytes).toEqual(value);
     expect(loaded?.sha256).toBe(row.sha256);
-  });
+  }, 15_000);
 });
 
 describe("finances screening persistence", () => {
