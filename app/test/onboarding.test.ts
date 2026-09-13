@@ -10,7 +10,7 @@ import {
   saveVertical,
   type ApplicationPack,
 } from "~/lib/onboarding/application";
-import { screenApplication } from "~/lib/onboarding/screening";
+import { priceListKind, screenApplication } from "~/lib/onboarding/screening";
 import {
   canGenerateSwedbankAgreement,
   firstIncompleteStep,
@@ -119,6 +119,17 @@ describe("screening", () => {
     });
     expect(result.recommended).toBe("swedbank");
     expect(result.extraDocs).toBe(false);
+  });
+
+  it("requests accounts for unknown finances without using sector-2 prices", () => {
+    const result = screenApplication({
+      sector: 0,
+      equity: "unknown",
+      operations: "positive",
+    });
+    expect(result.recommended).toBe("swedbank");
+    expect(result.extraDocs).toBe(true);
+    expect(priceListKind(result)).toBe("standard");
   });
 });
 

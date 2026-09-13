@@ -94,18 +94,23 @@ const resumeHref = onboardingPack
   ? wizardPath(onboardingPack.application.id, resumeSlug, actor, merchantId)
   : `/umbon${actor.kind === "staff" ? `?handil=${merchantId}` : ""}`;
 const checklistItems = onboardingPack
-  ? STEP_SLUGS.filter((slug) => slug !== "bida").map((slug) => ({
-      label: stepLabel(slug),
-      href: wizardPath(onboardingPack.application.id, slug, actor, merchantId),
-      state: (isStepComplete(slug as StepSlug, onboardingPack)
-        ? "done"
-        : slug === resumeSlug
-          ? "current"
-          : "todo") as "todo" | "current" | "done",
-    }))
+  ? STEP_SLUGS.filter((slug) => slug !== "bida").map((slug) => {
+      const done = isStepComplete(slug as StepSlug, onboardingPack);
+      const current = slug === resumeSlug;
+      return {
+        label: stepLabel(slug),
+        href: done || current
+          ? wizardPath(onboardingPack.application.id, slug, actor, merchantId)
+          : undefined,
+        state: (done ? "done" : current ? "current" : "todo") as
+          | "todo"
+          | "current"
+          | "done",
+      };
+    })
   : STEP_SLUGS.filter((slug) => slug !== "bida").map((slug, index) => ({
       label: stepLabel(slug),
-      href: resumeHref,
+      href: index === 0 ? resumeHref : undefined,
       state: (index === 0 ? "current" : "todo") as "todo" | "current" | "done",
     }));
 

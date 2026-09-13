@@ -24,6 +24,7 @@ const { items } = Astro.props;
             item.state === "current" && "is-current",
           ]}
           href={item.href}
+          aria-disabled={!item.href && item.state === "todo" ? "true" : undefined}
         >
           <span class="checklist-mark" aria-hidden="true" />
           <span>{item.label}</span>

@@ -425,24 +425,29 @@ const continueLabel = stig === "banki" && !app.bank_account
               <h2 class="wizard-section-title">Hvør lýsing passar best?</h2>
               <div class="choice-grid" data-cols="2">
                 {VERTICALS.map((vertical) => (
-                  <ChoiceCard
-                    name="vertical_key"
-                    value={vertical.key}
-                    title={vertical.label}
-                    hint={vertical.hint}
-                    checked={app.vertical_key === vertical.key}
-                  />
+                  <div class="choice-grid-item" data-sector={vertical.sector}>
+                    <ChoiceCard
+                      name="vertical_key"
+                      value={vertical.key}
+                      title={vertical.label}
+                      hint={vertical.hint}
+                      checked={app.vertical_key === vertical.key}
+                    />
+                  </div>
                 ))}
+              </div>
+              <div class="vertical-guidance" id="vertical-guidance" aria-live="polite">
+                <div class="wizard-alert" data-routing="1" hidden={app.vertical_sector !== 1}>
+                  <strong>Vit senda ikki hetta til Swedbank.</strong>
+                  <span>{fo.onboarding.sector1}</span>
+                </div>
+                <div class="wizard-alert" data-routing="2" hidden={app.vertical_sector !== 2}>
+                  <strong>Swedbank kann taka ímóti hesum.</strong>
+                  <span>{fo.onboarding.sector2}</span>
+                </div>
               </div>
             </section>
           </div>
-        )}
-
-        {stig === "vinnugrein" && app.vertical_sector === 1 && (
-          <p class="field-error" style="margin-top:1rem">{fo.onboarding.sector1}</p>
-        )}
-        {stig === "vinnugrein" && app.vertical_sector === 2 && (
-          <p class="field-hint" style="margin-top:1rem">{fo.onboarding.sector2}</p>
         )}
 
         {stig === "eigarar" && (
@@ -815,6 +820,26 @@ const continueLabel = stig === "banki" && !app.bank_account
     )
   }
 </WizardLayout>
+
+{
+  stig === "vinnugrein" && (
+    <script is:inline>
+      const verticalForm = document.getElementById("wizard-form");
+      const guidance = document.getElementById("vertical-guidance");
+
+      function showRouting() {
+        const selected = verticalForm?.querySelector('input[name="vertical_key"]:checked');
+        const sector = selected?.closest("[data-sector]")?.dataset.sector ?? "0";
+        guidance?.querySelectorAll("[data-routing]").forEach((message) => {
+          message.hidden = message.dataset.routing !== sector;
+        });
+      }
+
+      verticalForm?.addEventListener("change", showRouting);
+      showRouting();
+    </script>
+  )
+}
 
 {
   stig === "eigarar" && (

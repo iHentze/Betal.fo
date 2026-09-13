@@ -18,6 +18,7 @@ export interface ScreeningInput {
 export interface ScreeningResult {
   recommended: Acquirer;
   extraDocs: boolean;
+  priceList: "standard" | "sector2";
   refuseSwedbank: boolean;
   reason: string;
 }
@@ -27,6 +28,7 @@ export function screenApplication(input: ScreeningInput): ScreeningResult {
     return {
       recommended: "clearhaus",
       extraDocs: false,
+      priceList: "standard",
       refuseSwedbank: true,
       reason: "Geiri 1 — bannað vinnugrein hjá Swedbank",
     };
@@ -36,6 +38,7 @@ export function screenApplication(input: ScreeningInput): ScreeningResult {
     return {
       recommended: "clearhaus",
       extraDocs: false,
+      priceList: "standard",
       refuseSwedbank: true,
       reason: "Negativ eginogn — Swedbank rindar brutto og tekur ikki ímóti",
     };
@@ -45,6 +48,7 @@ export function screenApplication(input: ScreeningInput): ScreeningResult {
     return {
       recommended: "clearhaus",
       extraDocs: false,
+      priceList: "standard",
       refuseSwedbank: true,
       reason: "Negativ drift — Swedbank rindar brutto og tekur ikki ímóti",
     };
@@ -54,19 +58,31 @@ export function screenApplication(input: ScreeningInput): ScreeningResult {
     return {
       recommended: "swedbank",
       extraDocs: true,
+      priceList: "sector2",
       refuseSwedbank: false,
       reason: "Geiri 2 — Swedbank við hægri prísi og eyka skjølum",
+    };
+  }
+
+  if (input.equity === "unknown" || input.operations === "unknown") {
+    return {
+      recommended: "swedbank",
+      extraDocs: true,
+      priceList: "standard",
+      refuseSwedbank: false,
+      reason: "Óviss roknskapartøl — ársroknskapur krevst til skoðan",
     };
   }
 
   return {
     recommended: "swedbank",
     extraDocs: false,
+    priceList: "standard",
     refuseSwedbank: false,
     reason: "Vanlig vinnugrein, einki raut flagg",
   };
 }
 
 export function priceListKind(result: ScreeningResult): "standard" | "sector2" {
-  return result.extraDocs ? "sector2" : "standard";
+  return result.priceList;
 }

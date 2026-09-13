@@ -228,6 +228,7 @@ if vertical.sector == 1          → decline | clearhaus | shift4
 if equity == negative            → clearhaus | shift4
 if operations == negative        → clearhaus | shift4
 if vertical.sector == 2          → swedbank + sector2_price_list + extra_docs
+if equity or operations unknown  → swedbank + standard_fo_price_list + accounts
 else                             → swedbank + standard_fo_price_list
 ```
 

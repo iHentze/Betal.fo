@@ -1274,6 +1274,11 @@
     grid-template-columns: repeat(3, 1fr);
   }
 
+  .choice-grid-item,
+  .choice-grid-item > .choice-card {
+    height: 100%;
+  }
+
   .choice-card {
     position: relative;
     display: grid;
@@ -1465,6 +1470,10 @@
     color: var(--color-ink);
   }
 
+  .checklist-item[aria-disabled="true"] {
+    color: var(--color-ink-faint);
+  }
+
   .checklist-item:last-child {
     border-bottom: 0;
   }
@@ -1577,6 +1586,29 @@
   .wizard-alert.is-success {
     border-color: color-mix(in oklch, var(--color-state-success) 35%, var(--color-line));
     color: var(--color-ink-secondary);
+  }
+
+  .vertical-guidance {
+    margin-top: 0.875rem;
+  }
+
+  .vertical-guidance:empty {
+    display: none;
+  }
+
+  .vertical-guidance .wizard-alert {
+    display: grid;
+    gap: 0.1875rem;
+    margin-bottom: 0;
+  }
+
+  .vertical-guidance .wizard-alert[hidden] {
+    display: none;
+  }
+
+  .vertical-guidance strong {
+    color: var(--color-ink);
+    font-weight: 600;
   }
 
   .wizard-under-panel {
