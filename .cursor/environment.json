@@ -1,0 +1,16 @@
+{
+  "name": "betal.fo",
+  "build": {
+    "dockerfile": "Dockerfile",
+    "context": ".."
+  },
+  "user": "node",
+  "install": "npm ci",
+  "terminals": [
+    {
+      "name": "astro-dev",
+      "command": "npm run dev -- --host 0.0.0.0 --port 4321"
+    }
+  ],
+  "ports": [{ "name": "astro-dev", "port": 4321 }]
+}
