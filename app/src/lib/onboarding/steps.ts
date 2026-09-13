@@ -51,7 +51,7 @@ export function isStepComplete(slug: StepSlug, pack: ApplicationPack): boolean {
     case "eigarar":
       return (
         pack.owners.length > 0 &&
-        pack.owners.some((owner) => owner.is_signatory) &&
+        pack.owners.some((owner) => owner.is_signatory && owner.email) &&
         pack.owners.every((owner) => owner.name)
       );
     case "roknskapur":

@@ -29,4 +29,4 @@ APP_URL="http://localhost:4321"
 # SKRIVA_BASE_URL="https://klintraelectronicsigningapi.azurewebsites.net"
 # SKRIVA_EMAIL=""
 # SKRIVA_PASSWORD=""
-# SKRIVA_TENANT_ID=""
+# SKRIVA_TENANT_ID="" # optional when the user belongs to exactly one tenant

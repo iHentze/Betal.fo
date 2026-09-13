@@ -118,6 +118,9 @@ export const POST: APIRoute = async ({ params, request, locals, url }) => {
       if (!owners.some((owner) => owner.name.trim() && owner.is_signatory)) {
         return fail(here(step), "Í minsta lagi ein eigari má kunna undirskriva");
       }
+      if (owners.some((owner) => owner.is_signatory && !owner.email?.trim())) {
+        return fail(here(step), "Teldupostur manglar hjá einum undirskrivara");
+      }
       await saveOwners(env.DB, id, owners);
     } else if (step === "roknskapur") {
       const equity = String(form.get("equity") ?? "") as FinanceFlag;

@@ -172,6 +172,12 @@ describe("wizard resume", () => {
     await saveOwners(db, app.id, [
       { name: "Anna", is_signatory: true },
     ]);
+    const missingEmail = await loadPack(db, app.id);
+    expect(isStepComplete("eigarar", missingEmail!)).toBe(false);
+
+    await saveOwners(db, app.id, [
+      { name: "Anna", email: "anna@example.fo", is_signatory: true },
+    ]);
     const next = await loadPack(db, app.id);
     expect(isStepComplete("eigarar", next!)).toBe(true);
   });

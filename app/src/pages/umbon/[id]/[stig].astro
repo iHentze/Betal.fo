@@ -119,6 +119,20 @@ const priceList = await getActivePriceList(env.DB, priceListKind(screening));
 const fill = canFillAgreement(pack);
 const send = canSendToSkriva(pack, priceList, skrivaConfigured(env));
 const swedbank = app.recommended_acquirer === "swedbank" || !app.recommended_acquirer;
+const skrivaRows = pack.signings.filter((row) => row.provider === "skriva");
+const skrivaSigned = skrivaRows.length > 0 &&
+  skrivaRows.every((row) => row.status === "signed");
+const skrivaPending = skrivaRows.filter(
+  (row) => row.status === "sent" || row.status === "viewed",
+);
+const actorSigning = skrivaPending.find(
+  (row) => pack.owners.some(
+    (owner) =>
+      owner.is_signatory &&
+      owner.email?.toLowerCase() === actor.email.toLowerCase(),
+  ),
+) ?? skrivaPending[0];
+const skrivaMessage = Astro.url.searchParams.get("sent");
 const registryOwnerSuggestions = registrySnapshot
   ? (registrySnapshot.beneficialOwners.length > 0
       ? registrySnapshot.beneficialOwners
@@ -504,7 +518,16 @@ if (stig === "banki" && actor.kind === "staff") {
                   </div>
                   <Field label="Navn" name="owner_name" value={owner.name} required={index === 0} autocomplete="name" />
                   <div class="field-row">
-                    <Field label="Teldupostur" name="owner_email" type="email" value={owner.email} autocomplete="email" />
+                    <Field
+                      label="Teldupostur"
+                      name="owner_email"
+                      id={`owner-email-${index}`}
+                      type="email"
+                      value={owner.email}
+                      autocomplete="email"
+                      required={Boolean(owner.is_signatory)}
+                      hint="Klintra sendir undirskriftarleinkjuna higar."
+                    />
                     <Field label="Leiklutur" name="owner_role" value={owner.role} placeholder="t.d. stjóri" />
                   </div>
                   <Field label="Eigaralutur %" name="owner_bps" value={owner.ownership_bps == null ? "" : String(owner.ownership_bps / 100)} inputmode="decimal" />
@@ -800,15 +823,49 @@ if (stig === "banki" && actor.kind === "staff") {
                   <p>Samleikin váttar bæði undirskriftina og P-talið hjá undirskrivaranum.</p>
                 </div>
               </div>
-              {!send.ok && <p class="field-hint signing-note">{send.reason}</p>}
-              <form method="POST" action={`/api/umbon/${id}/skriva${q}`}>
-                <button class="btn btn-primary signing-action" type="submit" disabled={!send.ok}>
-                  Far til Samleikan
-                </button>
-              </form>
+
+              {skrivaSigned || skrivaMessage === "skriva_signed" ? (
+                <>
+                  <div class="bank-email-success">
+                    <span aria-hidden="true">✓</span>
+                    Avtalan er undirskrivað við Samleikanum og goymd í pakkanum.
+                  </div>
+                  <a class="btn signing-action" href={`/api/umbon/${id}/avtalan.pdf${q}`}>
+                    Opna undirskrivaðu avtaluna
+                  </a>
+                </>
+              ) : skrivaPending.length > 0 ? (
+                <>
+                  <div class="wizard-alert is-success">
+                    {skrivaMessage === "skriva"
+                      ? "Undirskriftin er stovnað, og Klintra hevur sent leinkjurnar."
+                      : `${skrivaPending.length} undirskrift bíðar.`}
+                  </div>
+                  {actor.kind === "merchant" && actorSigning?.signing_url && (
+                    <a class="btn btn-primary signing-action" href={actorSigning.signing_url}>
+                      Far til Samleikan
+                    </a>
+                  )}
+                  <form method="POST" action={`/api/umbon/${id}/skriva/status${q}`}>
+                    <button class="btn signing-action" type="submit">
+                      Dagfør støðuna
+                    </button>
+                  </form>
+                </>
+              ) : (
+                <>
+                  {!send.ok && <p class="field-hint signing-note">{send.reason}</p>}
+                  <form method="POST" action={`/api/umbon/${id}/skriva${q}`}>
+                    <button class="btn btn-primary signing-action" type="submit" disabled={!send.ok}>
+                      Stovna undirskrift
+                    </button>
+                  </form>
+                </>
+              )}
             </section>
 
-            <details class="wizard-panel wet-ink">
+            {!skrivaSigned && (
+              <details class="wizard-panel wet-ink">
               <summary>Eg vil heldur undirskriva á pappíri</summary>
               <p class="field-hint">{fo.onboarding.wetInk}</p>
 
@@ -847,7 +904,8 @@ if (stig === "banki" && actor.kind === "staff") {
                   <button class="btn signing-action" type="submit">Send pappírsavtaluna</button>
                 </form>
               )}
-            </details>
+              </details>
+            )}
           </>
         )}
       </div>
@@ -913,8 +971,15 @@ if (stig === "banki" && actor.kind === "staff") {
         cards.forEach((card, index) => {
           const number = card.querySelector(".owner-card-heading .tnum");
           const checkbox = card.querySelector('input[name="owner_signatory"]');
+          const email = card.querySelector('input[name="owner_email"]');
+          const emailLabel = email?.closest(".field")?.querySelector("label");
           if (number) number.textContent = String(index + 1);
-          if (checkbox) checkbox.value = String(index);
+          if (checkbox) {
+            checkbox.value = String(index);
+            if (email) email.required = checkbox.checked;
+          }
+          if (email) email.id = `owner-email-${index}`;
+          if (emailLabel) emailLabel.htmlFor = `owner-email-${index}`;
           card.querySelector(".owner-remove")?.toggleAttribute("hidden", cards.length === 1);
         });
       }
@@ -942,6 +1007,10 @@ if (stig === "banki" && actor.kind === "staff") {
         if (!button || ownerList.querySelectorAll("[data-owner-card]").length === 1) return;
         button.closest("[data-owner-card]")?.remove();
         renumberOwners();
+      });
+
+      ownerList?.addEventListener("change", (event) => {
+        if (event.target.matches('input[name="owner_signatory"]')) renumberOwners();
       });
 
       renumberOwners();

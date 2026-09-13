@@ -246,15 +246,21 @@ a new PDF.
 
 - Generate the FO agreement as PDF bytes (template + filled company / owners /
   prices / `FO`).
-- Start the Skriva/Samleikin identity flow for each signatory; persist the verified
-  P-tal returned by the provider rather than asking the merchant to type it.
-- Store tokens. Mail can come from Skriva (`sendMailToSigningPersons`) so we do not
-  block on our own email provider.
-- `redirectUrl` = `https://app.betal.fo/umbon/{id}/skriva` with
+- Log in to `klintraelectronicsigningapi.azurewebsites.net/api/Login`, then call
+  `/api/Signing/create-signing-request` with the filled PDF.
+- Start the Skriva/Samleikin identity flow for each signatory with
+  `personalIdentificationNumber: null`; persist the verified P-tal returned by the
+  provider rather than asking the merchant to type it.
+- Store the request id, person tokens and signing URLs. Klintra sends each signing
+  link (`sendMailToSigningPersons: true`).
+- `redirectUrl` = `https://app.betal.fo/umbon/{id}/undirskriva` with
   `appendTokenToRedirectUrl: true`.
-- Poll from a cron or a Durable Object alarm, **not** from the request that created
-  the signing. Also refresh when the merchant or staff opens the page.
-- On `signed`, download the PDF to R2 and move the application to `pack_ready`.
+- The merchant/staff status action calls `/api/Signing/task/status/token/{token}`.
+  A cron can call the same refresh later; it must not poll inside the request that
+  created the signing.
+- When every signer is complete, download the signed PDF from
+  `/api/Document/signed/downloadBySigningRequestAndToken/...`, store it in the pack,
+  and move the application to `pack_ready`.
 
 Staging uses P-numbers `320000001`–`320000020`. Never send a real P-tal to staging.
 
@@ -267,7 +273,7 @@ Needed before the first staging signature and bank request:
 | `SKRIVA_BASE_URL` | var, staging URL first |
 | `SKRIVA_EMAIL` | secret |
 | `SKRIVA_PASSWORD` | secret |
-| `SKRIVA_TENANT_ID` | secret or var, if login returns several tenants |
+| `SKRIVA_TENANT_ID` | optional secret/var; only needed if login returns several tenants |
 | `RESEND_API_KEY` | secret |
 | `BANK_EMAIL_FROM` | var, verified sender such as `Betal <banki@betal.fo>` |
 | R2 bucket `DOCUMENTS` | wrangler binding, private |

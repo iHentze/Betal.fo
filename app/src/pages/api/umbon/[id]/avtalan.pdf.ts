@@ -5,6 +5,7 @@ import { getActivePriceList } from "~/lib/onboarding/application";
 import { fillAgreementPdf } from "~/lib/onboarding/pdf";
 import { toArrayBuffer } from "~/lib/onboarding/bytes";
 import { priceListKind, screenApplication } from "~/lib/onboarding/screening";
+import { getDocumentBytes } from "~/lib/onboarding/documents";
 
 export const prerender = false;
 
@@ -19,6 +20,24 @@ export const GET: APIRoute = async ({ params, locals, url }) => {
     pack = await requirePack(env.DB, actor, id, url.searchParams.get("handil"));
   } catch {
     return new Response("forbidden", { status: 403 });
+  }
+
+  if (pack.events.some((event) => event.kind === "skriva_signed")) {
+    const signed = await getDocumentBytes(env.DB, id, "agreement");
+    if (signed?.bytes) {
+      const bytes = signed.bytes instanceof Uint8Array
+        ? signed.bytes
+        : new Uint8Array(signed.bytes);
+      return new Response(toArrayBuffer(bytes), {
+        headers: {
+          "Content-Type": signed.content_type ?? "application/pdf",
+          "Content-Disposition": `inline; filename="${
+            signed.file_name ?? "kortinnloysing-fo-undirskrivad.pdf"
+          }"`,
+          "Cache-Control": "private, no-store",
+        },
+      });
+    }
   }
 
   const screening = screenApplication({
