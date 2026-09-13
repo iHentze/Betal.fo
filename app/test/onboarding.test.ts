@@ -4,6 +4,7 @@ import {
   getOrCreateApplication,
   loadPack,
   saveBusinessProfile,
+  saveAnswers,
   saveCompany,
   saveFinances,
   saveOwners,
@@ -18,6 +19,63 @@ import {
 } from "~/lib/onboarding/steps";
 import { canFillAgreement, canSendToSkriva, fillAgreementPdf, fillBankFormPdf } from "~/lib/onboarding/pdf";
 import { putDocument } from "~/lib/onboarding/documents";
+import { readFileSync } from "node:fs";
+import { PRICE_CATEGORIES } from "~/lib/onboarding/swedbank";
+import type { PriceList } from "~/lib/onboarding/application";
+
+const completeBusinessAnswers = {
+  annual_card_turnover_dkk: 1_000_000,
+  average_transaction_dkk: 500,
+  market_name: "Handilin",
+  contact_name: "Anna Eigari",
+  contact_phone: "+298 123456",
+  contact_email: "anna@example.fo",
+  invoice_email: "rokning@example.fo",
+  product_type: "physical",
+  inventory: "yes",
+  delivery_method: "postur",
+  delivery_days: 2,
+  subscriptions: false,
+  gift_cards: false,
+  primary_customers: "consumers",
+  payment_link_mode: "none",
+  save_card: false,
+  wallets: [],
+  other_mit: false,
+  website_terms: true,
+  made_to_order: false,
+  made_to_order_days: null,
+  donations: false,
+  sales_regions: { denmark: 0, nordics: 100, eu: 0, usa: 0, other: 0 },
+};
+
+const agreementTemplate = new Uint8Array(
+  readFileSync(new URL("../assets/swedbank/Kortindlosning-Online-FO.pdf", import.meta.url)),
+);
+const bankTemplate = new Uint8Array(
+  readFileSync(new URL("../assets/swedbank/Swedbank Pay - Bekræftelse af konto.pdf", import.meta.url)),
+);
+const officialPriceList: PriceList = {
+  id: "pl",
+  kind: "standard",
+  version: 1,
+  currency: "DKK",
+  country_code: "FO",
+  rates_json: JSON.stringify({
+    establishmentFeeMinor: 10000,
+    monthlyFeeMinor: 5000,
+    minimumMonthlyPaymentMinor: 0,
+    priceCategory: "FO standard test",
+    cardRates: Object.fromEntries(PRICE_CATEGORIES.map((category) => [
+      category,
+      {
+        visa: { transactionMinor: 50, basisPoints: 150 },
+        mastercard: { transactionMinor: 50, basisPoints: 150 },
+        diners: { transactionMinor: 75, basisPoints: 200 },
+      },
+    ])),
+  }),
+};
 
 function emptyPack(overrides: Partial<ApplicationPack["application"]> = {}): ApplicationPack {
   return {
@@ -42,7 +100,10 @@ function emptyPack(overrides: Partial<ApplicationPack["application"]> = {}): App
       registry_checked_at_ms: null,
       registry_snapshot: null,
       company_details_confirmed: 1,
-      website: null,
+      policy_id: null,
+      final_snapshot_id: null,
+      locked_at_ms: null,
+      website: "https://handil.fo",
       sells: "Kaffi",
       vertical_key: "cafe",
       vertical_sector: 0,
@@ -75,6 +136,14 @@ function emptyPack(overrides: Partial<ApplicationPack["application"]> = {}): App
     documents: [],
     signings: [],
     events: [],
+    answers: Object.entries(completeBusinessAnswers).map(([key, value]) => ({
+      application_id: "a1",
+      key,
+      value_json: JSON.stringify(value),
+      source: "merchant",
+      confirmed_at_ms: 1,
+      updated_at_ms: 1,
+    })),
   };
 }
 
@@ -155,6 +224,9 @@ describe("wizard resume", () => {
 
     await saveBusinessProfile(db, app.id, "cafe", "Kaffi og køkur", "https://handil.fo", "test@betal.fo");
     pack = await loadPack(db, app.id);
+    expect(firstIncompleteStep(pack!)).toBe("vinnugrein");
+    await saveAnswers(db, app.id, completeBusinessAnswers);
+    pack = await loadPack(db, app.id);
     expect(firstIncompleteStep(pack!)).toBe("eigarar");
     expect(pack!.application.recommended_acquirer).toBe("swedbank");
   });
@@ -202,13 +274,15 @@ describe("FO agreement fill", () => {
 
   it("produces a valid FO PDF when the pack is Swedbank-ready", async () => {
     const pack = emptyPack();
-    const bytes = await fillAgreementPdf(pack, null);
+    const bytes = await fillAgreementPdf(pack, officialPriceList, agreementTemplate);
     expect(new TextDecoder().decode(bytes.slice(0, 5))).toBe("%PDF-");
-    expect(bytes.byteLength).toBeGreaterThan(800);
+    expect(bytes.byteLength).toBeGreaterThan(300_000);
     const { PDFDocument } = await import("pdf-lib");
     const loaded = await PDFDocument.load(bytes);
-    expect(loaded.getPageCount()).toBe(1);
+    expect(loaded.getPageCount()).toBe(5);
+    expect(loaded.getForm().getFields()).toHaveLength(0);
     expect(canSendToSkriva(pack, null, true).ok).toBe(false);
+    expect(canSendToSkriva(pack, officialPriceList, true).ok).toBe(true);
   });
 
   it("blocks Skriva when the price list is empty even if fill works", () => {
@@ -231,10 +305,12 @@ describe("FO agreement fill", () => {
   });
 
   it("pre-fills the bank confirmation", async () => {
-    const bytes = await fillBankFormPdf(emptyPack());
+    const bytes = await fillBankFormPdf(emptyPack(), bankTemplate);
     expect(new TextDecoder().decode(bytes.slice(0, 5))).toBe("%PDF-");
     const { PDFDocument } = await import("pdf-lib");
-    expect((await PDFDocument.load(bytes)).getPageCount()).toBe(1);
+    const loaded = await PDFDocument.load(bytes);
+    expect(loaded.getPageCount()).toBe(1);
+    expect(loaded.getForm().getFields()).toHaveLength(0);
   });
 
   it("stores an uploaded document on the pack", async () => {

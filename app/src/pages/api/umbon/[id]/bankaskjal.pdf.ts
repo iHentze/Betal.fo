@@ -3,6 +3,7 @@ import { env } from "~/lib/env";
 import { requirePack } from "~/lib/onboarding/access";
 import { fillBankFormPdf } from "~/lib/onboarding/pdf";
 import { toArrayBuffer } from "~/lib/onboarding/bytes";
+import { getOfficialTemplate } from "~/lib/onboarding/swedbank";
 
 export const prerender = false;
 
@@ -19,11 +20,19 @@ export const GET: APIRoute = async ({ params, locals, url }) => {
     return new Response("forbidden", { status: 403 });
   }
 
-  const bytes = await fillBankFormPdf(pack);
-  return new Response(toArrayBuffer(bytes), {
-    headers: {
-      "Content-Type": "application/pdf",
-      "Content-Disposition": `inline; filename="bankastadfesting.pdf"`,
-    },
-  });
+  try {
+    const official = await getOfficialTemplate(env.DB, env.DOCUMENTS, "bank_confirmation");
+    const bytes = await fillBankFormPdf(pack, official.bytes);
+    return new Response(toArrayBuffer(bytes), {
+      headers: {
+        "Content-Type": "application/pdf",
+        "Content-Disposition": `inline; filename="bankastadfesting.pdf"`,
+        "Cache-Control": "private, no-store",
+      },
+    });
+  } catch (error) {
+    return new Response(error instanceof Error ? error.message : "Bankaskjalið fekst ikki", {
+      status: 409,
+    });
+  }
 };

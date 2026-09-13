@@ -6,6 +6,7 @@ import {
   markWetInk,
   saveBank,
   saveBusinessProfile,
+  saveAnswers,
   saveCompany,
   saveEygaCompany,
   saveFinances,
@@ -14,6 +15,7 @@ import {
 import { getEygaCompany } from "~/lib/onboarding/eyga";
 import { firstIncompleteStep, isStepSlug, STEP_SLUGS } from "~/lib/onboarding/steps";
 import type { FinanceFlag } from "~/lib/onboarding/screening";
+import { businessAnswersFromForm } from "~/lib/onboarding/questionnaire";
 
 export const prerender = false;
 
@@ -91,6 +93,15 @@ export const POST: APIRoute = async ({ params, request, locals, url }) => {
       if (!key || !sells) {
         return fail(here(step), "Vel eina vinnugrein og greið stutt frá, hvat tit selja");
       }
+      let answers: Record<string, unknown>;
+      try {
+        answers = businessAnswersFromForm(form);
+      } catch {
+        return fail(
+          here(step),
+          "Svara øllum spurningunum og kanna, at prosentini eru 100 tilsamans",
+        );
+      }
       await saveBusinessProfile(
         env.DB,
         id,
@@ -99,6 +110,7 @@ export const POST: APIRoute = async ({ params, request, locals, url }) => {
         String(form.get("website") ?? ""),
         actor.email,
       );
+      await saveAnswers(env.DB, id, answers);
     } else if (step === "eigarar") {
       const names = form.getAll("owner_name").map((v) => String(v));
       const emails = form.getAll("owner_email").map((v) => String(v));

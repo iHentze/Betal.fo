@@ -6,7 +6,7 @@ import Dropzone from "~/components/ui/Dropzone.astro";
 import { env } from "~/lib/env";
 import { fo } from "~/content/fo";
 import { requirePack, wizardPath, handilQuery } from "~/lib/onboarding/access";
-import { getActivePriceList } from "~/lib/onboarding/application";
+import { answerValue, getActivePriceList } from "~/lib/onboarding/application";
 import { canFillAgreement, canSendToSkriva } from "~/lib/onboarding/pdf";
 import { priceListKind, screenApplication } from "~/lib/onboarding/screening";
 import { skrivaConfigured } from "~/lib/onboarding/skriva";
@@ -29,6 +29,7 @@ import {
   type EygaCompany,
   type EygaSearchResult,
 } from "~/lib/onboarding/eyga";
+import type { SalesRegions } from "~/lib/onboarding/questionnaire";
 
 export const prerender = false;
 
@@ -192,6 +193,15 @@ const continueLabel = stig === "banki" && !app.bank_account
   ? "Ger bankaskjalið"
   : fo.onboarding.continue;
 const bankEmailReady = Boolean(env.RESEND_API_KEY);
+const selectedWallets = answerValue<string[]>(pack, "wallets") ?? [];
+const salesRegions = answerValue<SalesRegions>(pack, "sales_regions") ?? {
+  denmark: 0,
+  nordics: 100,
+  eu: 0,
+  usa: 0,
+  other: 0,
+};
+const answerBoolean = (key: string) => answerValue<boolean>(pack, key);
 let clientEmail = actor.email;
 if (stig === "banki" && actor.kind === "staff") {
   const contact = await env.DB
@@ -455,7 +465,49 @@ if (stig === "banki" && actor.kind === "staff") {
                 value={app.website}
                 placeholder="https://"
                 autocomplete="url"
+                required
               />
+              <Field
+                label="Navn á sølustaðnum"
+                name="market_name"
+                value={answerValue<string>(pack, "market_name") ?? app.legal_name}
+                required
+              />
+              <div class="field-row">
+                <Field
+                  label="Kontaktpersónur"
+                  name="contact_name"
+                  value={answerValue<string>(pack, "contact_name") ?? actor.name}
+                  required
+                  autocomplete="name"
+                />
+                <Field
+                  label="Telefon"
+                  name="contact_phone"
+                  type="tel"
+                  value={answerValue<string>(pack, "contact_phone")}
+                  required
+                  autocomplete="tel"
+                />
+              </div>
+              <div class="field-row">
+                <Field
+                  label="Teldupostur"
+                  name="contact_email"
+                  type="email"
+                  value={answerValue<string>(pack, "contact_email") ?? actor.email}
+                  required
+                  autocomplete="email"
+                />
+                <Field
+                  label="Teldupostur til fakturar"
+                  name="invoice_email"
+                  type="email"
+                  value={answerValue<string>(pack, "invoice_email") ?? actor.email}
+                  required
+                  autocomplete="email"
+                />
+              </div>
             </section>
             <section>
               <h2 class="wizard-section-title">Hvør lýsing passar best?</h2>
@@ -482,6 +534,183 @@ if (stig === "banki" && actor.kind === "staff") {
                   <span>{fo.onboarding.sector2}</span>
                 </div>
               </div>
+            </section>
+
+            <section class="wizard-panel">
+              <h2 class="wizard-section-title">Væntað kortsøla</h2>
+              <p class="wizard-section-copy">
+                Tølini skulu vera ein realistisk meting fyri Visa og Mastercard.
+              </p>
+              <div class="field-row">
+                <Field
+                  label="Væntað kortsøla um árið (DKK)"
+                  name="annual_card_turnover_dkk"
+                  type="number"
+                  value={answerValue<number>(pack, "annual_card_turnover_dkk")}
+                  required
+                  inputmode="decimal"
+                />
+                <Field
+                  label="Miðal keypsupphædd (DKK)"
+                  name="average_transaction_dkk"
+                  type="number"
+                  value={answerValue<number>(pack, "average_transaction_dkk")}
+                  required
+                  inputmode="decimal"
+                />
+              </div>
+            </section>
+
+            <section class="wizard-panel">
+              <h2 class="wizard-section-title">Vørur og veiting</h2>
+              <p class="field-label">Hvat slag av vørum selja tit?</p>
+              <div class="choice-grid" data-cols="3">
+                <ChoiceCard name="product_type" value="physical" title="Fysiskar vørur" checked={answerValue<string>(pack, "product_type") === "physical"} required />
+                <ChoiceCard name="product_type" value="digital" title="Talgildar vørur" checked={answerValue<string>(pack, "product_type") === "digital"} required />
+                <ChoiceCard name="product_type" value="both" title="Bæði" checked={answerValue<string>(pack, "product_type") === "both"} required />
+              </div>
+
+              <p class="field-label wizard-question">Hava tit vørurnar á goymslu?</p>
+              <div class="choice-grid" data-cols="3">
+                <ChoiceCard name="inventory" value="yes" title="Ja" checked={answerValue<string>(pack, "inventory") === "yes"} required />
+                <ChoiceCard name="inventory" value="partial" title="Partvíst" checked={answerValue<string>(pack, "inventory") === "partial"} required />
+                <ChoiceCard name="inventory" value="no" title="Nei" checked={answerValue<string>(pack, "inventory") === "no"} required />
+              </div>
+
+              <div class="field-row wizard-question">
+                <Field
+                  label="Hvussu verða vørur ella tænastur latnar?"
+                  name="delivery_method"
+                  value={answerValue<string>(pack, "delivery_method")}
+                  placeholder="T.d. talgilt, postur ella heintan"
+                  required
+                />
+                <Field
+                  label="Dagar frá gjaldi til levering"
+                  name="delivery_days"
+                  type="number"
+                  value={answerValue<number>(pack, "delivery_days")}
+                  required
+                  inputmode="numeric"
+                />
+              </div>
+            </section>
+
+            <section class="wizard-panel">
+              <h2 class="wizard-section-title">Gjaldshættir og kundar</h2>
+              <p class="field-label">Bjóða tit gjaldsleinki?</p>
+              <div class="choice-grid" data-cols="2">
+                <ChoiceCard name="payment_link_mode" value="none" title="Nei, vanlig netverslun" checked={answerValue<string>(pack, "payment_link_mode") === "none"} required />
+                <ChoiceCard name="payment_link_mode" value="html" title="Ja, HTML-leinki" checked={answerValue<string>(pack, "payment_link_mode") === "html"} required />
+                <ChoiceCard name="payment_link_mode" value="digital" title="Ja, SMS ella teldupostur" checked={answerValue<string>(pack, "payment_link_mode") === "digital"} required />
+                <ChoiceCard name="payment_link_mode" value="physical" title="Ja, á fysiskum sølustaði" checked={answerValue<string>(pack, "payment_link_mode") === "physical"} required />
+              </div>
+
+              <p class="field-label wizard-question">Hvørjir eru høvuðskundarnir?</p>
+              <div class="choice-grid" data-cols="3">
+                <ChoiceCard name="primary_customers" value="consumers" title="Einstaklingar" checked={answerValue<string>(pack, "primary_customers") === "consumers"} required />
+                <ChoiceCard name="primary_customers" value="businesses" title="Fyritøkur" checked={answerValue<string>(pack, "primary_customers") === "businesses"} required />
+                <ChoiceCard name="primary_customers" value="both" title="Bæði" checked={answerValue<string>(pack, "primary_customers") === "both"} required />
+              </div>
+
+              {[
+                ["subscriptions", "Bjóða tit haldsgjøld?"],
+                ["gift_cards", "Selja tit gávukort ella forskotsgjaldskort?"],
+                ["donations", "Taka tit ímóti gávum uttan mótveiting?"],
+                ["save_card", "Kunnu kundar goyma kortupplýsingar?"],
+                ["other_mit", "Bjóða tit onnur endurtakandi gjøld við skiftandi upphædd?"],
+                ["website_terms", "Eru handilstreytir á heimasíðuni?"],
+                ["made_to_order", "Selja tit bílagdar vørur?"],
+              ].map(([key, label]) => (
+                <div class="binary-question">
+                  <span class="field-label">{label}</span>
+                  <div class="choice-grid" data-cols="2">
+                    <ChoiceCard name={key} value="no" title="Nei" checked={answerBoolean(key) === false} required />
+                    <ChoiceCard name={key} value="yes" title="Ja" checked={answerBoolean(key) === true} required />
+                  </div>
+                </div>
+              ))}
+
+              <div id="save-card-details" hidden={!answerBoolean("save_card")}>
+                <p class="field-label wizard-question">Verða kortupplýsingarnar goymdar í eini app?</p>
+                <div class="choice-grid" data-cols="2">
+                  <ChoiceCard name="save_card_in_app" value="no" title="Nei" checked={answerBoolean("save_card_in_app") === false} />
+                  <ChoiceCard name="save_card_in_app" value="yes" title="Ja" checked={answerBoolean("save_card_in_app") === true} />
+                </div>
+              </div>
+
+              <div id="made-to-order-details" hidden={!answerBoolean("made_to_order")}>
+                <div class="field-row wizard-question">
+                  <Field
+                    label="Vanlig leveringartíð (dagar)"
+                    name="made_to_order_days"
+                    type="number"
+                    value={answerValue<number>(pack, "made_to_order_days")}
+                    inputmode="numeric"
+                  />
+                  <Field
+                    label="Partur av kortsøluni (%)"
+                    name="made_to_order_share_percent"
+                    type="number"
+                    value={answerValue<number>(pack, "made_to_order_share_percent")}
+                    inputmode="decimal"
+                  />
+                </div>
+                <p class="field-label wizard-question">Rinda kundar depositum?</p>
+                <div class="choice-grid" data-cols="2">
+                  <ChoiceCard name="deposit" value="no" title="Nei" checked={answerBoolean("deposit") === false} />
+                  <ChoiceCard name="deposit" value="yes" title="Ja" checked={answerBoolean("deposit") === true} />
+                </div>
+                <div id="deposit-details" hidden={!answerBoolean("deposit")}>
+                  <Field
+                    label="Depositum (%)"
+                    name="deposit_share_percent"
+                    type="number"
+                    value={answerValue<number>(pack, "deposit_share_percent")}
+                    inputmode="decimal"
+                  />
+                </div>
+                <div class="field-row wizard-question">
+                  <Field
+                    label="Nær verður restin goldin?"
+                    name="final_payment_when"
+                    value={answerValue<string>(pack, "final_payment_when")}
+                  />
+                  <Field
+                    label="Hvussu verður restin goldin?"
+                    name="final_payment_method"
+                    value={answerValue<string>(pack, "final_payment_method")}
+                  />
+                </div>
+              </div>
+
+              <p class="field-label wizard-question">Talgildar pungar</p>
+              <div class="choice-grid" data-cols="3">
+                <ChoiceCard name="wallets" value="mobilepay" title="MobilePay" type="checkbox" checked={selectedWallets.includes("mobilepay")} />
+                <ChoiceCard name="wallets" value="applepay" title="Apple Pay" type="checkbox" checked={selectedWallets.includes("applepay")} />
+                <ChoiceCard name="wallets" value="googlepay" title="Google Pay" type="checkbox" checked={selectedWallets.includes("googlepay")} />
+              </div>
+              <Field
+                label="Annar talgildur pungur"
+                name="wallet_other"
+                value={answerValue<string>(pack, "wallet_other")}
+                placeholder="Valfrítt"
+              />
+            </section>
+
+            <section class="wizard-panel">
+              <h2 class="wizard-section-title">Hvar eru kundarnir?</h2>
+              <p class="wizard-section-copy">Prosentini skulu vera 100 tilsamans.</p>
+              <div class="sales-regions-grid">
+                <Field label="Danmark %" name="sales_denmark" type="number" value={salesRegions.denmark} required inputmode="decimal" />
+                <Field label="Onnur Norðurlond %" name="sales_nordics" type="number" value={salesRegions.nordics} required inputmode="decimal" />
+                <Field label="Onnur ES-lond %" name="sales_eu" type="number" value={salesRegions.eu} required inputmode="decimal" />
+                <Field label="USA %" name="sales_usa" type="number" value={salesRegions.usa} required inputmode="decimal" />
+                <Field label="Onnur lond %" name="sales_other" type="number" value={salesRegions.other} required inputmode="decimal" />
+              </div>
+              <p class="sales-total tnum" id="sales-total">
+                Tilsamans: {salesRegions.denmark + salesRegions.nordics + salesRegions.eu + salesRegions.usa + salesRegions.other}%
+              </p>
             </section>
           </div>
         )}
@@ -964,8 +1193,53 @@ if (stig === "banki" && actor.kind === "staff") {
         });
       }
 
-      verticalForm?.addEventListener("change", showRouting);
+      function updateBusinessFields() {
+        const madeToOrder = verticalForm?.querySelector(
+          'input[name="made_to_order"]:checked',
+        )?.value === "yes";
+        const details = document.getElementById("made-to-order-details");
+        if (details) details.hidden = !madeToOrder;
+        details?.querySelectorAll("input").forEach((input) => {
+          if (input.name !== "deposit_share_percent") input.required = madeToOrder;
+        });
+
+        const deposit = madeToOrder && verticalForm?.querySelector(
+          'input[name="deposit"]:checked',
+        )?.value === "yes";
+        const depositDetails = document.getElementById("deposit-details");
+        if (depositDetails) depositDetails.hidden = !deposit;
+        const depositShare = verticalForm?.querySelector('input[name="deposit_share_percent"]');
+        if (depositShare) depositShare.required = deposit;
+
+        const saveCard = verticalForm?.querySelector(
+          'input[name="save_card"]:checked',
+        )?.value === "yes";
+        const saveCardDetails = document.getElementById("save-card-details");
+        if (saveCardDetails) saveCardDetails.hidden = !saveCard;
+        saveCardDetails?.querySelectorAll("input").forEach((input) => {
+          input.required = saveCard;
+        });
+
+        const total = ["sales_denmark", "sales_nordics", "sales_eu", "sales_usa", "sales_other"]
+          .reduce((sum, name) => {
+            const input = verticalForm?.querySelector(`input[name="${name}"]`);
+            return sum + (Number(input?.value) || 0);
+          }, 0);
+        const totalLabel = document.getElementById("sales-total");
+        if (totalLabel) {
+          totalLabel.textContent = `Tilsamans: ${total}%`;
+          totalLabel.classList.toggle("is-valid", total === 100);
+          totalLabel.classList.toggle("is-error", total !== 100);
+        }
+      }
+
+      verticalForm?.addEventListener("change", () => {
+        showRouting();
+        updateBusinessFields();
+      });
+      verticalForm?.addEventListener("input", updateBusinessFields);
       showRouting();
+      updateBusinessFields();
     </script>
   )
 }

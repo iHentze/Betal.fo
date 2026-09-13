@@ -1,5 +1,6 @@
 import { fo } from "~/content/fo";
 import type { ApplicationPack } from "./application";
+import { businessAnswersComplete } from "./questionnaire";
 
 export const STEP_SLUGS = [
   "felag",
@@ -47,7 +48,8 @@ export function isStepComplete(slug: StepSlug, pack: ApplicationPack): boolean {
           app.postal_code,
       );
     case "vinnugrein":
-      return Boolean(app.vertical_key && app.sells);
+      return Boolean(app.vertical_key && app.sells && app.website) &&
+        businessAnswersComplete(pack);
     case "eigarar":
       return (
         pack.owners.length > 0 &&
@@ -70,10 +72,23 @@ export function isStepComplete(slug: StepSlug, pack: ApplicationPack): boolean {
       if (app.recommended_acquirer && app.recommended_acquirer !== "swedbank") {
         return pack.events.some((event) => event.kind === "acknowledged_reroute");
       }
-      return (
-        pack.signings.some((row) => row.status === "signed" || row.status === "wet_ink") ||
-        (hasDocument(pack, "agreement") && hasDocument(pack, "photo_id"))
-      );
+      {
+        const latestRequestId = pack.signings.find(
+          (row) => row.provider === "skriva" && row.signing_request_id,
+        )?.signing_request_id;
+        const latestRows = pack.signings.filter(
+          (row) =>
+            row.provider === "skriva" &&
+            row.signing_request_id === latestRequestId,
+        );
+        const everySelectedSignerSigned =
+          latestRows.length > 0 &&
+          latestRows.length === pack.owners.filter((owner) => owner.is_signatory).length &&
+          latestRows.every((row) => row.status === "signed");
+        return everySelectedSignerSigned ||
+          pack.signings.some((row) => row.status === "wet_ink") ||
+          (hasDocument(pack, "agreement") && hasDocument(pack, "photo_id"));
+      }
     case "bida":
       return isStepComplete("undirskriva", pack);
   }
