@@ -1,0 +1,101 @@
+---
+import WizardLayout from "~/components/ui/WizardLayout.astro";
+import { env } from "~/lib/env";
+import { fo } from "~/content/fo";
+import { requirePack, wizardPath } from "~/lib/onboarding/access";
+import {
+  STEP_SLUGS,
+  firstIncompleteStep,
+  isStepComplete,
+  stepLabel,
+  type StepSlug,
+} from "~/lib/onboarding/steps";
+import {
+  applicationProgress,
+  missingItemLabel,
+  vinnugreinChapter,
+} from "~/lib/onboarding/progress";
+import { formatDateTime } from "~/lib/nav";
+
+export const prerender = false;
+
+const actor = Astro.locals.actor!;
+const id = Astro.params.id!;
+
+let pack;
+try {
+  pack = await requirePack(env.DB, actor, id, Astro.url.searchParams.get("handil"));
+} catch {
+  return Astro.redirect("/umbon");
+}
+
+const merchantId = pack.application.merchant_id;
+const first = firstIncompleteStep(pack);
+const currentIndex = STEP_SLUGS.indexOf(first);
+const progress = applicationProgress(pack);
+const href = (slug: string) => wizardPath(id, slug, actor, merchantId);
+const sectionHref = (slug: StepSlug) =>
+  slug === "vinnugrein" ? `${href(slug)}#${vinnugreinChapter(pack)}` : href(slug);
+const steps = STEP_SLUGS.map((slug) => ({
+  slug,
+  label: stepLabel(slug),
+  href: href(slug),
+  state: (slug === first
+    ? "current"
+    : isStepComplete(slug as StepSlug, pack)
+    ? "done"
+    : "todo") as "todo" | "current" | "done",
+}));
+---
+
+<WizardLayout
+  title={fo.onboarding.overviewTitle}
+  why={fo.onboarding.overviewWhy}
+  steps={steps}
+  currentIndex={currentIndex}
+  savedLabel={`${fo.onboarding.saved} · ${formatDateTime(pack.application.updated_at_ms)}`}
+  backHref="/"
+  hideContinue
+>
+  <p class="application-progress-meta tnum">
+    {progress.percentage}% · {progress.complete} av {progress.total} upplýsingum
+  </p>
+  <div class="application-progress-track" aria-label={`${progress.percentage}% liðugt`}>
+    <span style={`width:${progress.percentage}%`} />
+  </div>
+
+  <nav class="application-sections" aria-label="Partar í umsóknini">
+    {progress.steps.map((section) => {
+      const done = section.complete === section.total;
+      const current = section.slug === first;
+      const preview = section.missing.slice(0, 2).map(missingItemLabel).join(" · ");
+      const extra = section.missing.length > 2 ? ` +${section.missing.length - 2}` : "";
+      return (
+        <a
+          class:list={["application-section", done && "is-done", current && "is-current"]}
+          href={sectionHref(section.slug)}
+        >
+          <span class:list={["application-section-mark", done && "is-done"]}>
+            {done ? "✓" : STEP_SLUGS.indexOf(section.slug) + 1}
+          </span>
+          <span class="application-section-body">
+            <span>
+              <strong>{stepLabel(section.slug)}</strong>
+              <small class="tnum">
+                {done ? fo.onboarding.done : fo.onboarding.missingCount(section.missing.length)}
+              </small>
+            </span>
+            {!done && preview && (
+              <em class="application-section-gap">{preview}{extra}</em>
+            )}
+          </span>
+          <span aria-hidden="true">›</span>
+        </a>
+      );
+    })}
+  </nav>
+
+  <a slot="foot" class="btn btn-primary wizard-continue" href={sectionHref(first)}>
+    {fo.onboarding.resume}
+  </a>
+</WizardLayout>

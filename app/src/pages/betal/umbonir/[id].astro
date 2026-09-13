@@ -17,6 +17,9 @@ import {
   sectorStatus,
 } from "~/lib/status";
 import { parseEygaSnapshot } from "~/lib/onboarding/eyga";
+import { applicationProgress } from "~/lib/onboarding/progress";
+import { getFinalSnapshot, snapshotDivergence } from "~/lib/onboarding/snapshot";
+import { verticalByKey } from "~/lib/onboarding/verticals";
 
 export const prerender = false;
 
@@ -33,6 +36,37 @@ const missing = missingDocKinds(pack);
 const error = Astro.url.searchParams.get("feilur");
 const wizard = wizardPath(id, "felag", actor, app.merchant_id);
 const registry = parseEygaSnapshot(app.registry_snapshot);
+const progress = applicationProgress(pack);
+const finalSnapshot = await getFinalSnapshot(env.DB, id);
+const snapshotDiffs = finalSnapshot ? snapshotDivergence(pack, finalSnapshot) : [];
+let snapshotPayload: {
+  application?: { legal_name?: string | null; v_tal?: string | null; vertical_key?: string | null };
+  priceList?: { kind?: string; version?: number };
+  agreementTemplate?: { id?: string; sha256?: string };
+  signers?: Array<{ name?: string; email?: string | null }>;
+} | null = null;
+if (finalSnapshot) {
+  try {
+    snapshotPayload = JSON.parse(finalSnapshot.payload_json);
+  } catch {
+    snapshotPayload = null;
+  }
+}
+const bankEmails = await env.DB
+  .prepare(
+    `SELECT bank_email, cc_email, status, sent_at_ms, delivered_at_ms, failure_reason
+     FROM onboarding_bank_email
+     WHERE application_id = ?1 ORDER BY sent_at_ms DESC`,
+  )
+  .bind(id)
+  .all<{
+    bank_email: string;
+    cc_email: string;
+    status: string;
+    sent_at_ms: number;
+    delivered_at_ms: number | null;
+    failure_reason: string | null;
+  }>();
 const merchant = await env.DB
   .prepare(`SELECT name FROM merchant WHERE id = ?1`)
   .bind(app.merchant_id)
@@ -78,6 +112,11 @@ const merchant = await env.DB
     <div>
       <div class="stat-label">Skjøl ið vantar</div>
       <div class="stat-value tnum">{missing.length}</div>
+    </div>
+    <div>
+      <div class="stat-label">Umsóknin</div>
+      <div class="stat-value tnum">{progress.percentage}%</div>
+      <div class="stat-sub">{progress.missing} upplýsingar mangla</div>
     </div>
   </div>
 
@@ -142,6 +181,12 @@ const merchant = await env.DB
               )}
             </div>
           ))}
+          {registry.signingRules && (
+            <div class="registry-signing-rules">
+              <strong>Tekningarregla</strong>
+              <span>{registry.signingRules}</span>
+            </div>
+          )}
         </div>
       </Settings>
     )}
@@ -163,6 +208,139 @@ const merchant = await env.DB
         ))
       )}
     </Settings>
+
+    <Settings title="Undirskriftir">
+      {pack.signings.filter((signing) => signing.provider === "skriva").length === 0 ? (
+        <div class="empty">Eingin Klintra-undirskrift stovnað</div>
+      ) : (
+        pack.signings.filter((signing) => signing.provider === "skriva").map((signing) => {
+          const owner = pack.owners.find((candidate) => candidate.id === signing.owner_id);
+          return (
+            <div class="settings-row">
+              <div>
+                <div class="settings-row-title">{owner?.name ?? "Undirskrivari"}</div>
+                <div class="settings-row-description">
+                  {signing.status}
+                  {signing.p_tal_ciphertext
+                    ? ` · P-tal váttað við Samleikanum · ••••${signing.p_tal_last4 ?? ""}`
+                    : ""}
+                </div>
+              </div>
+              {signing.signing_url && signing.status !== "signed" && (
+                <a class="btn" href={signing.signing_url} target="_blank" rel="noreferrer">
+                  Opna
+                </a>
+              )}
+            </div>
+          );
+        })
+      )}
+    </Settings>
+
+    <Settings title="Bankafyrispurningar">
+      {bankEmails.results.length === 0 ? (
+        <div class="empty">Eingin fyrispurningur sendur</div>
+      ) : (
+        bankEmails.results.map((email) => (
+          <div class="settings-row">
+            <div>
+              <div class="settings-row-title">{email.bank_email}</div>
+              <div class="settings-row-description">
+                {email.status} · CC {email.cc_email} · {formatDateTime(email.sent_at_ms)}
+              </div>
+            </div>
+          </div>
+        ))
+      )}
+    </Settings>
+
+    <Settings title="Vinnu- og váðaupplýsingar">
+      {pack.answers.length === 0 ? (
+        <div class="empty">Eingi svar goymd</div>
+      ) : (
+        pack.answers.map((answer) => {
+          let value = answer.value_json;
+          try {
+            const parsed = JSON.parse(answer.value_json);
+            value = Array.isArray(parsed)
+              ? parsed.join(", ")
+              : parsed && typeof parsed === "object"
+                ? Object.entries(parsed).map(([key, item]) => `${key}: ${item}`).join(" · ")
+                : String(parsed);
+          } catch {
+            // Keep the stored JSON string.
+          }
+          return (
+            <div class="settings-row">
+              <div>
+                <div class="settings-row-title">{answer.key}</div>
+                <div class="settings-row-description">{value}</div>
+              </div>
+              <span class="source-badge">{answer.source}</span>
+            </div>
+          );
+        })
+      )}
+    </Settings>
+
+    <Settings title="Endalig umsókn">
+      {finalSnapshot ? (
+        <div class="snapshot-payload">
+          <div>Snapshot <span class="tnum">{finalSnapshot.id}</span></div>
+          <div class="field-hint">SHA-256 <span class="tnum">{finalSnapshot.sha256}</span></div>
+          <div class="field-hint">
+            Policy {finalSnapshot.policy_id} · príslisti {finalSnapshot.price_list_id}
+          </div>
+          {snapshotPayload && (
+            <div class="field-hint">
+              {snapshotPayload.application?.legal_name}
+              {snapshotPayload.application?.v_tal ? ` · V-tal ${snapshotPayload.application.v_tal}` : ""}
+              {snapshotPayload.application?.vertical_key
+                ? ` · ${verticalByKey(snapshotPayload.application.vertical_key)?.label ?? snapshotPayload.application.vertical_key}`
+                : ""}
+              {snapshotPayload.priceList
+                ? ` · ${snapshotPayload.priceList.kind} v${snapshotPayload.priceList.version}`
+                : ""}
+            </div>
+          )}
+          {snapshotPayload?.signers && snapshotPayload.signers.length > 0 && (
+            <div class="field-hint">
+              Undirskrivarar: {snapshotPayload.signers.map((signer) => signer.name ?? signer.email).join(", ")}
+            </div>
+          )}
+          {snapshotPayload?.agreementTemplate?.sha256 && (
+            <div class="field-hint">
+              Avtalu-hash <span class="tnum">{snapshotPayload.agreementTemplate.sha256}</span>
+            </div>
+          )}
+        </div>
+      ) : (
+        <div class="empty">Umsóknin er ikki læst til undirskrift enn</div>
+      )}
+    </Settings>
+
+    {finalSnapshot && (
+      <Settings
+        title="Samanbering við goymdu upplýsingarnar"
+        description={snapshotDiffs.length === 0
+          ? "Lívandi pakkin samsvarar við læsta snapshot."
+          : "Pakkin hevur broytt seg síðan undirskrift varð læst."}
+      >
+        {snapshotDiffs.length === 0 ? (
+          <div class="empty">Einki frávik</div>
+        ) : (
+          <div class="snapshot-diff">
+            {snapshotDiffs.map((diff) => (
+              <div class="snapshot-diff-row">
+                <strong>{diff.path}</strong>
+                <span class="field-hint">Nú: {diff.live}</span>
+                <span class="field-hint">Læst: {diff.frozen}</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </Settings>
+    )}
 
     <Settings title="Skjøl">
       {pack.documents.length === 0 ? (
@@ -203,7 +381,13 @@ const merchant = await env.DB
         <Field label="Uttanveltar tilvísing" name="external_ref" />
         <Field label="Viðmerking" name="reason" type="textarea" />
         <div style="display:flex; flex-wrap:wrap; gap:.5rem">
-          <button class="btn btn-primary" type="submit" onclick="document.getElementById('staff-action').value='submit'">
+          <button
+            class="btn btn-primary"
+            type="submit"
+            disabled={app.state !== "pack_ready"}
+            title={app.state !== "pack_ready" ? "Pakkin er ikki klárur" : undefined}
+            onclick="document.getElementById('staff-action').value='submit'"
+          >
             Merk sent
           </button>
           <button class="btn" type="submit" onclick="document.getElementById('staff-action').value='reroute'">

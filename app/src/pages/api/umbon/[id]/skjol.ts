@@ -1,7 +1,12 @@
 import type { APIRoute } from "astro";
 import { env } from "~/lib/env";
 import { requirePack, wizardPath } from "~/lib/onboarding/access";
-import { isDocumentKind, putDocument } from "~/lib/onboarding/documents";
+import {
+  isDocumentKind,
+  MAX_DOCUMENT_BYTES,
+  putDocument,
+  validateDocumentUpload,
+} from "~/lib/onboarding/documents";
 
 export const prerender = false;
 
@@ -33,17 +38,23 @@ export const POST: APIRoute = async ({ params, request, locals, url }) => {
 
   if (!isDocumentKind(kind)) return fail("Ókent skjalaslag");
   if (!(file instanceof File) || file.size === 0) return fail("Vel eina fílu");
+  if (file.size > MAX_DOCUMENT_BYTES) return fail("Fílan er ov stór (í mesta lagi 10 MB)");
 
   const bytes = new Uint8Array(await file.arrayBuffer());
   try {
+    const contentType = validateDocumentUpload(
+      file.name,
+      file.type || "application/octet-stream",
+      bytes,
+    );
     await putDocument(env.DB, {
       applicationId: id,
       kind,
       fileName: file.name,
-      contentType: file.type || "application/octet-stream",
+      contentType,
       bytes,
       uploadedBy: actor.email,
-    });
+    }, { bucket: env.DOCUMENTS });
   } catch (error) {
     return fail(error instanceof Error ? error.message : String(error));
   }

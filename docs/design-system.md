@@ -84,8 +84,10 @@ no permanent step rail. Like Revolut Business, one task sits in a centered colum
 the header carries quiet `3/8 · Eigarar` progress and the portal checklist is the
 overview. The fixed footer lines up with the form instead of spanning an empty canvas.
 
-Astro wrappers: `WizardLayout`, `StepNav`, `Field`, `ChoiceCard`, `Dropzone`,
-`Checklist`. Pages do not paste inline label styles.
+Astro wrappers: `WizardLayout`, `StepNav`, `Field`, `ChoiceCard`, `YesNo`, `Dropzone`,
+`Checklist`. Pages do not paste inline label styles. Binary KYB questions use `YesNo`,
+not a pair of full-height choice cards. Long industry catalogues stay behind
+“Onnur vinnugrein” — the three common Faroese verticals stay on the first screen.
 
 ## Hard rules
 

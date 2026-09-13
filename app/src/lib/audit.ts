@@ -27,6 +27,8 @@ export type AuditAction =
   | "create_merchant"
   | "activate_merchant"
   | "create_price_plan"
+  | "create_price_list"
+  | "approve_price_list"
   | "create_payment_link"
   | "login"
   | "invite_user"

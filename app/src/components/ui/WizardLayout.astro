@@ -17,6 +17,7 @@ interface Props {
   backHref?: string | null;
   continueLabel?: string;
   formAction?: string;
+  autosaveAction?: string;
   hideContinue?: boolean;
 }
 
@@ -29,6 +30,7 @@ const {
   backHref,
   continueLabel = fo.onboarding.continue,
   formAction,
+  autosaveAction,
   hideContinue = false,
 } = Astro.props;
 
@@ -49,14 +51,14 @@ const hasFooter = (!hideContinue && Boolean(formAction)) || Astro.slots.has("foo
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
   </head>
   <body>
-    <div class="wizard">
+    <div class="wizard" data-autosave-action={autosaveAction}>
       <header class="wizard-top">
         <div class="wizard-top-inner">
           <a href="/" aria-label="betal" class="wizard-top-wordmark">
             <Wordmark width="4.75rem" />
           </a>
-          <span class="wizard-top-progress tnum">{progress}</span>
-          <span class="wizard-top-status">{savedLabel}</span>
+          <span class="wizard-top-progress tnum" id="wizard-top-progress">{progress}</span>
+          <span class="wizard-top-status" id="wizard-save-status">{savedLabel}</span>
         </div>
         <div class="wizard-progress" aria-hidden="true">
           <span style={`width:${completion}`} />
@@ -67,7 +69,7 @@ const hasFooter = (!hideContinue && Boolean(formAction)) || Astro.slots.has("foo
         <div class="wizard-main">
           {
             backHref && (
-              <a class="wizard-back" href={backHref}>
+              <a class="wizard-back" id="wizard-back" href={backHref}>
                 <span aria-hidden="true">←</span>
                 {fo.onboarding.back}
               </a>
@@ -75,8 +77,9 @@ const hasFooter = (!hideContinue && Boolean(formAction)) || Astro.slots.has("foo
           }
           <header class="wizard-intro">
           <div class="wizard-kicker tnum">{progress}</div>
-          <h1 class="wizard-title">{title}</h1>
-          {why && <p class="wizard-why">{why}</p>}
+          <h1 class="wizard-title" id="wizard-title">{title}</h1>
+          {why && <p class="wizard-why" id="wizard-why">{why}</p>}
+          <p class="wizard-chapter-index tnum" id="wizard-chapter-index" hidden></p>
           </header>
           <slot />
         </div>
@@ -89,7 +92,12 @@ const hasFooter = (!hideContinue && Boolean(formAction)) || Astro.slots.has("foo
               <slot name="foot" />
               <div class="wizard-foot-spacer" />
               {!hideContinue && formAction && (
-                <button class="btn btn-primary wizard-continue" type="submit" form="wizard-form">
+                <button
+                  class="btn btn-primary wizard-continue"
+                  id="wizard-continue"
+                  type="submit"
+                  form="wizard-form"
+                >
                   {continueLabel}
                 </button>
               )}
@@ -98,5 +106,55 @@ const hasFooter = (!hideContinue && Boolean(formAction)) || Astro.slots.has("foo
         )
       }
     </div>
+    {
+      autosaveAction && (
+    <script is:inline>
+      const wizard = document.querySelector(".wizard[data-autosave-action]");
+      const form = document.getElementById("wizard-form");
+      const status = document.getElementById("wizard-save-status");
+      const action = wizard?.dataset.autosaveAction;
+      let timer;
+      let request;
+
+      async function save() {
+        if (!form || !action || !status) return;
+        request?.abort();
+        request = new AbortController();
+        status.textContent = navigator.onLine ? "Goymir…" : "Einki samband";
+        try {
+          const response = await fetch(action, {
+            method: "POST",
+            body: new FormData(form),
+            signal: request.signal,
+          });
+          if (!response.ok) throw new Error("save failed");
+          const payload = await response.json();
+          status.textContent = `Goymt · ${new Date(payload.savedAt).toLocaleTimeString("fo-FO", {
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: false,
+          })}`;
+        } catch (error) {
+          if (error?.name !== "AbortError") status.textContent = "Ikki goymt · royn aftur";
+        }
+      }
+
+      function queueSave(event) {
+        clearTimeout(timer);
+        timer = setTimeout(save, event.type === "change" ? 150 : 700);
+      }
+
+      form?.addEventListener("input", queueSave);
+      form?.addEventListener("change", queueSave);
+      form?.addEventListener("submit", () => {
+        clearTimeout(timer);
+        request?.abort();
+      });
+      window.addEventListener("online", () => {
+        if (status?.textContent?.startsWith("Einki samband")) queueSave({ type: "change" });
+      });
+    </script>
+      )
+    }
   </body>
 </html>

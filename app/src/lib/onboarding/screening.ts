@@ -23,6 +23,22 @@ export interface ScreeningResult {
   reason: string;
 }
 
+export function deriveSectorFromAnswers(
+  baseSector: number,
+  answers: Record<string, unknown>,
+): number {
+  // Unsupervised donations are explicitly sector 1 in the pinned Swedbank policy.
+  if (answers.donations === true && answers.donations_supervised !== true) return 1;
+  if (answers.donations === true) return Math.max(baseSector, 2);
+  // Gift/prepaid cards and digitally delivered goods are sector 2.
+  if (
+    answers.gift_cards === true ||
+    answers.product_type === "digital" ||
+    answers.product_type === "both"
+  ) return Math.max(baseSector, 2);
+  return baseSector;
+}
+
 export function screenApplication(input: ScreeningInput): ScreeningResult {
   if (input.sector === 1) {
     return {

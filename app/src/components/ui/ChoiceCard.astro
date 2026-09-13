@@ -10,6 +10,7 @@ interface Props {
   checked?: boolean;
   disabled?: boolean;
   type?: "radio" | "checkbox";
+  required?: boolean;
 }
 
 const {
@@ -20,11 +21,20 @@ const {
   checked = false,
   disabled = false,
   type = "radio",
+  required = false,
 } = Astro.props;
 ---
 
 <label class:list={["choice-card", checked && "is-selected", disabled && "is-disabled"]}>
-  <input type={type} name={name} value={value} checked={checked} disabled={disabled} />
+  <input
+    type={type}
+    name={name}
+    value={value}
+    checked={checked}
+    disabled={disabled}
+    required={required}
+    data-required={required || undefined}
+  />
   <div class="choice-card-title">{title}</div>
   {hint && <div class="choice-card-hint">{hint}</div>}
   <slot />

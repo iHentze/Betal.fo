@@ -6,6 +6,7 @@ import { fillAgreementPdf } from "~/lib/onboarding/pdf";
 import { toArrayBuffer } from "~/lib/onboarding/bytes";
 import { priceListKind, screenApplication } from "~/lib/onboarding/screening";
 import { getDocumentBytes } from "~/lib/onboarding/documents";
+import { getOfficialTemplate } from "~/lib/onboarding/swedbank";
 
 export const prerender = false;
 
@@ -23,7 +24,7 @@ export const GET: APIRoute = async ({ params, locals, url }) => {
   }
 
   if (pack.events.some((event) => event.kind === "skriva_signed")) {
-    const signed = await getDocumentBytes(env.DB, id, "agreement");
+    const signed = await getDocumentBytes(env.DB, id, "agreement", env.DOCUMENTS);
     if (signed?.bytes) {
       const bytes = signed.bytes instanceof Uint8Array
         ? signed.bytes
@@ -48,7 +49,8 @@ export const GET: APIRoute = async ({ params, locals, url }) => {
   const list = await getActivePriceList(env.DB, priceListKind(screening));
 
   try {
-    const bytes = await fillAgreementPdf(pack, list);
+    const official = await getOfficialTemplate(env.DB, env.DOCUMENTS, "agreement");
+    const bytes = await fillAgreementPdf(pack, list, official.bytes);
     return new Response(toArrayBuffer(bytes), {
       headers: {
         "Content-Type": "application/pdf",

@@ -219,7 +219,8 @@ onboarding_event
 `acquiring_application` stays as the acquirer-facing record (`submitted` /
 `approved` / `rejected`). The new tables are how we *got* there.
 
-Documents live in R2. D1 holds metadata only. We do not have an R2 binding yet.
+Documents live in R2 (`DOCUMENTS` → `betal-documents`). D1 still holds metadata
+and a dual-read fallback on `onboarding_document.bytes`.
 
 ## Screening is a function
 
@@ -275,7 +276,7 @@ Needed before the first staging signature and bank request:
 | `SKRIVA_PASSWORD` | secret |
 | `SKRIVA_TENANT_ID` | optional secret/var; only needed if login returns several tenants |
 | `RESEND_API_KEY` | secret |
-| `BANK_EMAIL_FROM` | var, verified sender such as `Betal <banki@betal.fo>` |
+| `BANK_EMAIL_FROM` | var, verified sender `Betal <banki@send.betal.fo>` |
 | R2 bucket `DOCUMENTS` | wrangler binding, private |
 | Cron, ~every minute | poll open Skriva tokens |
 
@@ -316,15 +317,15 @@ Betal without waiting on Klintra credentials or R2.
 
 1. **Skriva tenant login.** Teitur sent environments and test P-numbers, not an API
    user. We need one for staging.
-2. **FO price lists.** Nicolai said the agreement must go out with FO pricing.
-   Which numbers go on the standard list vs sector 2? That is commercial, from
-   Robin / Swedbank, not something we invent.
-3. **Sector list.** Transcribe `Prohibited lines of business.pdf` before we let a
-   merchant self-serve the vertical step.
-4. **Agreement fields.** Transcribe `Kortindlosning-Online-FO.pdf` so we know what
-   we must fill vs what Swedbank pre-prints.
-5. **Bank form.** Same for `Bekræftelse af konto.pdf` — which fields the merchant
-   fills vs the bank.
+2. **FO price lists.** The agreement goes out with FO pricing. Staff enter the
+   commercially supplied numbers at `/betal/prislistar`. Do not invent rates.
+3. **Sector list.** The prohibited PDF is versioned in `onboarding_sector_rule`
+   and offered in the merchant vertical picker.
+4. **Agreement fields.** `Kortindlosning-Online-FO.pdf` is filled from the
+   official AcroForm. Agent-ID, Access-ID and branchekode stay as Swedbank
+   pre-prints; unused extra account blocks stay blank.
+5. **Bank form.** Merchant name, V-tal and account are filled; the bank dates
+   and stamps the rest.
 6. **Who signs.** One tegningsberettiget, or every owner above some threshold?
 7. **Shift4 volume threshold.** Robin said "større forretning med god volumen".
    Ask for a number.

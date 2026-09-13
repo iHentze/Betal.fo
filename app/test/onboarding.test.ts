@@ -4,20 +4,70 @@ import {
   getOrCreateApplication,
   loadPack,
   saveBusinessProfile,
+  saveAnswers,
   saveCompany,
   saveFinances,
   saveOwners,
   saveVertical,
   type ApplicationPack,
 } from "~/lib/onboarding/application";
-import { priceListKind, screenApplication } from "~/lib/onboarding/screening";
+import {
+  deriveSectorFromAnswers,
+  priceListKind,
+  screenApplication,
+} from "~/lib/onboarding/screening";
 import {
   canGenerateSwedbankAgreement,
   firstIncompleteStep,
   isStepComplete,
 } from "~/lib/onboarding/steps";
 import { canFillAgreement, canSendToSkriva, fillAgreementPdf, fillBankFormPdf } from "~/lib/onboarding/pdf";
-import { putDocument } from "~/lib/onboarding/documents";
+import { getDocumentBytes, putDocument } from "~/lib/onboarding/documents";
+import type { ObjectBucket } from "~/lib/db/types";
+import { readFileSync } from "node:fs";
+import { dummyOfficialRates } from "~/lib/onboarding/official-rates";
+import type { PriceList } from "~/lib/onboarding/application";
+
+const completeBusinessAnswers = {
+  annual_card_turnover_dkk: 1_000_000,
+  average_transaction_dkk: 500,
+  market_name: "Handilin",
+  contact_name: "Anna Eigari",
+  contact_phone: "+298 123456",
+  contact_email: "anna@example.fo",
+  invoice_email: "rokning@example.fo",
+  product_type: "physical",
+  inventory: "yes",
+  delivery_method: "postur",
+  delivery_days: 2,
+  subscriptions: false,
+  gift_cards: false,
+  primary_customers: "consumers",
+  payment_link_mode: "none",
+  save_card: false,
+  wallets: [],
+  other_mit: false,
+  website_terms: true,
+  made_to_order: false,
+  made_to_order_days: null,
+  donations: false,
+  sales_regions: { denmark: 0, nordics: 100, eu: 0, usa: 0, other: 0 },
+};
+
+const agreementTemplate = new Uint8Array(
+  readFileSync(new URL("../assets/swedbank/Kortindlosning-Online-FO.pdf", import.meta.url)),
+);
+const bankTemplate = new Uint8Array(
+  readFileSync(new URL("../assets/swedbank/Swedbank Pay - Bekræftelse af konto.pdf", import.meta.url)),
+);
+const officialPriceList: PriceList = {
+  id: "pl",
+  kind: "standard",
+  version: 1,
+  currency: "DKK",
+  country_code: "FO",
+  rates_json: JSON.stringify(dummyOfficialRates("standard")),
+};
 
 function emptyPack(overrides: Partial<ApplicationPack["application"]> = {}): ApplicationPack {
   return {
@@ -42,7 +92,10 @@ function emptyPack(overrides: Partial<ApplicationPack["application"]> = {}): App
       registry_checked_at_ms: null,
       registry_snapshot: null,
       company_details_confirmed: 1,
-      website: null,
+      policy_id: null,
+      final_snapshot_id: null,
+      locked_at_ms: null,
+      website: "https://handil.fo",
       sells: "Kaffi",
       vertical_key: "cafe",
       vertical_sector: 0,
@@ -75,6 +128,14 @@ function emptyPack(overrides: Partial<ApplicationPack["application"]> = {}): App
     documents: [],
     signings: [],
     events: [],
+    answers: Object.entries(completeBusinessAnswers).map(([key, value]) => ({
+      application_id: "a1",
+      key,
+      value_json: JSON.stringify(value),
+      source: "merchant",
+      confirmed_at_ms: 1,
+      updated_at_ms: 1,
+    })),
   };
 }
 
@@ -131,6 +192,19 @@ describe("screening", () => {
     expect(result.extraDocs).toBe(true);
     expect(priceListKind(result)).toBe("standard");
   });
+
+  it("derives official policy sectors from product answers", () => {
+    expect(deriveSectorFromAnswers(0, { gift_cards: true })).toBe(2);
+    expect(deriveSectorFromAnswers(0, { product_type: "digital" })).toBe(2);
+    expect(deriveSectorFromAnswers(0, {
+      donations: true,
+      donations_supervised: false,
+    })).toBe(1);
+    expect(deriveSectorFromAnswers(0, {
+      donations: true,
+      donations_supervised: true,
+    })).toBe(2);
+  });
 });
 
 describe("wizard resume", () => {
@@ -154,6 +228,9 @@ describe("wizard resume", () => {
     expect(firstIncompleteStep(pack!)).toBe("vinnugrein");
 
     await saveBusinessProfile(db, app.id, "cafe", "Kaffi og køkur", "https://handil.fo", "test@betal.fo");
+    pack = await loadPack(db, app.id);
+    expect(firstIncompleteStep(pack!)).toBe("vinnugrein");
+    await saveAnswers(db, app.id, completeBusinessAnswers);
     pack = await loadPack(db, app.id);
     expect(firstIncompleteStep(pack!)).toBe("eigarar");
     expect(pack!.application.recommended_acquirer).toBe("swedbank");
@@ -191,6 +268,41 @@ describe("wizard resume", () => {
     expect(pack!.application.extra_docs_required).toBe(1);
     expect(pack!.application.recommended_acquirer).toBe("swedbank");
   });
+
+  it("requires every selected owner to finish the latest signing request", () => {
+    const pack = emptyPack();
+    pack.owners.push({
+      ...pack.owners[0]!,
+      id: "o2",
+      name: "Bárður",
+      email: "bardur@example.fo",
+      sort_order: 1,
+    });
+    const signing = (ownerId: string, status: string, index: number) => ({
+      id: `s${index}`,
+      application_id: "a1",
+      provider: "skriva",
+      environment: "staging",
+      signing_request_id: "42",
+      signer_token: `token-${index}`,
+      signing_url: `https://sign.klintra.fo/${index}`,
+      p_tal: null,
+      status,
+      last_polled_at_ms: null,
+      created_at_ms: 1,
+      owner_id: ownerId,
+      signing_person_id: index,
+      document_instance_id: "d1",
+      provider_status_json: null,
+      expires_at_ms: null,
+      p_tal_ciphertext: null,
+      p_tal_last4: null,
+    });
+    pack.signings = [signing("o1", "signed", 1), signing("o2", "sent", 2)];
+    expect(isStepComplete("undirskriva", pack)).toBe(false);
+    pack.signings = [signing("o1", "signed", 1), signing("o2", "signed", 2)];
+    expect(isStepComplete("undirskriva", pack)).toBe(true);
+  });
 });
 
 describe("FO agreement fill", () => {
@@ -202,18 +314,22 @@ describe("FO agreement fill", () => {
 
   it("produces a valid FO PDF when the pack is Swedbank-ready", async () => {
     const pack = emptyPack();
-    const bytes = await fillAgreementPdf(pack, null);
+    const bytes = await fillAgreementPdf(pack, officialPriceList, agreementTemplate);
     expect(new TextDecoder().decode(bytes.slice(0, 5))).toBe("%PDF-");
-    expect(bytes.byteLength).toBeGreaterThan(800);
+    expect(bytes.byteLength).toBeGreaterThan(200_000);
     const { PDFDocument } = await import("pdf-lib");
     const loaded = await PDFDocument.load(bytes);
-    expect(loaded.getPageCount()).toBe(1);
+    expect(loaded.getPageCount()).toBe(5);
+    expect(loaded.getForm().getFields()).toHaveLength(0);
     expect(canSendToSkriva(pack, null, true).ok).toBe(false);
+    expect(canSendToSkriva(pack, officialPriceList, true).ok).toBe(true);
   });
 
-  it("blocks Skriva when the price list is empty even if fill works", () => {
+  it("blocks Skriva when the price list is empty even if fill works", async () => {
     const pack = emptyPack();
     expect(canFillAgreement(pack).ok).toBe(true);
+    const preview = await fillAgreementPdf(pack, null, agreementTemplate);
+    expect(new TextDecoder().decode(preview.slice(0, 5))).toBe("%PDF-");
     expect(
       canSendToSkriva(
         pack,
@@ -231,10 +347,12 @@ describe("FO agreement fill", () => {
   });
 
   it("pre-fills the bank confirmation", async () => {
-    const bytes = await fillBankFormPdf(emptyPack());
+    const bytes = await fillBankFormPdf(emptyPack(), bankTemplate);
     expect(new TextDecoder().decode(bytes.slice(0, 5))).toBe("%PDF-");
     const { PDFDocument } = await import("pdf-lib");
-    expect((await PDFDocument.load(bytes)).getPageCount()).toBe(1);
+    const loaded = await PDFDocument.load(bytes);
+    expect(loaded.getPageCount()).toBe(1);
+    expect(loaded.getForm().getFields()).toHaveLength(0);
   });
 
   it("stores an uploaded document on the pack", async () => {
@@ -253,6 +371,49 @@ describe("FO agreement fill", () => {
     expect(pack!.documents[0]?.kind).toBe("company_registration");
     expect(pack!.documents[0]?.byte_size).toBe(4);
   });
+
+  it("stores large private documents in R2 and verifies their hash", async () => {
+    const db = freshDatabase();
+    seedMerchant(db);
+    const app = await getOrCreateApplication(db, "m1");
+    const objects = new Map<string, Uint8Array>();
+    const bucket: ObjectBucket = {
+      async put(key, value) {
+        objects.set(key, new Uint8Array(value));
+      },
+      async get(key) {
+        const value = objects.get(key);
+        return value
+          ? { async arrayBuffer() { return value.slice().buffer; } }
+          : null;
+      },
+      async delete(key) {
+        objects.delete(key);
+      },
+    };
+    const value = new Uint8Array(1_500_001).fill(7);
+    await putDocument(db, {
+      applicationId: app.id,
+      kind: "owners_book",
+      fileName: "eigarabok.pdf",
+      contentType: "application/pdf",
+      bytes: value,
+      uploadedBy: "anna@example.fo",
+    }, { bucket });
+
+    const row = db.query<{
+      storage: string;
+      bytes: Uint8Array | null;
+      r2_key: string;
+      sha256: string;
+    }>("SELECT storage, bytes, r2_key, sha256 FROM onboarding_document")[0]!;
+    expect(row.storage).toBe("r2");
+    expect(row.bytes).toBeNull();
+    expect(row.r2_key).toContain(`/owners_book/`);
+    const loaded = await getDocumentBytes(db, app.id, "owners_book", bucket);
+    expect(loaded?.bytes).toEqual(value);
+    expect(loaded?.sha256).toBe(row.sha256);
+  }, 15_000);
 });
 
 describe("finances screening persistence", () => {

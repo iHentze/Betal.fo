@@ -31,6 +31,23 @@ export interface ServiceFetcher {
   fetch(input: Request | string, init?: RequestInit): Promise<Response>;
 }
 
+export interface ObjectBucket {
+  put(
+    key: string,
+    value: ArrayBuffer | Uint8Array,
+    options?: {
+      httpMetadata?: { contentType?: string };
+      customMetadata?: Record<string, string>;
+    },
+  ): Promise<unknown>;
+  get(key: string): Promise<{
+    arrayBuffer(): Promise<ArrayBuffer>;
+    httpMetadata?: { contentType?: string };
+    customMetadata?: Record<string, string>;
+  } | null>;
+  delete(key: string): Promise<void>;
+}
+
 export interface IngestMessage {
   deliveryId: string;
 }
@@ -52,11 +69,18 @@ export interface Env {
   SKRIVA_TENANT_ID?: string;
   /** Private Worker-to-Worker binding to the Eyga v1 company API. */
   EYGA_API?: ServiceFetcher;
-  /** URL fallback for local/staging only. */
+  /** URL fallback when a Bearer token is set. Loopback fixtures lose to EYGA_CORE. */
   EYGA_API_BASE_URL?: string;
   EYGA_API_TOKEN?: string;
+  /** Live eyga-core D1 — the same register as eyga.fo. */
+  EYGA_CORE?: Database;
+  /** Live eyga-search FTS5 index. Optional; name search falls back to LIKE. */
+  EYGA_SEARCH?: Database;
   /** Resend transactional email configuration. */
   RESEND_API_KEY?: string;
+  RESEND_WEBHOOK_SECRET?: string;
   RESEND_BASE_URL?: string;
   BANK_EMAIL_FROM?: string;
+  DOCUMENTS?: ObjectBucket;
+  IDENTITY_ENCRYPTION_KEY?: string;
 }

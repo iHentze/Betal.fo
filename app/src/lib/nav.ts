@@ -44,6 +44,7 @@ export function navFor(
       { label: fo.nav.periods, href: "/betal/tidarskeid", icon: "periods" },
       { label: fo.nav.margin, href: "/betal/vinningur", icon: "margin" },
       { label: fo.nav.applications, href: "/betal/umbonir", icon: "applications" },
+      { label: fo.nav.prices, href: "/betal/prislistar", icon: "prices" },
       { label: fo.nav.leads, href: "/betal/ahugadir", icon: "leads" },
       { label: fo.nav.support, href: "/betal/studul", icon: "support" },
       { label: fo.nav.design, href: "/betal/snid", icon: "design" },
@@ -75,6 +76,12 @@ export function formatDateTime(ms: number): string {
   return `${pad(date.getUTCDate())}.${pad(date.getUTCMonth() + 1)}. ${pad(
     date.getUTCHours(),
   )}:${pad(date.getUTCMinutes())}`;
+}
+
+export function formatFileSize(bytes: number | null | undefined): string {
+  if (bytes == null || bytes <= 0) return "";
+  if (bytes < 1024) return `${bytes} B`;
+  return `${Math.round(bytes / 1024)} KB`;
 }
 
 export function formatDate(value: string | null): string {

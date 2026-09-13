@@ -28,6 +28,7 @@ export const fo = {
     leads: "Áhugaðir",
     support: "Stuðul",
     applications: "Umsóknir",
+    prices: "Príslistar",
     design: "Snið",
     backToApp: "Aftur til skipanina",
   },
@@ -179,6 +180,34 @@ export const fo = {
     back: "Aftur",
     continue: "Halt áfram",
     resume: "Halt áfram við umsóknini",
+    overviewTitle: "Halt fram har tú slapp",
+    overviewWhy: "Tú kanst arbeiða í fleiri pørtum og koma aftur seinni. Alt verður goymt.",
+    done: "Liðugt",
+    missingCount: (n: number) => (n === 1 ? "1 manglar" : `${n} mangla`),
+    otherVertical: "Onnur vinnugrein",
+    searchVertical: "Leita í vinnugreinum",
+    chapters: {
+      virki: {
+        title: "Hvat gera tit?",
+        why: "Ein stutt lýsing og tann vinnugreinin, ið passar best.",
+      },
+      samband: {
+        title: "Hvør tekur ímóti?",
+        why: "Vit brúka hetta til undirskrift, fakturar og spurningar.",
+      },
+      sola: {
+        title: "Hvussu er sølan?",
+        why: "Tølini skulu vera ein realistisk meting fyri Visa og Mastercard.",
+      },
+      gjald: {
+        title: "Hvussu rinda kundarnir?",
+        why: "Stutt ja og nei. Svarini ávirka screening, ikki prísin her.",
+      },
+      lond: {
+        title: "Hvar eru kundarnir?",
+        why: "Prosentini skulu vera 100 tilsamans.",
+      },
+    },
     bannerTitle: "Gjaldingar eru ikki tøkar enn",
     bannerDetail:
       "Innloysarin hevur ikki góðkent pakkan. Tú kanst sitja í skipanini — vit siga tær, tá ið tú kanst taka ímóti korti.",
@@ -212,9 +241,18 @@ export const fo = {
     sector2: "Hendan greinin kann fara til Swedbank, men krevur hægri prís og eyka skjøl.",
     noSwedbankPdf: "Vit gera ikki eina Swedbank-avtalu, tá ið tilmælið er ein annar innloysari.",
     skrivaBlocked:
-      "Skriva er stongt, til FO-avtalan er fylt og príslistin settur. Staging bíðar eisini eftir Klintra-brúkara.",
-    priceListMissing: "Príslistin er ikki settur. Vit senda ikki eina avtalu uttan FO-prísir.",
+      "Skriva er stongt, til FO-avtalan er fylt og ein góðkendur FO-príslisti er settur. Staging bíðar eisini eftir Klintra-brúkara.",
+    priceListMissing: "Góðkendur FO-príslisti manglar. Starvsfólk seta tølini frá Swedbank — vit uppfinna tey ikki.",
     wetInk: "Undirskriva á pappír og send mynd av undirskrift og persónsprovi.",
+    openPdf: "Opna PDF",
+    agreementReady: "Almenna Swedbank-skjalið, fylt við tykkara upplýsingum.",
+    agreementRatesPending:
+      "Prísfeltið er tómt, til Betal hevur sett tølini frá Swedbank. Vit uppfinna tey ikki.",
+    dummyRatesNote: "Hetta eru roynsluprísir, ikki tøl frá Swedbank.",
+    skrivaRatesPending:
+      "Samleikin letur ikki upp, fyrr enn FO-prísirnir eru settir.",
+    skrivaNotConfigured: "Samleikin er ikki knýttur enn. Tú kanst lesa avtaluna.",
+    signersTitle: "Tey, ið skulu undirskriva",
     waitSwedbank: "Swedbank hevur pakkan. Vit siga tær, tá ið teir hava tikið støðu.",
     waitClearhaus: "Vit rætta hetta móti Clearhaus. Tú skalt ikki senda nakað til Swedbank.",
     waitStaff: "Starvsfólk hjá Betal lesa pakkan. Vit skriva, um okkurt vantar.",

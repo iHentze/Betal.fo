@@ -9,6 +9,7 @@ import {
 } from "~/lib/onboarding/bank-email";
 import { recordEvent } from "~/lib/onboarding/application";
 import { fillBankFormPdf } from "~/lib/onboarding/pdf";
+import { getOfficialTemplate } from "~/lib/onboarding/swedbank";
 
 export const prerender = false;
 
@@ -65,7 +66,8 @@ export const POST: APIRoute = async ({ params, request, locals, url }) => {
       return fail("CC skal vera telduposturin hjá innritaða viðskiftafólkinum");
     }
 
-    const attachment = await fillBankFormPdf(pack);
+    const official = await getOfficialTemplate(env.DB, env.DOCUMENTS, "bank_confirmation");
+    const attachment = await fillBankFormPdf(pack, official.bytes);
     const input = {
       from: env.BANK_EMAIL_FROM ?? "Betal <banki@betal.fo>",
       to,

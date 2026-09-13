@@ -12,3 +12,4 @@ dist/
 
 # Generated seed data for local development
 app/.seed.sql
+app/.eyga-core.sql

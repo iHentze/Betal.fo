@@ -168,9 +168,13 @@ const applicationStates: Record<string, StatusDescriptor> = {
   draft: { tone: "pending", label: "Uppskot" },
   screening: { tone: "processing", label: "Skoðan" },
   collecting: { tone: "paused", label: "Skjøl vantar" },
+  ready_for_review: { tone: "processing", label: "Klár til skoðan" },
+  ready_for_signing: { tone: "processing", label: "Klár til undirskrift" },
   signing: { tone: "processing", label: "Undirskriva" },
   pack_ready: { tone: "success", label: "Pakkin er tilbúgvin" },
   submitted: { tone: "processing", label: "Sent" },
+  in_review: { tone: "processing", label: "Til skoðanar" },
+  more_info: { tone: "paused", label: "Meira vantar" },
   approved: { tone: "success", label: "Góðkent" },
   rejected: { tone: "failed", label: "Avvíst" },
   routed: { tone: "refunded", label: "Flutt" },
@@ -208,4 +212,10 @@ export function sectorStatus(sector: number | null | undefined): StatusDescripto
   if (sector === 2) return { tone: "pending", label: "Geiri 2" };
   if (sector === 0) return { tone: "success", label: "Vanlig" };
   return { tone: "voided", label: "—" };
+}
+
+export function priceListStatus(status: string | null | undefined): StatusDescriptor {
+  if (status === "approved") return { tone: "success", label: "Góðkendur" };
+  if (status === "draft") return { tone: "pending", label: "Uppskot" };
+  return { tone: "voided", label: "Manglar" };
 }

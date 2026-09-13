@@ -1,0 +1,211 @@
+---
+import AppLayout from "~/layouts/AppLayout.astro";
+import Banner from "~/components/ui/Banner.astro";
+import Field from "~/components/ui/Field.astro";
+import Settings from "~/components/ui/Settings.astro";
+import StatusBadge from "~/components/ui/StatusBadge.astro";
+import { env } from "~/lib/env";
+import { fo } from "~/content/fo";
+import { navFor, formatDateTime } from "~/lib/nav";
+import { getActivePriceList } from "~/lib/onboarding/application";
+import { listPriceLists } from "~/lib/onboarding/price-lists";
+import {
+  PRICE_CATEGORY_LABELS,
+  PRICE_SCHEMES,
+  formValuesFromOfficialRates,
+  officialRateFieldName,
+  parseOfficialRates,
+} from "~/lib/onboarding/official-rates";
+import { PRICE_CATEGORIES } from "~/lib/onboarding/swedbank";
+import { priceListStatus } from "~/lib/status";
+
+export const prerender = false;
+
+const actor = Astro.locals.actor!;
+if (actor.kind !== "staff") return Astro.redirect("/");
+
+const nav = navFor(actor);
+const error = Astro.url.searchParams.get("feilur");
+const saved = Astro.url.searchParams.has("ok");
+const lists = await listPriceLists(env.DB);
+const approvedStandard = await getActivePriceList(env.DB, "standard");
+const approvedSector2 = await getActivePriceList(env.DB, "sector2");
+const draft = lists.find((list) => list.status === "draft") ?? null;
+const values = formValuesFromOfficialRates(parseOfficialRates(draft?.rates_json));
+const kindLabel = (kind: string) => (kind === "sector2" ? "Geiri 2" : "Standard");
+---
+
+<AppLayout
+  title={fo.nav.prices}
+  crumbs={[{ label: "Betal" }, { label: fo.nav.prices }]}
+  nav={nav}
+  context="Betal"
+>
+  {
+    error && (
+      <Fragment slot="banner">
+        <Banner tone="failed" title={error} />
+      </Fragment>
+    )
+  }
+  {
+    saved && !error && (
+      <Fragment slot="banner">
+        <Banner tone="success" title="Príslistin er goymdur" />
+      </Fragment>
+    )
+  }
+
+  <div class="page-header">
+    <div>
+      <div class="stat-label">Standard</div>
+      <div class="stat-value" style="font-size:1.125rem">
+        <StatusBadge status={priceListStatus(approvedStandard?.status)} variant="pill" />
+      </div>
+      <div class="stat-sub">
+        {approvedStandard ? `Útgáva ${approvedStandard.version}` : "Eingin góðkendur listi"}
+      </div>
+    </div>
+    <div>
+      <div class="stat-label">Geiri 2</div>
+      <div class="stat-value" style="font-size:1.125rem">
+        <StatusBadge status={priceListStatus(approvedSector2?.status)} variant="pill" />
+      </div>
+      <div class="stat-sub">
+        {approvedSector2 ? `Útgáva ${approvedSector2.version}` : "Eingin góðkendur listi"}
+      </div>
+    </div>
+  </div>
+
+  <div style="padding:1.25rem .875rem; max-width:56rem">
+    <Settings
+      title="Skráset FO-prísir"
+      description="Skriva tølini frá Swedbank, tá tey koma. Roynslulistin er merktur TEST og er ikki ein Swedbank-kelda."
+    >
+      <form method="POST" action="/api/betal/prislistar" style="padding:.875rem; display:grid; gap:.875rem">
+        <input type="hidden" name="action" value="draft" />
+        <label class="field">
+          <span class="field-label">Príslisti</span>
+          <select class="input field-input" name="kind" required>
+            <option value="standard" selected={draft?.kind !== "sector2"}>Standard</option>
+            <option value="sector2" selected={draft?.kind === "sector2"}>Geiri 2</option>
+          </select>
+        </label>
+        <div class="field-row">
+          <Field
+            label="Stovnargjald (DKK)"
+            name="establishment_fee"
+            value={values.establishment_fee}
+            inputmode="decimal"
+            required
+          />
+          <Field
+            label="Mánaðargjald (DKK)"
+            name="monthly_fee"
+            value={values.monthly_fee}
+            inputmode="decimal"
+            required
+          />
+          <Field
+            label="Minsta mánaðargjald (DKK)"
+            name="minimum_monthly"
+            value={values.minimum_monthly}
+            inputmode="decimal"
+            required
+          />
+        </div>
+        <Field
+          label="Prísbólkur á avtaluni"
+          name="price_category"
+          value={values.price_category}
+          required
+        />
+        <div class="rate-matrix-wrap">
+          <table class="rate-matrix tnum">
+            <thead>
+              <tr>
+                <th>Bólkur</th>
+                {PRICE_SCHEMES.map((scheme) => (
+                  <Fragment>
+                    <th>{scheme} DKK</th>
+                    <th>{scheme} %</th>
+                  </Fragment>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {PRICE_CATEGORIES.map((category) => (
+                <tr>
+                  <th>{PRICE_CATEGORY_LABELS[category]}</th>
+                  {PRICE_SCHEMES.map((scheme) => (
+                    <Fragment>
+                      <td>
+                        <input
+                          name={officialRateFieldName(category, scheme, "txn")}
+                          value={values[officialRateFieldName(category, scheme, "txn")] ?? ""}
+                          inputmode="decimal"
+                          required
+                        />
+                      </td>
+                      <td>
+                        <input
+                          name={officialRateFieldName(category, scheme, "pct")}
+                          value={values[officialRateFieldName(category, scheme, "pct")] ?? ""}
+                          inputmode="decimal"
+                          required
+                        />
+                      </td>
+                    </Fragment>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <Field
+          label="Kelda"
+          name="source_note"
+          hint="T.d. Swedbank Pay FO príslisti, dagfesting og hvør sendi tølini."
+          value={draft?.source_note ?? ""}
+          required
+        />
+        <div>
+          <button class="btn btn-primary" type="submit">Goym uppskot</button>
+        </div>
+      </form>
+    </Settings>
+
+    <Settings title="Útgávur">
+      {lists.length === 0 ? (
+        <div class="empty">Ongir príslistar enn. Skráset tølini omanfyri, so góðkenn tey.</div>
+      ) : (
+        lists.map((list) => (
+          <div class="settings-row">
+            <div>
+              <div class="settings-row-title">
+                {kindLabel(list.kind)} · útgáva <span class="tnum">{list.version}</span>
+              </div>
+              <div class="settings-row-description">
+                {list.source_note ?? "Eingin kelda"}
+                {list.approved_by ? ` · ${list.approved_by}` : list.created_by ? ` · ${list.created_by}` : ""}
+                {list.approved_at_ms
+                  ? ` · ${formatDateTime(list.approved_at_ms)}`
+                  : ` · ${formatDateTime(list.created_at_ms)}`}
+              </div>
+            </div>
+            <div class="settings-row-control" style="display:flex; gap:.5rem; align-items:center">
+              <StatusBadge status={priceListStatus(list.status)} variant="pill" />
+              {list.status === "draft" && (
+                <form method="POST" action="/api/betal/prislistar">
+                  <input type="hidden" name="action" value="approve" />
+                  <input type="hidden" name="id" value={list.id} />
+                  <button class="btn btn-primary" type="submit">Góðkenn</button>
+                </form>
+              )}
+            </div>
+          </div>
+        ))
+      )}
+    </Settings>
+  </div>
+</AppLayout>

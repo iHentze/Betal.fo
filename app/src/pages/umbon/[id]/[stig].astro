@@ -2,17 +2,17 @@
 import WizardLayout from "~/components/ui/WizardLayout.astro";
 import Field from "~/components/ui/Field.astro";
 import ChoiceCard from "~/components/ui/ChoiceCard.astro";
+import YesNo from "~/components/ui/YesNo.astro";
 import Dropzone from "~/components/ui/Dropzone.astro";
 import { env } from "~/lib/env";
 import { fo } from "~/content/fo";
 import { requirePack, wizardPath, handilQuery } from "~/lib/onboarding/access";
-import { getActivePriceList } from "~/lib/onboarding/application";
+import { answerValue, getActivePriceList } from "~/lib/onboarding/application";
 import { canFillAgreement, canSendToSkriva } from "~/lib/onboarding/pdf";
 import { priceListKind, screenApplication } from "~/lib/onboarding/screening";
 import { skrivaConfigured } from "~/lib/onboarding/skriva";
 import {
   STEP_SLUGS,
-  firstIncompleteStep,
   hasDocument,
   isStepComplete,
   isStepSlug,
@@ -20,8 +20,14 @@ import {
   stepWhy,
   type StepSlug,
 } from "~/lib/onboarding/steps";
-import { VERTICALS } from "~/lib/onboarding/verticals";
-import { formatDateTime } from "~/lib/nav";
+import {
+  FEATURED_VERTICALS,
+  VERTICAL_GROUPS,
+  isFeaturedVertical,
+  verticalByKey,
+} from "~/lib/onboarding/verticals";
+import { isDummyOfficialRates, parseOfficialRates } from "~/lib/onboarding/official-rates";
+import { formatDateTime, formatFileSize } from "~/lib/nav";
 import {
   getEygaCompany,
   parseEygaSnapshot,
@@ -29,6 +35,7 @@ import {
   type EygaCompany,
   type EygaSearchResult,
 } from "~/lib/onboarding/eyga";
+import type { SalesRegions } from "~/lib/onboarding/questionnaire";
 
 export const prerender = false;
 
@@ -48,16 +55,6 @@ try {
 const merchantId = pack.application.merchant_id;
 const q = handilQuery(actor, merchantId);
 const href = (slug: string) => wizardPath(id, slug, actor, merchantId);
-const first = firstIncompleteStep(pack);
-
-// Merchants may open a completed step or the first gap. Staff may open any step.
-if (actor.kind !== "staff") {
-  const requested = STEP_SLUGS.indexOf(stig);
-  const allowed = STEP_SLUGS.indexOf(first);
-  if (requested > allowed) {
-    return Astro.redirect(href(first));
-  }
-}
 
 const currentIndex = STEP_SLUGS.indexOf(stig);
 const steps = STEP_SLUGS.map((slug) => ({
@@ -75,6 +72,10 @@ const error = Astro.url.searchParams.get("feilur");
 const bankEmailSent = Astro.url.searchParams.get("sent") === "banki";
 const app = pack.application;
 const formAction = `/api/umbon/${id}${q}`;
+const autosaveAction = ["felag", "vinnugrein", "eigarar", "roknskapur", "banki", "skjol"]
+  .includes(stig)
+  ? `/api/umbon/${id}/autosave${q}`
+  : undefined;
 const uploadAction = `/api/umbon/${id}/skjol${q}`;
 const backHref = currentIndex > 0 ? href(STEP_SLUGS[currentIndex - 1]!) : `/${q}`;
 const savedLabel = fo.onboarding.saved;
@@ -117,7 +118,12 @@ const screening = screenApplication({
 });
 const priceList = await getActivePriceList(env.DB, priceListKind(screening));
 const fill = canFillAgreement(pack);
-const send = canSendToSkriva(pack, priceList, skrivaConfigured(env));
+const skrivaReady = skrivaConfigured(env);
+const officialRates = parseOfficialRates(priceList?.rates_json);
+const ratesReady = Boolean(officialRates);
+const dummyRates = isDummyOfficialRates(officialRates);
+const send = canSendToSkriva(pack, priceList, skrivaReady);
+const signers = pack.owners.filter((owner) => owner.is_signatory);
 const swedbank = app.recommended_acquirer === "swedbank" || !app.recommended_acquirer;
 const latestSkrivaRequestId = pack.signings.find(
   (row) => row.provider === "skriva" && row.signing_request_id,
@@ -174,6 +180,13 @@ const owners = pack.owners.length > 0 ? pack.owners : registryOwnerSuggestions.l
 const docChip = (kind: string) => pack.documents.find((d) => d.kind === kind && d.byte_size);
 
 const hideContinue = stig === "bida";
+const applicationLocked = Boolean(
+  app.locked_at_ms &&
+  app.state !== "collecting" &&
+  app.state !== "more_info" &&
+  stig !== "undirskriva" &&
+  stig !== "bida",
+);
 const companyFormReady = manualCompany || Boolean(selectedCompany);
 const selectedCompanyActive = selectedCompany?.status === "active";
 const selectedCompanyComplete = Boolean(
@@ -182,7 +195,7 @@ const selectedCompanyComplete = Boolean(
   selectedCompany.postalCode &&
   selectedCompany.city,
 );
-const pageFormAction = hideContinue || stig === "undirskriva"
+const pageFormAction = hideContinue || applicationLocked || stig === "undirskriva"
   || (stig === "felag" && !companyFormReady)
   || (stig === "felag" && Boolean(selectedCompany) && !selectedCompanyActive)
   || (stig === "felag" && Boolean(selectedCompany) && !selectedCompanyComplete)
@@ -192,6 +205,46 @@ const continueLabel = stig === "banki" && !app.bank_account
   ? "Ger bankaskjalið"
   : fo.onboarding.continue;
 const bankEmailReady = Boolean(env.RESEND_API_KEY);
+const selectedWallets = answerValue<string[]>(pack, "wallets") ?? [];
+const salesRegions = answerValue<SalesRegions>(pack, "sales_regions") ?? {
+  denmark: 0,
+  nordics: 100,
+  eu: 0,
+  usa: 0,
+  other: 0,
+};
+const answerBoolean = (key: string) => answerValue<boolean>(pack, key);
+const otherVerticalGroups = VERTICAL_GROUPS.filter((group) => group.sector !== 0);
+const otherVerticalOpen = Boolean(app.vertical_key) && !isFeaturedVertical(app.vertical_key);
+const selectedVerticalSector = verticalByKey(app.vertical_key)?.sector ?? 0;
+const binaryBusinessQuestions = [
+  { key: "subscriptions", label: "Bjóða tit haldsgjøld?" },
+  { key: "gift_cards", label: "Selja tit gávukort ella forskotsgjaldskort?" },
+  { key: "donations", label: "Taka tit ímóti gávum uttan mótveiting?" },
+  { key: "save_card", label: "Kunnu kundar goyma kortupplýsingar?" },
+  {
+    key: "other_mit",
+    label: "Bjóða tit onnur endurtakandi gjøld við skiftandi upphædd?",
+  },
+  { key: "website_terms", label: "Eru handilstreytir á heimasíðuni?" },
+  { key: "made_to_order", label: "Selja tit bílagdar vørur?" },
+] as const;
+let latestBankEmail: {
+  status: string;
+  bank_email: string;
+  sent_at_ms: number;
+} | null = null;
+if (stig === "banki") {
+  latestBankEmail = await env.DB
+    .prepare(
+      `SELECT status, bank_email, sent_at_ms
+       FROM onboarding_bank_email
+       WHERE application_id = ?1
+       ORDER BY sent_at_ms DESC LIMIT 1`,
+    )
+    .bind(id)
+    .first();
+}
 let clientEmail = actor.email;
 if (stig === "banki" && actor.kind === "staff") {
   const contact = await env.DB
@@ -208,19 +261,27 @@ if (stig === "banki" && actor.kind === "staff") {
 ---
 
 <WizardLayout
-  title={stepLabel(stig)}
-  why={stepWhy(stig)}
+  title={stig === "vinnugrein" ? fo.onboarding.chapters.virki.title : stepLabel(stig)}
+  why={stig === "vinnugrein" ? fo.onboarding.chapters.virki.why : stepWhy(stig)}
   steps={steps}
   currentIndex={currentIndex}
   savedLabel={savedLabel}
   backHref={backHref}
   formAction={pageFormAction}
+  autosaveAction={autosaveAction}
   continueLabel={continueLabel}
   hideContinue={hideContinue}
 >
   {
     error && (
       <div class="wizard-alert is-error">{error}</div>
+    )
+  }
+  {
+    applicationLocked && (
+      <div class="wizard-alert">
+        Umsóknin er læst, meðan hon verður undirskrivað ella viðgjørd.
+      </div>
     )
   }
 
@@ -272,7 +333,7 @@ if (stig === "banki" && actor.kind === "staff") {
                       <strong>{result.name}</strong>
                       <span>{result.location} · skrásetingarnr. {result.registryNumber}</span>
                     </span>
-                    <span class:list={["registry-status", result.status !== "virkid" && "is-warning"]}>
+                    <span class:list={["registry-status", result.status !== "active" && "is-warning"]}>
                       {result.statusLabel}
                     </span>
                     <span class="registry-chevron" aria-hidden="true">›</span>
@@ -320,6 +381,13 @@ if (stig === "banki" && actor.kind === "staff") {
                   </dd>
                 </div>
               </dl>
+
+              {selectedCompany.purpose && (
+                <div class="registry-signing-rules">
+                  <strong>Endamál</strong>
+                  <span>{selectedCompany.purpose}</span>
+                </div>
+              )}
 
               {selectedCompany.owners.length > 0 && (
                 <div class="registry-people-preview">
@@ -432,19 +500,31 @@ if (stig === "banki" && actor.kind === "staff") {
 
   {
     (stig === "vinnugrein" || stig === "eigarar" || stig === "roknskapur") && (
-      <form id="wizard-form" method="POST" action={formAction}>
+      <form
+        id="wizard-form"
+        method="POST"
+        action={formAction}
+        class={stig === "vinnugrein" ? "wizard-form" : undefined}
+        data-chapters={stig === "vinnugrein" ? "" : undefined}
+        data-last-continue={fo.onboarding.continue}
+      >
         <input type="hidden" name="step" value={stig} />
 
         {stig === "vinnugrein" && (
-          <div class="wizard-stack">
-            <section class="wizard-panel">
+          <>
+            <section
+              class="wizard-chapter"
+              data-chapter="virki"
+              data-title={fo.onboarding.chapters.virki.title}
+              data-why={fo.onboarding.chapters.virki.why}
+            >
               <Field
                 label="Hvat selja tit?"
                 name="sells"
                 type="textarea"
                 value={app.sells}
                 required
-                rows={3}
+                rows={2}
                 placeholder="T.d. kaffi, køkur og matur í kaffistovu"
                 hint="Ein greiður setningur er nokk."
               />
@@ -455,35 +535,313 @@ if (stig === "banki" && actor.kind === "staff") {
                 value={app.website}
                 placeholder="https://"
                 autocomplete="url"
+                required
               />
-            </section>
-            <section>
-              <h2 class="wizard-section-title">Hvør lýsing passar best?</h2>
-              <div class="choice-grid" data-cols="2">
-                {VERTICALS.map((vertical) => (
-                  <div class="choice-grid-item" data-sector={vertical.sector}>
-                    <ChoiceCard
-                      name="vertical_key"
-                      value={vertical.key}
-                      title={vertical.label}
-                      hint={vertical.hint}
-                      checked={app.vertical_key === vertical.key}
-                    />
+              <Field
+                label="Navn á sølustaðnum"
+                name="market_name"
+                value={answerValue<string>(pack, "market_name") ?? app.legal_name}
+                required
+              />
+              <div>
+                <p class="field-label">Hvør lýsing passar best?</p>
+                <div class="choice-grid" data-cols="1">
+                  {FEATURED_VERTICALS.map((vertical) => (
+                    <div class="choice-grid-item" data-sector={vertical.sector}>
+                      <ChoiceCard
+                        name="vertical_key"
+                        value={vertical.key}
+                        title={vertical.label}
+                        hint={vertical.hint}
+                        checked={app.vertical_key === vertical.key}
+                        required
+                      />
+                    </div>
+                  ))}
+                </div>
+                <details class="vertical-more" id="vertical-more" open={otherVerticalOpen}>
+                  <summary>{fo.onboarding.otherVertical}</summary>
+                  <div class="vertical-more-body">
+                    <label class="vertical-search">
+                      <span class="visually-hidden">{fo.onboarding.searchVertical}</span>
+                      <input
+                        class="input field-input"
+                        id="vertical-search"
+                        type="search"
+                        placeholder={fo.onboarding.searchVertical}
+                      />
+                    </label>
+                    {otherVerticalGroups.map((group) => (
+                      <div class="vertical-group">
+                        <h3 class="vertical-group-title">{group.title}</h3>
+                        <div class="choice-grid" data-cols="1">
+                          {group.items.map((vertical) => (
+                            <div class="choice-grid-item" data-sector={vertical.sector}>
+                              <ChoiceCard
+                                name="vertical_key"
+                                value={vertical.key}
+                                title={vertical.label}
+                                hint={vertical.hint}
+                                checked={app.vertical_key === vertical.key}
+                              />
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                ))}
+                </details>
               </div>
               <div class="vertical-guidance" id="vertical-guidance" aria-live="polite">
-                <div class="wizard-alert" data-routing="1" hidden={app.vertical_sector !== 1}>
+                <div class="wizard-alert" data-routing="1" hidden={selectedVerticalSector !== 1}>
                   <strong>Vit senda ikki hetta til Swedbank.</strong>
                   <span>{fo.onboarding.sector1}</span>
                 </div>
-                <div class="wizard-alert" data-routing="2" hidden={app.vertical_sector !== 2}>
+                <div class="wizard-alert" data-routing="2" hidden={selectedVerticalSector !== 2}>
                   <strong>Swedbank kann taka ímóti hesum.</strong>
                   <span>{fo.onboarding.sector2}</span>
                 </div>
               </div>
             </section>
-          </div>
+
+            <section
+              class="wizard-chapter"
+              data-chapter="samband"
+              data-title={fo.onboarding.chapters.samband.title}
+              data-why={fo.onboarding.chapters.samband.why}
+              hidden
+            >
+              <Field
+                label="Kontaktpersónur"
+                name="contact_name"
+                value={answerValue<string>(pack, "contact_name") ?? actor.name}
+                required
+                autocomplete="name"
+              />
+              <Field
+                label="Telefon"
+                name="contact_phone"
+                type="tel"
+                value={answerValue<string>(pack, "contact_phone")}
+                required
+                autocomplete="tel"
+              />
+              <Field
+                label="Teldupostur"
+                name="contact_email"
+                type="email"
+                value={answerValue<string>(pack, "contact_email") ?? actor.email}
+                required
+                autocomplete="email"
+              />
+              <Field
+                label="Teldupostur til fakturar"
+                name="invoice_email"
+                type="email"
+                value={answerValue<string>(pack, "invoice_email") ?? actor.email}
+                required
+                autocomplete="email"
+              />
+            </section>
+
+            <section
+              class="wizard-chapter"
+              data-chapter="sola"
+              data-title={fo.onboarding.chapters.sola.title}
+              data-why={fo.onboarding.chapters.sola.why}
+              hidden
+            >
+              <div class="field-row">
+                <Field
+                  label="Væntað kortsøla um árið (DKK)"
+                  name="annual_card_turnover_dkk"
+                  type="number"
+                  value={answerValue<number>(pack, "annual_card_turnover_dkk")}
+                  required
+                  inputmode="decimal"
+                />
+                <Field
+                  label="Miðal keypsupphædd (DKK)"
+                  name="average_transaction_dkk"
+                  type="number"
+                  value={answerValue<number>(pack, "average_transaction_dkk")}
+                  required
+                  inputmode="decimal"
+                />
+              </div>
+              <div>
+                <p class="field-label">Hvat slag av vørum selja tit?</p>
+                <div class="choice-grid is-compact" data-cols="3">
+                  <ChoiceCard name="product_type" value="physical" title="Fysiskar vørur" checked={answerValue<string>(pack, "product_type") === "physical"} required />
+                  <ChoiceCard name="product_type" value="digital" title="Talgildar vørur" checked={answerValue<string>(pack, "product_type") === "digital"} required />
+                  <ChoiceCard name="product_type" value="both" title="Bæði" checked={answerValue<string>(pack, "product_type") === "both"} required />
+                </div>
+              </div>
+              <div>
+                <p class="field-label">Hava tit vørurnar á goymslu?</p>
+                <div class="choice-grid is-compact" data-cols="3">
+                  <ChoiceCard name="inventory" value="yes" title="Ja" checked={answerValue<string>(pack, "inventory") === "yes"} required />
+                  <ChoiceCard name="inventory" value="partial" title="Partvíst" checked={answerValue<string>(pack, "inventory") === "partial"} required />
+                  <ChoiceCard name="inventory" value="no" title="Nei" checked={answerValue<string>(pack, "inventory") === "no"} required />
+                </div>
+              </div>
+              <Field
+                label="Hvussu verða vørur ella tænastur latnar?"
+                name="delivery_method"
+                value={answerValue<string>(pack, "delivery_method")}
+                placeholder="T.d. talgilt, postur ella heintan"
+                required
+              />
+              <Field
+                label="Dagar frá gjaldi til levering"
+                name="delivery_days"
+                type="number"
+                value={answerValue<number>(pack, "delivery_days")}
+                required
+                inputmode="numeric"
+              />
+            </section>
+
+            <section
+              class="wizard-chapter"
+              data-chapter="gjald"
+              data-title={fo.onboarding.chapters.gjald.title}
+              data-why={fo.onboarding.chapters.gjald.why}
+              hidden
+            >
+              <div>
+                <p class="field-label">Bjóða tit gjaldsleinki?</p>
+                <div class="choice-grid is-compact" data-cols="2">
+                  <ChoiceCard name="payment_link_mode" value="none" title="Nei, vanlig netverslun" checked={answerValue<string>(pack, "payment_link_mode") === "none"} required />
+                  <ChoiceCard name="payment_link_mode" value="html" title="Ja, HTML-leinki" checked={answerValue<string>(pack, "payment_link_mode") === "html"} required />
+                  <ChoiceCard name="payment_link_mode" value="digital" title="Ja, SMS ella teldupostur" checked={answerValue<string>(pack, "payment_link_mode") === "digital"} required />
+                  <ChoiceCard name="payment_link_mode" value="physical" title="Ja, á fysiskum sølustaði" checked={answerValue<string>(pack, "payment_link_mode") === "physical"} required />
+                </div>
+              </div>
+              <div>
+                <p class="field-label">Hvørjir eru høvuðskundarnir?</p>
+                <div class="choice-grid is-compact" data-cols="3">
+                  <ChoiceCard name="primary_customers" value="consumers" title="Einstaklingar" checked={answerValue<string>(pack, "primary_customers") === "consumers"} required />
+                  <ChoiceCard name="primary_customers" value="businesses" title="Fyritøkur" checked={answerValue<string>(pack, "primary_customers") === "businesses"} required />
+                  <ChoiceCard name="primary_customers" value="both" title="Bæði" checked={answerValue<string>(pack, "primary_customers") === "both"} required />
+                </div>
+              </div>
+              <div class="yesno-list">
+                {binaryBusinessQuestions.map(({ key, label }) => (
+                  <>
+                    <YesNo name={key} label={label} value={answerBoolean(key)} required />
+                    {key === "save_card" && (
+                      <div id="save-card-details" class="yesno-followup" hidden={!answerBoolean("save_card")}>
+                        <YesNo
+                          name="save_card_in_app"
+                          label="Verða kortupplýsingarnar goymdar í eini app?"
+                          value={answerBoolean("save_card_in_app")}
+                        />
+                      </div>
+                    )}
+                    {key === "donations" && (
+                      <div id="donation-details" class="yesno-followup" hidden={!answerBoolean("donations")}>
+                        <YesNo
+                          name="donations_supervised"
+                          label="Er innsavningin undir almennum ella góðkendum eftirliti?"
+                          value={answerBoolean("donations_supervised")}
+                        />
+                      </div>
+                    )}
+                    {key === "made_to_order" && (
+                      <div id="made-to-order-details" class="yesno-followup" hidden={!answerBoolean("made_to_order")}>
+                        <div class="field-row">
+                          <Field
+                            label="Vanlig leveringartíð (dagar)"
+                            name="made_to_order_days"
+                            type="number"
+                            value={answerValue<number>(pack, "made_to_order_days")}
+                            inputmode="numeric"
+                          />
+                          <Field
+                            label="Partur av kortsøluni (%)"
+                            name="made_to_order_share_percent"
+                            type="number"
+                            value={answerValue<number>(pack, "made_to_order_share_percent")}
+                            inputmode="decimal"
+                          />
+                        </div>
+                        <YesNo
+                          name="deposit"
+                          label="Rinda kundar depositum?"
+                          value={answerBoolean("deposit")}
+                        />
+                        <div id="deposit-details" hidden={!answerBoolean("deposit")}>
+                          <Field
+                            label="Depositum (%)"
+                            name="deposit_share_percent"
+                            type="number"
+                            value={answerValue<number>(pack, "deposit_share_percent")}
+                            inputmode="decimal"
+                          />
+                        </div>
+                        <div class="field-row">
+                          <Field
+                            label="Nær verður restin goldin?"
+                            name="final_payment_when"
+                            value={answerValue<string>(pack, "final_payment_when")}
+                          />
+                          <Field
+                            label="Hvussu verður restin goldin?"
+                            name="final_payment_method"
+                            value={answerValue<string>(pack, "final_payment_method")}
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </>
+                ))}
+              </div>
+              <div class="vertical-guidance" id="answer-guidance" aria-live="polite">
+                <div class="wizard-alert" data-routing="1" hidden>
+                  <strong>Vit senda ikki hetta til Swedbank.</strong>
+                  <span>{fo.onboarding.sector1}</span>
+                </div>
+                <div class="wizard-alert" data-routing="2" hidden>
+                  <strong>Swedbank kann taka ímóti hesum.</strong>
+                  <span>{fo.onboarding.sector2}</span>
+                </div>
+              </div>
+              <div>
+                <p class="field-label">Talgildar pungar</p>
+                <div class="choice-grid is-compact" data-cols="3">
+                  <ChoiceCard name="wallets" value="mobilepay" title="MobilePay" type="checkbox" checked={selectedWallets.includes("mobilepay")} />
+                  <ChoiceCard name="wallets" value="applepay" title="Apple Pay" type="checkbox" checked={selectedWallets.includes("applepay")} />
+                  <ChoiceCard name="wallets" value="googlepay" title="Google Pay" type="checkbox" checked={selectedWallets.includes("googlepay")} />
+                </div>
+                <Field
+                  label="Annar talgildur pungur"
+                  name="wallet_other"
+                  value={answerValue<string>(pack, "wallet_other")}
+                  placeholder="Valfrítt"
+                />
+              </div>
+            </section>
+
+            <section
+              class="wizard-chapter"
+              data-chapter="lond"
+              data-title={fo.onboarding.chapters.lond.title}
+              data-why={fo.onboarding.chapters.lond.why}
+              hidden
+            >
+              <div class="sales-regions-grid">
+                <Field label="Danmark %" name="sales_denmark" type="number" value={salesRegions.denmark} required inputmode="decimal" />
+                <Field label="Onnur Norðurlond %" name="sales_nordics" type="number" value={salesRegions.nordics} required inputmode="decimal" />
+                <Field label="Onnur ES-lond %" name="sales_eu" type="number" value={salesRegions.eu} required inputmode="decimal" />
+                <Field label="USA %" name="sales_usa" type="number" value={salesRegions.usa} required inputmode="decimal" />
+                <Field label="Onnur lond %" name="sales_other" type="number" value={salesRegions.other} required inputmode="decimal" />
+              </div>
+              <p class="sales-total tnum" id="sales-total">
+                Tilsamans: {salesRegions.denmark + salesRegions.nordics + salesRegions.eu + salesRegions.usa + salesRegions.other}%
+              </p>
+            </section>
+          </>
         )}
 
         {stig === "eigarar" && (
@@ -512,6 +870,28 @@ if (stig === "banki" && actor.kind === "staff") {
                     </div>
                   ))}
                 </div>
+                {registrySnapshot.management.length > 0 && (
+                  <div class="registry-people-preview">
+                    <div class="registry-people-title">
+                      <span>Leiðsla og nevnd</span>
+                      <span class="tnum">{registrySnapshot.management.length}</span>
+                    </div>
+                    {registrySnapshot.management.slice(0, 6).map((person) => (
+                      <div class="registry-person">
+                        <span>
+                          <strong>{person.name}</strong>
+                          {person.description && <small>{person.description}</small>}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {registrySnapshot.signingRules && (
+                  <div class="registry-signing-rules">
+                    <strong>Tekningarregla</strong>
+                    <span>{registrySnapshot.signingRules}</span>
+                  </div>
+                )}
                 <p class="field-hint">{fo.onboarding.eygaPrivate}</p>
               </section>
             )}
@@ -621,12 +1001,21 @@ if (stig === "banki" && actor.kind === "staff") {
                 <p>Betal sendir ein lidnan teldupost við bankaskjalinum viðheftum.</p>
               </div>
             </div>
-            {bankEmailSent ? (
+            {bankEmailSent || (latestBankEmail && latestBankEmail.status !== "failed") ? (
               <>
                 <p class="bank-email-success" role="status">
                   <span aria-hidden="true">✓</span>
-                  Telduposturin er sendur. Tú ert sett/ur í CC og fært svarið frá bankanum.
+                  {latestBankEmail?.status === "delivered"
+                    ? "Telduposturin er komin fram til bankan."
+                    : latestBankEmail?.status === "delayed"
+                      ? "Telduposturin er seinkaður. Resend roynir aftur."
+                      : "Telduposturin er sendur. Tú ert sett/ur í CC og fært svarið frá bankanum."}
                 </p>
+                {latestBankEmail && (
+                  <p class="field-hint">
+                    Til {latestBankEmail.bank_email} · {formatDateTime(latestBankEmail.sent_at_ms)}
+                  </p>
+                )}
                 <a class="bank-email-again" href={href("banki")}>
                   Send til annan teldupost
                 </a>
@@ -688,7 +1077,7 @@ if (stig === "banki" && actor.kind === "staff") {
               <div class="file-chip is-complete">
                 <span class="file-chip-check" aria-hidden="true">✓</span>
                 <span class="file-chip-name">{docChip("bank_confirmation")?.file_name}</span>
-                <span class="file-chip-meta tnum">{docChip("bank_confirmation")?.byte_size} B</span>
+                <span class="file-chip-meta tnum">{formatFileSize(docChip("bank_confirmation")?.byte_size)}</span>
               </div>
             ) : (
               <form method="POST" action={uploadAction} enctype="multipart/form-data">
@@ -707,8 +1096,15 @@ if (stig === "banki" && actor.kind === "staff") {
   {
     stig === "skjol" && (
       <div class="wizard-stack">
-        <form id="wizard-form" method="POST" action={formAction}>
+        <form id="wizard-form" method="POST" action={formAction} class="wizard-panel">
           <input type="hidden" name="step" value="skjol" />
+          <Field
+            label="Aðrar viðmerkingar"
+            name="additional_comments"
+            type="textarea"
+            value={answerValue<string>(pack, "additional_comments")}
+            hint="Valfrítt"
+          />
         </form>
 
         <section class="wizard-panel upload-panel">
@@ -723,7 +1119,7 @@ if (stig === "banki" && actor.kind === "staff") {
             <div class="file-chip is-complete">
               <span class="file-chip-check" aria-hidden="true">✓</span>
               <span class="file-chip-name">{docChip("company_registration")?.file_name}</span>
-              <span class="file-chip-meta tnum">{docChip("company_registration")?.byte_size} B</span>
+              <span class="file-chip-meta tnum">{formatFileSize(docChip("company_registration")?.byte_size)}</span>
             </div>
           ) : (
             <form method="POST" action={uploadAction} enctype="multipart/form-data">
@@ -747,7 +1143,7 @@ if (stig === "banki" && actor.kind === "staff") {
             <div class="file-chip is-complete">
               <span class="file-chip-check" aria-hidden="true">✓</span>
               <span class="file-chip-name">{docChip("owners_book")?.file_name}</span>
-              <span class="file-chip-meta tnum">{docChip("owners_book")?.byte_size} B</span>
+              <span class="file-chip-meta tnum">{formatFileSize(docChip("owners_book")?.byte_size)}</span>
             </div>
           ) : (
             <form method="POST" action={uploadAction} enctype="multipart/form-data">
@@ -783,6 +1179,54 @@ if (stig === "banki" && actor.kind === "staff") {
             )}
           </section>
         )}
+
+        {app.vertical_sector === 2 && (
+          <section class="wizard-panel upload-panel">
+            <div class="upload-panel-heading">
+              <div>
+                <h2>Eyka vinnuspurningar</h2>
+                <p>Spurningar og skjalprógv, sum hoyra til vinnugreinina.</p>
+              </div>
+              {docChip("industry_answers") && <span class="upload-done">Klárt</span>}
+            </div>
+            {docChip("industry_answers") ? (
+              <div class="file-chip is-complete">
+                <span class="file-chip-check" aria-hidden="true">✓</span>
+                <span class="file-chip-name">{docChip("industry_answers")?.file_name}</span>
+              </div>
+            ) : (
+              <form method="POST" action={uploadAction} enctype="multipart/form-data">
+                <input type="hidden" name="kind" value="industry_answers" />
+                <input type="hidden" name="step" value="skjol" />
+                <Dropzone title="Vel vinnuskjal" />
+                <button class="btn upload-submit" type="submit">Legg upp</button>
+              </form>
+            )}
+          </section>
+        )}
+
+        <section class="wizard-panel upload-panel">
+          <div class="upload-panel-heading">
+            <div>
+              <h2>Onnur skjøl</h2>
+              <p>Valfrí skjøl, sum hjálpa Betal ella innloysaranum at skilja umsóknina.</p>
+            </div>
+            {docChip("additional") && <span class="upload-done">Lagt upp</span>}
+          </div>
+          {docChip("additional") ? (
+            <div class="file-chip is-complete">
+              <span class="file-chip-check" aria-hidden="true">✓</span>
+              <span class="file-chip-name">{docChip("additional")?.file_name}</span>
+            </div>
+          ) : (
+            <form method="POST" action={uploadAction} enctype="multipart/form-data">
+              <input type="hidden" name="kind" value="additional" />
+              <input type="hidden" name="step" value="skjol" />
+              <Dropzone title="Vel annað skjal" />
+              <button class="btn upload-submit" type="submit">Legg upp</button>
+            </form>
+          )}
+        </section>
       </div>
     )
   }
@@ -809,8 +1253,17 @@ if (stig === "banki" && actor.kind === "staff") {
               <div class="wizard-panel-heading">
                 <div>
                   <h2>Avtalan hjá tykkum</h2>
-                  <p>Navn, eigarar, FO og rætti príslistin eru fylt frammanundan.</p>
+                  <p>
+                    {fo.onboarding.agreementReady}
+                    {dummyRates && ` ${fo.onboarding.dummyRatesNote}`}
+                    {!ratesReady && ` ${fo.onboarding.agreementRatesPending}`}
+                  </p>
                 </div>
+                {fill.ok && (
+                  <a class="agreement-open" href={`/api/umbon/${id}/avtalan.pdf${q}`} target="_blank" rel="noreferrer">
+                    {fo.onboarding.openPdf} ↗
+                  </a>
+                )}
               </div>
               {!fill.ok && <div class="wizard-alert is-error">{fill.reason}</div>}
               {fill.ok && (
@@ -827,9 +1280,20 @@ if (stig === "banki" && actor.kind === "staff") {
                 <span class="task-number" aria-hidden="true">◇</span>
                 <div>
                   <h2>Undirskriva við Samleikanum</h2>
-                  <p>Samleikin váttar bæði undirskriftina og P-talið hjá undirskrivaranum.</p>
+                  <p>Samleikin váttar undirskriftina. P-talið kemur harífrá — tú skrivar tað ikki her.</p>
                 </div>
               </div>
+
+              {signers.length > 0 && (
+                <ul class="signer-list" aria-label={fo.onboarding.signersTitle}>
+                  {signers.map((owner) => (
+                    <li>
+                      <strong>{owner.name || "Navn manglar"}</strong>
+                      <small>{owner.email || "Teldupostur manglar"}</small>
+                    </li>
+                  ))}
+                </ul>
+              )}
 
               {skrivaSigned || skrivaMessage === "skriva_signed" ? (
                 <>
@@ -845,7 +1309,7 @@ if (stig === "banki" && actor.kind === "staff") {
                 <>
                   <div class="wizard-alert is-success">
                     {skrivaMessage === "skriva"
-                      ? "Undirskriftin er stovnað, og Klintra hevur sent leinkjurnar."
+                      ? "Undirskriftin er stovnað. Far til Samleikan at vátta."
                       : skrivaPending.length === 1
                         ? "Ein undirskrift bíðar."
                         : `${skrivaPending.length} undirskriftir bíða.`}
@@ -855,15 +1319,31 @@ if (stig === "banki" && actor.kind === "staff") {
                       Far til Samleikan
                     </a>
                   )}
-                  <form method="POST" action={`/api/umbon/${id}/skriva/status${q}`}>
+                  <form
+                    id="skriva-status"
+                    method="POST"
+                    action={`/api/umbon/${id}/skriva/status${q}`}
+                  >
                     <button class="btn signing-action" type="submit">
                       Dagfør støðuna
                     </button>
                   </form>
+                  {Astro.url.searchParams.has("token") && (
+                    <script is:inline>
+                      document.getElementById("skriva-status")?.submit();
+                    </script>
+                  )}
                 </>
               ) : (
                 <>
-                  {!send.ok && <p class="field-hint signing-note">{send.reason}</p>}
+                  {!ratesReady && <p class="signing-note">{fo.onboarding.skrivaRatesPending}</p>}
+                  {dummyRates && <p class="signing-note">{fo.onboarding.dummyRatesNote}</p>}
+                  {ratesReady && !skrivaReady && (
+                    <p class="signing-note">{fo.onboarding.skrivaNotConfigured}</p>
+                  )}
+                  {ratesReady && skrivaReady && !send.ok && (
+                    <p class="signing-note">{send.reason}</p>
+                  )}
                   <form method="POST" action={`/api/umbon/${id}/skriva${q}`}>
                     <button class="btn btn-primary signing-action" type="submit" disabled={!send.ok}>
                       Stovna undirskrift
@@ -951,21 +1431,208 @@ if (stig === "banki" && actor.kind === "staff") {
 </WizardLayout>
 
 {
+  applicationLocked && (
+    <script is:inline>
+      document.querySelectorAll("#wizard-form input, #wizard-form textarea, #wizard-form select, #wizard-form button")
+        .forEach((control) => control.disabled = true);
+    </script>
+  )
+}
+
+{
   stig === "vinnugrein" && (
     <script is:inline>
       const verticalForm = document.getElementById("wizard-form");
       const guidance = document.getElementById("vertical-guidance");
+      const chapters = [...(verticalForm?.querySelectorAll(".wizard-chapter") ?? [])];
+      const titleEl = document.getElementById("wizard-title");
+      const whyEl = document.getElementById("wizard-why");
+      const continueBtn = document.getElementById("wizard-continue");
+      const backLink = document.getElementById("wizard-back");
+      const chapterIndex = document.getElementById("wizard-chapter-index");
+      const topProgress = document.getElementById("wizard-top-progress");
+      const defaultContinue = continueBtn?.textContent ?? "Halt áfram";
+      const lastContinue = verticalForm?.dataset.lastContinue ?? defaultContinue;
+      if (topProgress && !topProgress.dataset.base) topProgress.dataset.base = topProgress.textContent;
+      let current = 0;
 
       function showRouting() {
         const selected = verticalForm?.querySelector('input[name="vertical_key"]:checked');
-        const sector = selected?.closest("[data-sector]")?.dataset.sector ?? "0";
+        const verticalSector = Number(selected?.closest("[data-sector]")?.dataset.sector ?? "0");
+        let answerSector = verticalSector;
+        const donations = verticalForm?.querySelector('input[name="donations"]:checked')?.value;
+        const giftCards = verticalForm?.querySelector('input[name="gift_cards"]:checked')?.value;
+        const productType = verticalForm?.querySelector('input[name="product_type"]:checked')?.value;
+        if (donations === "yes") {
+          const supervised = verticalForm?.querySelector(
+            'input[name="donations_supervised"]:checked',
+          )?.value;
+          answerSector = supervised === "yes" ? Math.max(answerSector, 2) : 1;
+        } else if (giftCards === "yes" || productType === "digital" || productType === "both") {
+          answerSector = Math.max(answerSector, 2);
+        }
         guidance?.querySelectorAll("[data-routing]").forEach((message) => {
-          message.hidden = message.dataset.routing !== sector;
+          message.hidden = Number(message.dataset.routing) !== verticalSector;
+        });
+        const answerGuidance = document.getElementById("answer-guidance");
+        const elevated = answerSector !== verticalSector;
+        answerGuidance?.querySelectorAll("[data-routing]").forEach((message) => {
+          message.hidden = !elevated || Number(message.dataset.routing) !== answerSector;
         });
       }
 
-      verticalForm?.addEventListener("change", showRouting);
-      showRouting();
+      function updateBusinessFields() {
+        const madeToOrder = verticalForm?.querySelector(
+          'input[name="made_to_order"]:checked',
+        )?.value === "yes";
+        const details = document.getElementById("made-to-order-details");
+        if (details) details.hidden = !madeToOrder;
+        details?.querySelectorAll("input").forEach((input) => {
+          if (input.name !== "deposit_share_percent") input.required = madeToOrder;
+        });
+
+        const deposit = madeToOrder && verticalForm?.querySelector(
+          'input[name="deposit"]:checked',
+        )?.value === "yes";
+        const depositDetails = document.getElementById("deposit-details");
+        if (depositDetails) depositDetails.hidden = !deposit;
+        const depositShare = verticalForm?.querySelector('input[name="deposit_share_percent"]');
+        if (depositShare) depositShare.required = deposit;
+
+        const saveCard = verticalForm?.querySelector(
+          'input[name="save_card"]:checked',
+        )?.value === "yes";
+        const saveCardDetails = document.getElementById("save-card-details");
+        if (saveCardDetails) saveCardDetails.hidden = !saveCard;
+        saveCardDetails?.querySelectorAll("input").forEach((input) => {
+          input.required = saveCard;
+        });
+
+        const donations = verticalForm?.querySelector(
+          'input[name="donations"]:checked',
+        )?.value === "yes";
+        const donationDetails = document.getElementById("donation-details");
+        if (donationDetails) donationDetails.hidden = !donations;
+        donationDetails?.querySelectorAll("input").forEach((input) => {
+          input.required = donations;
+        });
+
+        const total = ["sales_denmark", "sales_nordics", "sales_eu", "sales_usa", "sales_other"]
+          .reduce((sum, name) => {
+            const input = verticalForm?.querySelector(`input[name="${name}"]`);
+            return sum + (Number(input?.value) || 0);
+          }, 0);
+        const totalLabel = document.getElementById("sales-total");
+        if (totalLabel) {
+          totalLabel.textContent = `Tilsamans: ${total}%`;
+          totalLabel.classList.toggle("is-valid", total === 100);
+          totalLabel.classList.toggle("is-error", total !== 100);
+        }
+      }
+
+      function syncChapterRequired(chapter, on) {
+        chapter.querySelectorAll("input, select, textarea").forEach((field) => {
+          if (field.type === "hidden" || field.type === "search") return;
+          if (on) {
+            if (field.hasAttribute("data-required")) field.required = true;
+          } else {
+            field.required = false;
+          }
+        });
+      }
+
+      function relaxHiddenChapters() {
+        chapters.forEach((chapter, i) => {
+          if (i !== current) syncChapterRequired(chapter, false);
+        });
+      }
+
+      function showChapter(index) {
+        current = Math.max(0, Math.min(index, chapters.length - 1));
+        chapters.forEach((chapter, i) => {
+          const on = i === current;
+          chapter.hidden = !on;
+          syncChapterRequired(chapter, on);
+        });
+        const active = chapters[current];
+        if (titleEl && active?.dataset.title) titleEl.textContent = active.dataset.title;
+        if (whyEl && active?.dataset.why) whyEl.textContent = active.dataset.why;
+        if (continueBtn) {
+          continueBtn.textContent = current === chapters.length - 1 ? lastContinue : defaultContinue;
+        }
+        if (chapterIndex) {
+          chapterIndex.hidden = false;
+          chapterIndex.textContent = `${current + 1} / ${chapters.length}`;
+        }
+        if (topProgress?.dataset.base) {
+          topProgress.textContent = `${topProgress.dataset.base} · ${current + 1}/${chapters.length}`;
+        }
+        const key = active?.dataset.chapter;
+        if (key) history.replaceState(null, "", `#${key}`);
+        updateBusinessFields();
+        relaxHiddenChapters();
+        showRouting();
+        window.scrollTo(0, 0);
+      }
+
+      function firstInvalidChapter() {
+        return chapters.findIndex((chapter) => chapter.querySelector(":invalid"));
+      }
+
+      verticalForm?.addEventListener("submit", (event) => {
+        if (!chapters.length) return;
+        if (current < chapters.length - 1) {
+          event.preventDefault();
+          if (!verticalForm.reportValidity()) return;
+          showChapter(current + 1);
+          return;
+        }
+        chapters.forEach((chapter) => syncChapterRequired(chapter, true));
+        updateBusinessFields();
+        if (!verticalForm.checkValidity()) {
+          event.preventDefault();
+          const invalid = firstInvalidChapter();
+          if (invalid >= 0) showChapter(invalid);
+          verticalForm.reportValidity();
+        }
+      });
+
+      backLink?.addEventListener("click", (event) => {
+        if (current > 0) {
+          event.preventDefault();
+          showChapter(current - 1);
+        }
+      });
+
+      const verticalSearch = document.getElementById("vertical-search");
+      const more = document.getElementById("vertical-more");
+      verticalSearch?.addEventListener("input", () => {
+        const query = verticalSearch.value.trim().toLowerCase();
+        if (query && more && !more.open) more.open = true;
+        more?.querySelectorAll(".choice-grid-item").forEach((item) => {
+          const text = item.textContent?.toLowerCase() ?? "";
+          item.hidden = query.length > 0 && !text.includes(query);
+        });
+      });
+
+      verticalForm?.addEventListener("change", () => {
+        showRouting();
+        updateBusinessFields();
+        relaxHiddenChapters();
+      });
+      verticalForm?.addEventListener("input", () => {
+        updateBusinessFields();
+        relaxHiddenChapters();
+      });
+
+      if (chapters.length) {
+        const hashChapter = window.location.hash.replace("#", "");
+        const start = chapters.findIndex((chapter) => chapter.dataset.chapter === hashChapter);
+        showChapter(start >= 0 ? start : 0);
+      } else {
+        showRouting();
+        updateBusinessFields();
+      }
     </script>
   )
 }
@@ -1054,7 +1721,7 @@ if (stig === "banki" && actor.kind === "staff") {
         copy.append(name, meta);
 
         const status = document.createElement("span");
-        status.className = `registry-status${result.status === "virkid" ? "" : " is-warning"}`;
+        status.className = `registry-status${result.status === "active" ? "" : " is-warning"}`;
         status.textContent = result.statusLabel;
 
         const chevron = document.createElement("span");

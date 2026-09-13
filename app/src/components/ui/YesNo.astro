@@ -1,0 +1,43 @@
+---
+/**
+ * A compact yes/no row. Use this for binary KYB questions — two full ChoiceCards
+ * turn a short question into a wall of navy pills.
+ */
+interface Props {
+  name: string;
+  label: string;
+  value?: boolean | null;
+  required?: boolean;
+}
+
+const { name, label, value = null, required = false } = Astro.props;
+const labelId = `${name}-label`;
+---
+
+<div class="yesno-row">
+  <span class="yesno-label" id={labelId}>{label}</span>
+  <div class="yesno-pills" role="radiogroup" aria-labelledby={labelId}>
+    <label class:list={["yesno-pill", value === false && "is-selected"]}>
+      <input
+        type="radio"
+        name={name}
+        value="no"
+        checked={value === false}
+        required={required}
+        data-required={required || undefined}
+      />
+      Nei
+    </label>
+    <label class:list={["yesno-pill", value === true && "is-selected"]}>
+      <input
+        type="radio"
+        name={name}
+        value="yes"
+        checked={value === true}
+        required={required}
+        data-required={required || undefined}
+      />
+      Ja
+    </label>
+  </div>
+</div>
