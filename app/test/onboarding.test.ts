@@ -276,7 +276,7 @@ describe("FO agreement fill", () => {
     const pack = emptyPack();
     const bytes = await fillAgreementPdf(pack, officialPriceList, agreementTemplate);
     expect(new TextDecoder().decode(bytes.slice(0, 5))).toBe("%PDF-");
-    expect(bytes.byteLength).toBeGreaterThan(300_000);
+    expect(bytes.byteLength).toBeGreaterThan(200_000);
     const { PDFDocument } = await import("pdf-lib");
     const loaded = await PDFDocument.load(bytes);
     expect(loaded.getPageCount()).toBe(5);

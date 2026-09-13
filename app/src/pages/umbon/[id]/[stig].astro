@@ -202,6 +202,18 @@ const salesRegions = answerValue<SalesRegions>(pack, "sales_regions") ?? {
   other: 0,
 };
 const answerBoolean = (key: string) => answerValue<boolean>(pack, key);
+const binaryBusinessQuestions = [
+  { key: "subscriptions", label: "Bjóða tit haldsgjøld?" },
+  { key: "gift_cards", label: "Selja tit gávukort ella forskotsgjaldskort?" },
+  { key: "donations", label: "Taka tit ímóti gávum uttan mótveiting?" },
+  { key: "save_card", label: "Kunnu kundar goyma kortupplýsingar?" },
+  {
+    key: "other_mit",
+    label: "Bjóða tit onnur endurtakandi gjøld við skiftandi upphædd?",
+  },
+  { key: "website_terms", label: "Eru handilstreytir á heimasíðuni?" },
+  { key: "made_to_order", label: "Selja tit bílagdar vørur?" },
+] as const;
 let clientEmail = actor.email;
 if (stig === "banki" && actor.kind === "staff") {
   const contact = await env.DB
@@ -613,15 +625,7 @@ if (stig === "banki" && actor.kind === "staff") {
                 <ChoiceCard name="primary_customers" value="both" title="Bæði" checked={answerValue<string>(pack, "primary_customers") === "both"} required />
               </div>
 
-              {[
-                ["subscriptions", "Bjóða tit haldsgjøld?"],
-                ["gift_cards", "Selja tit gávukort ella forskotsgjaldskort?"],
-                ["donations", "Taka tit ímóti gávum uttan mótveiting?"],
-                ["save_card", "Kunnu kundar goyma kortupplýsingar?"],
-                ["other_mit", "Bjóða tit onnur endurtakandi gjøld við skiftandi upphædd?"],
-                ["website_terms", "Eru handilstreytir á heimasíðuni?"],
-                ["made_to_order", "Selja tit bílagdar vørur?"],
-              ].map(([key, label]) => (
+              {binaryBusinessQuestions.map(({ key, label }) => (
                 <div class="binary-question">
                   <span class="field-label">{label}</span>
                   <div class="choice-grid" data-cols="2">
