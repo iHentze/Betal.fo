@@ -83,7 +83,7 @@ import { fo, products } from "../content/fo";
 
           <ul class="mt-9 flex flex-wrap gap-x-6 gap-y-3 text-xs font-medium text-white/55" data-reveal>
             {
-              ["Bygt á ePay og Softpay", "Føroysk tænasta", "Eingin bindandi tólaleiga"].map((item) => (
+              fo.home.pills.map((item) => (
                 <li class="flex items-center gap-2">
                   <svg class="h-3.5 w-3.5 shrink-0 text-green" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                     <path
@@ -155,29 +155,15 @@ import { fo, products } from "../content/fo";
             {products[0].eyebrow}
           </p>
           <h2 class="mt-3 text-3xl font-bold leading-[1.05] tracking-[-0.03em] text-white sm:text-5xl" data-reveal>
-            Eitt gjaldsvindeyga, ið er bygt til at selja.
+            {fo.home.onlineTitle}
           </h2>
           <p class="mt-5 max-w-lg text-base leading-relaxed text-white/70" data-reveal>
-            Apple Pay og Google Pay ovast, sjálvvirkandi kortkanning og 3D Secure, ið bert steðgar, tá tað
-            veruliga er neyðugt. Alt í tínum litum, á tínum navni.
+            {fo.home.onlineLead}
           </p>
 
           <ul class="mt-8 space-y-3" data-reveal-group="70">
             {
-              [
-                {
-                  t: "Apple Pay og Google Pay ovast",
-                  d: "Kundin er liðugur upp á fá sekund, uttan at skriva eitt einasta tal.",
-                },
-                {
-                  t: "Sniðgivið eftir tínum vørumerki",
-                  d: "Litir, búmerki og snið. Kundin fer ongantíð av tínari síðu.",
-                },
-                {
-                  t: "Gjaldsleinki uttan nethandil",
-                  d: "Send eina rokning við telduposti ella SMS og fá inn gjaldið samstundis.",
-                },
-              ].map((row) => (
+              fo.home.onlinePoints.map((row) => (
                 <li
                   class="spotlight flex items-start gap-3.5 rounded-2xl border border-white/8 bg-white/[0.025] p-4"
                   data-reveal
@@ -186,8 +172,8 @@ import { fo, products } from "../content/fo";
                     ✓
                   </span>
                   <span>
-                    <span class="block text-sm font-semibold text-white">{row.t}</span>
-                    <span class="mt-0.5 block text-xs leading-relaxed text-white/55">{row.d}</span>
+                    <span class="block text-sm font-semibold text-white">{row.title}</span>
+                    <span class="mt-0.5 block text-xs leading-relaxed text-white/55">{row.text}</span>
                   </span>
                 </li>
               ))
@@ -199,7 +185,7 @@ import { fo, products } from "../content/fo";
             class="group mt-8 inline-flex items-center gap-2 text-sm font-semibold text-green"
             data-reveal
           >
-            Les meira um {products[0].eyebrow}
+            {fo.home.moreAbout} {products[0].eyebrow}
             <span class="transition-transform duration-300 group-hover:translate-x-1" aria-hidden="true">→</span>
           </a>
         </div>
@@ -220,12 +206,12 @@ import { fo, products } from "../content/fo";
       <div>
         <Wordmark class="h-12 w-auto text-navy sm:h-16" title="betal" />
         <p class="mt-3 text-[11px] font-semibold uppercase tracking-[0.24em] text-navy/70">
-          Gjaldsloysnir til føroyska vinnu
+          {fo.home.ribbonLabel}
         </p>
       </div>
       <div class="md:text-right">
-        <p class="text-2xl font-bold tracking-tight text-navy sm:text-3xl">Eitt navn. Alt gjaldið.</p>
-        <p class="mt-1 text-sm font-medium text-navy/70">Á alnetinum, á staðnum og alt tað millum.</p>
+        <p class="text-2xl font-bold tracking-tight text-navy sm:text-3xl">{fo.home.ribbonTitle}</p>
+        <p class="mt-1 text-sm font-medium text-navy/70">{fo.home.ribbonText}</p>
       </div>
     </div>
   </section>
@@ -237,17 +223,18 @@ import { fo, products } from "../content/fo";
     >
       <div class="grid items-center gap-12 lg:grid-cols-2">
         <div data-reveal-group="80">
-          <p class="text-[11px] font-semibold uppercase tracking-[0.24em] text-green" data-reveal>Backoffice</p>
+          <p class="text-[11px] font-semibold uppercase tracking-[0.24em] text-green" data-reveal>
+            {fo.home.backofficeEyebrow}
+          </p>
           <h2 class="mt-3 text-3xl font-bold leading-[1.05] tracking-[-0.03em] text-white sm:text-4xl" data-reveal>
-            Hvørt einasta gjald, í roynd og veru.
+            {fo.home.backofficeTitle}
           </h2>
           <p class="mt-4 max-w-lg text-sm leading-relaxed text-white/65 sm:text-base" data-reveal>
-            Fylg við hvørjum stigi í gjaldsgongdini — frá góðkenning og 3D Secure til avrokning. Tak gjald,
-            endurgjald ella strika beinleiðis úr yvirlitinum, uttan at skifta síðu.
+            {fo.home.backofficeLead}
           </p>
           <ul class="mt-6 flex flex-wrap gap-2" data-reveal>
             {
-              ["Beinleiðis yvirlit", "Endurgjald við einum klikki", "Avstemming", "API og webhooks"].map((tag) => (
+              fo.home.backofficeTags.map((tag) => (
                 <li class="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-xs text-white/70">
                   {tag}
                 </li>
@@ -259,7 +246,7 @@ import { fo, products } from "../content/fo";
             class="group mt-8 inline-flex items-center gap-2 text-sm font-semibold text-green"
             data-reveal
           >
-            Sí hvussu vit røkja tað fyri teg
+            {fo.home.backofficeCta}
             <span class="transition-transform duration-300 group-hover:translate-x-1" aria-hidden="true">→</span>
           </a>
         </div>
@@ -282,14 +269,13 @@ import { fo, products } from "../content/fo";
           {products[1].title}
         </h2>
         <p class="mt-4 max-w-lg text-sm leading-relaxed text-white/65 sm:text-base">
-          Softpay ger tína iPhone ella Android til ein fullgildan nándgjaldsterminal. Eingin leiga, eingin
-          eyka kassi á diskinum — bert telefonin, tú longu hevur í lummanum.
+          {fo.home.softpayLead}
         </p>
         <a
           href={products[1].href}
           class="group mt-8 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/[0.05] px-6 py-3.5 text-sm font-semibold text-white transition-all duration-300 hover:border-green/40 hover:bg-white/[0.09]"
         >
-          Les meira um Softpay
+          {fo.home.softpayCta}
           <span class="transition-transform duration-300 group-hover:translate-x-1" aria-hidden="true">→</span>
         </a>
       </div>

@@ -39,7 +39,7 @@ const leadIcon = productIcons[lead.id as ProductIconId];
 
       <ul class="mt-6 flex flex-wrap gap-2">
         {
-          ["Gjaldsvindeyga", "Gjaldsleinki", "Apple Pay", "Google Pay"].map((tag) => (
+          ("tags" in lead ? lead.tags : []).map((tag) => (
             <li class="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-[11px] text-white/65">
               {tag}
             </li>
@@ -48,7 +48,7 @@ const leadIcon = productIcons[lead.id as ProductIconId];
       </ul>
 
       <span class="mt-7 inline-flex items-center gap-2 text-sm font-semibold text-green">
-        Kanna loysn
+        {fo.home.explore}
         <span class="transition-transform duration-300 group-hover:translate-x-1.5" aria-hidden="true">→</span>
       </span>
     </div>
@@ -101,7 +101,7 @@ const leadIcon = productIcons[lead.id as ProductIconId];
               </h3>
               <p class="mt-2 text-sm leading-relaxed text-white/60">{product.card}</p>
               <span class="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-green">
-                Kanna loysn
+                {fo.home.explore}
                 <span class="transition-transform duration-300 group-hover:translate-x-1.5" aria-hidden="true">
                   →
                 </span>

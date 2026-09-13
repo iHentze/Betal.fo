@@ -16,7 +16,7 @@ import { site } from "../content/site";
       <input
         name="name"
         type="text"
-        placeholder="Títt navn"
+        placeholder={fo.contact.namePlaceholder}
         autocomplete="name"
         required
         class="rounded-2xl border border-white/15 bg-white/[0.04] px-4 py-3.5 text-base font-normal text-white outline-none ring-green/50 placeholder:text-white/30 focus:border-green focus:ring-2 transition"
@@ -27,7 +27,7 @@ import { site } from "../content/site";
       <input
         name="company"
         type="text"
-        placeholder="Tín fyritøka"
+        placeholder={fo.contact.companyPlaceholder}
         autocomplete="organization"
         class="rounded-2xl border border-white/15 bg-white/[0.04] px-4 py-3.5 text-base font-normal text-white outline-none ring-green/50 placeholder:text-white/30 focus:border-green focus:ring-2 transition"
       />
@@ -37,7 +37,7 @@ import { site } from "../content/site";
       <input
         name="phone"
         type="tel"
-        placeholder="+298 ..."
+        placeholder={fo.contact.phonePlaceholder}
         autocomplete="tel"
         class="rounded-2xl border border-white/15 bg-white/[0.04] px-4 py-3.5 text-base font-normal text-white outline-none ring-green/50 placeholder:text-white/30 focus:border-green focus:ring-2 transition"
       />
@@ -47,7 +47,7 @@ import { site } from "../content/site";
       <input
         name="email"
         type="email"
-        placeholder="navn@fyritoka.fo"
+        placeholder={fo.contact.emailPlaceholder}
         autocomplete="email"
         required
         class="rounded-2xl border border-white/15 bg-white/[0.04] px-4 py-3.5 text-base font-normal text-white outline-none ring-green/50 placeholder:text-white/30 focus:border-green focus:ring-2 transition"
@@ -84,7 +84,7 @@ import { site } from "../content/site";
     <textarea
       name="message"
       rows="5"
-      placeholder="Greið stutt frá tínum virksemi og tørvi..."
+      placeholder={fo.contact.messagePlaceholder}
       required
       class="resize-y rounded-2xl border border-white/15 bg-white/[0.04] px-4 py-3.5 text-base font-normal text-white outline-none ring-green/50 placeholder:text-white/30 focus:border-green focus:ring-2 transition"
     ></textarea>

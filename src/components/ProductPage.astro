@@ -63,7 +63,7 @@ const showcase =
             href="/#loysnir"
             class="rounded-full border border-white/15 bg-white/[0.04] px-7 py-3.5 text-sm font-semibold text-white backdrop-blur-md transition-all duration-300 hover:border-white/30 hover:bg-white/[0.08]"
           >
-            Aðrar loysnir
+            {fo.productCta.other}
           </a>
         </div>
       </div>
@@ -126,21 +126,24 @@ const showcase =
         data-reveal
       >
         <div>
-          <p class="text-[11px] font-semibold uppercase tracking-[0.24em] text-green">Gjaldsvindeygað</p>
-          <h2 class="mt-3 text-2xl font-bold leading-[1.1] tracking-[-0.02em] text-white sm:text-3xl">
-            {extra?.title ?? "Eingin nethandil? Send eitt trygt gjaldsleinki."}
-          </h2>
-          <p class="mt-4 max-w-lg text-sm leading-relaxed text-white/65">
-            Fakturar, serstøk tilboð ella stakar sølur. Send eitt leinki í telduposti ella SMS — kundin letur
-            tað upp og rindar við Apple Pay, Google Pay ella korti.
+          <p class="text-[11px] font-semibold uppercase tracking-[0.24em] text-green">
+            {extra && "eyebrow" in extra ? extra.eyebrow : fo.home.onlineTitle}
           </p>
-          <ul class="mt-6 flex flex-wrap gap-2">
-            {["Eingin kassi tørvast", "Fult yvirlit í backoffice", "3D Secure 2"].map((tag) => (
-              <li class="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-xs text-white/70">
-                {tag}
-              </li>
-            ))}
-          </ul>
+          <h2 class="mt-3 text-2xl font-bold leading-[1.1] tracking-[-0.02em] text-white sm:text-3xl">
+            {extra?.title}
+          </h2>
+          <p class="mt-4 max-w-lg text-sm leading-relaxed text-white/65">{extra?.body}</p>
+          {
+            extra && "tags" in extra && extra.tags && (
+              <ul class="mt-6 flex flex-wrap gap-2">
+                {extra.tags.map((tag) => (
+                  <li class="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-xs text-white/70">
+                    {tag}
+                  </li>
+                ))}
+              </ul>
+            )
+          }
         </div>
         <div class="flex justify-center">
           <AnimatedCheckout />
@@ -156,14 +159,13 @@ const showcase =
         data-reveal
       >
         <div>
-          <p class="text-[11px] font-semibold uppercase tracking-[0.24em] text-green">Backoffice</p>
-          <h2 class="mt-3 text-2xl font-bold leading-[1.1] tracking-[-0.02em] text-white sm:text-3xl">
-            Vit halda eyga við — tú sært úrslitið.
-          </h2>
-          <p class="mt-4 max-w-lg text-sm leading-relaxed text-white/65">
-            Vit seta haldgjøld, reglur og integratiónir upp, so gjøldini verða drigin sjálvvirkandi eftir
-            avtalu. Tú hevur altíð fult yvirlit yvir viðskiftafólk og inngjaldingar.
+          <p class="text-[11px] font-semibold uppercase tracking-[0.24em] text-green">
+            {extra && "eyebrow" in extra ? extra.eyebrow : fo.home.backofficeEyebrow}
           </p>
+          <h2 class="mt-3 text-2xl font-bold leading-[1.1] tracking-[-0.02em] text-white sm:text-3xl">
+            {extra?.title}
+          </h2>
+          <p class="mt-4 max-w-lg text-sm leading-relaxed text-white/65">{extra?.body}</p>
         </div>
         <div class="flex justify-center">
           <BackofficeSimulator />
@@ -198,7 +200,7 @@ const showcase =
     <div class="relative max-w-xl">
       <h2 class="text-3xl font-bold leading-[1.08] tracking-[-0.03em] sm:text-4xl">{fo.productCta.title}</h2>
       <p class="mt-3 text-sm font-medium leading-relaxed text-navy/75 sm:text-base">
-        Fá eitt óbindandi prát um tína gjaldsloysn. Vit svara skjótt og hjálpa tær í gongd.
+        {fo.productCta.lead}
       </p>
       <a
         href={`/samband/?t=${product.id}`}
