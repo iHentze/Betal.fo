@@ -55,6 +55,7 @@ export const POST: APIRoute = async ({ params, request, locals, url }) => {
   if (
     pack.application.locked_at_ms &&
     pack.application.state !== "collecting" &&
+    pack.application.state !== "more_info" &&
     step !== "undirskriva"
   ) {
     return fail(here(step), "Umsóknin er læst, meðan hon verður viðgjørd");

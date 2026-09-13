@@ -67,7 +67,11 @@ export const POST: APIRoute = async ({ params, request, locals, url }) => {
   } catch {
     return Response.json({ error: "forbidden" }, { status: 403 });
   }
-  if (pack.application.locked_at_ms && pack.application.state !== "collecting") {
+  if (
+    pack.application.locked_at_ms &&
+    pack.application.state !== "collecting" &&
+    pack.application.state !== "more_info"
+  ) {
     return Response.json({ error: "locked" }, { status: 423 });
   }
 
@@ -206,6 +210,10 @@ export const POST: APIRoute = async ({ params, request, locals, url }) => {
       }
     } else if (step === "banki" && form.has("bank_account")) {
       await saveBank(env.DB, id, String(form.get("bank_account") ?? ""));
+    } else if (step === "skjol" && form.has("additional_comments")) {
+      await saveAnswers(env.DB, id, {
+        additional_comments: String(form.get("additional_comments") ?? "").trim() || null,
+      });
     }
 
     const savedAt = Date.now();

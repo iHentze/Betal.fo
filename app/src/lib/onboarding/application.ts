@@ -778,7 +778,7 @@ export async function staffAction(
     await db
       .prepare(
         `UPDATE onboarding_application
-            SET state = 'collecting', request_note = ?2, updated_at_ms = ?3,
+            SET state = 'more_info', request_note = ?2, updated_at_ms = ?3,
                 final_snapshot_id = NULL, locked_at_ms = NULL
           WHERE id = ?1`,
       )

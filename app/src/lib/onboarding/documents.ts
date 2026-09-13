@@ -12,6 +12,7 @@ export const DOCUMENT_KINDS = [
   "bank_confirmation",
   "annual_accounts",
   "industry_answers",
+  "additional",
 ] as const;
 
 export type DocumentKind = (typeof DOCUMENT_KINDS)[number];

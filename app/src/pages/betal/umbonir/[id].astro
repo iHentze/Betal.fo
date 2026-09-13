@@ -17,6 +17,8 @@ import {
   sectorStatus,
 } from "~/lib/status";
 import { parseEygaSnapshot } from "~/lib/onboarding/eyga";
+import { applicationProgress } from "~/lib/onboarding/progress";
+import { getFinalSnapshot } from "~/lib/onboarding/snapshot";
 
 export const prerender = false;
 
@@ -33,6 +35,8 @@ const missing = missingDocKinds(pack);
 const error = Astro.url.searchParams.get("feilur");
 const wizard = wizardPath(id, "felag", actor, app.merchant_id);
 const registry = parseEygaSnapshot(app.registry_snapshot);
+const progress = applicationProgress(pack);
+const finalSnapshot = await getFinalSnapshot(env.DB, id);
 const bankEmails = await env.DB
   .prepare(
     `SELECT bank_email, cc_email, status, sent_at_ms, delivered_at_ms, failure_reason
@@ -93,6 +97,11 @@ const merchant = await env.DB
     <div>
       <div class="stat-label">Skjøl ið vantar</div>
       <div class="stat-value tnum">{missing.length}</div>
+    </div>
+    <div>
+      <div class="stat-label">Umsóknin</div>
+      <div class="stat-value tnum">{progress.percentage}%</div>
+      <div class="stat-sub">{progress.missing} upplýsingar mangla</div>
     </div>
   </div>
 
@@ -227,6 +236,49 @@ const merchant = await env.DB
             </div>
           </div>
         ))
+      )}
+    </Settings>
+
+    <Settings title="Vinnu- og váðaupplýsingar">
+      {pack.answers.length === 0 ? (
+        <div class="empty">Eingi svar goymd</div>
+      ) : (
+        pack.answers.map((answer) => {
+          let value = answer.value_json;
+          try {
+            const parsed = JSON.parse(answer.value_json);
+            value = Array.isArray(parsed)
+              ? parsed.join(", ")
+              : parsed && typeof parsed === "object"
+                ? Object.entries(parsed).map(([key, item]) => `${key}: ${item}`).join(" · ")
+                : String(parsed);
+          } catch {
+            // Keep the stored JSON string.
+          }
+          return (
+            <div class="settings-row">
+              <div>
+                <div class="settings-row-title">{answer.key}</div>
+                <div class="settings-row-description">{value}</div>
+              </div>
+              <span class="source-badge">{answer.source}</span>
+            </div>
+          );
+        })
+      )}
+    </Settings>
+
+    <Settings title="Endalig umsókn">
+      {finalSnapshot ? (
+        <div style="padding:.875rem; display:grid; gap:.35rem">
+          <div>Snapshot <span class="tnum">{finalSnapshot.id}</span></div>
+          <div class="field-hint">SHA-256 <span class="tnum">{finalSnapshot.sha256}</span></div>
+          <div class="field-hint">
+            Policy {finalSnapshot.policy_id} · príslisti {finalSnapshot.price_list_id}
+          </div>
+        </div>
+      ) : (
+        <div class="empty">Umsóknin er ikki læst til undirskrift enn</div>
       )}
     </Settings>
 

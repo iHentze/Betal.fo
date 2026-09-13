@@ -65,7 +65,7 @@ const error = Astro.url.searchParams.get("feilur");
 const bankEmailSent = Astro.url.searchParams.get("sent") === "banki";
 const app = pack.application;
 const formAction = `/api/umbon/${id}${q}`;
-const autosaveAction = ["felag", "vinnugrein", "eigarar", "roknskapur", "banki"]
+const autosaveAction = ["felag", "vinnugrein", "eigarar", "roknskapur", "banki", "skjol"]
   .includes(stig)
   ? `/api/umbon/${id}/autosave${q}`
   : undefined;
@@ -171,6 +171,7 @@ const hideContinue = stig === "bida";
 const applicationLocked = Boolean(
   app.locked_at_ms &&
   app.state !== "collecting" &&
+  app.state !== "more_info" &&
   stig !== "undirskriva" &&
   stig !== "bida",
 );
@@ -1011,8 +1012,15 @@ if (stig === "banki" && actor.kind === "staff") {
   {
     stig === "skjol" && (
       <div class="wizard-stack">
-        <form id="wizard-form" method="POST" action={formAction}>
+        <form id="wizard-form" method="POST" action={formAction} class="wizard-panel">
           <input type="hidden" name="step" value="skjol" />
+          <Field
+            label="Aðrar viðmerkingar"
+            name="additional_comments"
+            type="textarea"
+            value={answerValue<string>(pack, "additional_comments")}
+            hint="Valfrítt"
+          />
         </form>
 
         <section class="wizard-panel upload-panel">
@@ -1087,6 +1095,54 @@ if (stig === "banki" && actor.kind === "staff") {
             )}
           </section>
         )}
+
+        {app.vertical_sector === 2 && (
+          <section class="wizard-panel upload-panel">
+            <div class="upload-panel-heading">
+              <div>
+                <h2>Eyka vinnuspurningar</h2>
+                <p>Spurningar og skjalprógv, sum hoyra til vinnugreinina.</p>
+              </div>
+              {docChip("industry_answers") && <span class="upload-done">Klárt</span>}
+            </div>
+            {docChip("industry_answers") ? (
+              <div class="file-chip is-complete">
+                <span class="file-chip-check" aria-hidden="true">✓</span>
+                <span class="file-chip-name">{docChip("industry_answers")?.file_name}</span>
+              </div>
+            ) : (
+              <form method="POST" action={uploadAction} enctype="multipart/form-data">
+                <input type="hidden" name="kind" value="industry_answers" />
+                <input type="hidden" name="step" value="skjol" />
+                <Dropzone title="Vel vinnuskjal" />
+                <button class="btn upload-submit" type="submit">Legg upp</button>
+              </form>
+            )}
+          </section>
+        )}
+
+        <section class="wizard-panel upload-panel">
+          <div class="upload-panel-heading">
+            <div>
+              <h2>Onnur skjøl</h2>
+              <p>Valfrí skjøl, sum hjálpa Betal ella innloysaranum at skilja umsóknina.</p>
+            </div>
+            {docChip("additional") && <span class="upload-done">Lagt upp</span>}
+          </div>
+          {docChip("additional") ? (
+            <div class="file-chip is-complete">
+              <span class="file-chip-check" aria-hidden="true">✓</span>
+              <span class="file-chip-name">{docChip("additional")?.file_name}</span>
+            </div>
+          ) : (
+            <form method="POST" action={uploadAction} enctype="multipart/form-data">
+              <input type="hidden" name="kind" value="additional" />
+              <input type="hidden" name="step" value="skjol" />
+              <Dropzone title="Vel annað skjal" />
+              <button class="btn upload-submit" type="submit">Legg upp</button>
+            </form>
+          )}
+        </section>
       </div>
     )
   }

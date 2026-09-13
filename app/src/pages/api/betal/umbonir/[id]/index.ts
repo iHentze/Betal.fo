@@ -54,6 +54,12 @@ export const POST: APIRoute = async ({ params, request, locals }) => {
       action === "reject" ||
       action === "request_docs"
     ) {
+      if (action === "submit" && !externalRef) {
+        return fail("Uttanvelta tilvísingin manglar");
+      }
+      if (action !== "submit" && !reason) {
+        return fail("Viðmerking ella orsøk manglar");
+      }
       await staffAction(env.DB, {
         applicationId: id,
         actor,
