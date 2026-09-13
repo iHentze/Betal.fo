@@ -1857,18 +1857,15 @@
   }
 
   .vertical-more {
-    padding: 0.125rem 0.25rem 0.75rem;
-    border: 1px solid var(--color-line);
-    border-radius: 0.875rem;
-    background: var(--color-surface-1);
+    background: transparent;
   }
 
   .vertical-more > summary {
-    display: flex;
+    display: inline-flex;
     align-items: center;
-    min-height: 3rem;
-    padding: 0 0.625rem;
-    color: var(--color-ink-secondary);
+    gap: 0.35rem;
+    min-height: 2.25rem;
+    color: var(--color-ink-muted);
     font-size: var(--text-sm);
     cursor: pointer;
     list-style: none;
@@ -1878,21 +1875,34 @@
     display: none;
   }
 
+  .vertical-more > summary::after {
+    content: "›";
+    color: var(--color-ink-faint);
+  }
+
   .vertical-more[open] > summary {
-    color: var(--color-ink);
+    color: var(--color-ink-secondary);
+  }
+
+  .vertical-more[open] > summary::after {
+    content: "⌃";
+  }
+
+  .vertical-more-body {
+    margin-top: 0.75rem;
+    padding: 0.75rem;
+    border: 1px solid var(--color-line);
+    border-radius: 0.875rem;
+    background: var(--color-surface-1);
   }
 
   .vertical-search {
     display: block;
-    margin: 0 0.625rem 0.75rem;
+    margin-bottom: 0.75rem;
   }
 
   .vertical-search .input {
     width: 100%;
-  }
-
-  .vertical-more .vertical-group {
-    padding: 0 0.625rem 0.75rem;
   }
 
   .vertical-more .choice-card {

@@ -24,6 +24,7 @@ import {
   FEATURED_VERTICALS,
   VERTICAL_GROUPS,
   isFeaturedVertical,
+  verticalByKey,
 } from "~/lib/onboarding/verticals";
 import { formatDateTime } from "~/lib/nav";
 import {
@@ -209,6 +210,7 @@ const salesRegions = answerValue<SalesRegions>(pack, "sales_regions") ?? {
 const answerBoolean = (key: string) => answerValue<boolean>(pack, key);
 const otherVerticalGroups = VERTICAL_GROUPS.filter((group) => group.sector !== 0);
 const otherVerticalOpen = Boolean(app.vertical_key) && !isFeaturedVertical(app.vertical_key);
+const selectedVerticalSector = verticalByKey(app.vertical_key)?.sector ?? 0;
 const binaryBusinessQuestions = [
   { key: "subscriptions", label: "Bjóða tit haldsgjøld?" },
   { key: "gift_cards", label: "Selja tit gávukort ella forskotsgjaldskort?" },
@@ -516,7 +518,7 @@ if (stig === "banki" && actor.kind === "staff") {
                 type="textarea"
                 value={app.sells}
                 required
-                rows={3}
+                rows={2}
                 placeholder="T.d. kaffi, køkur og matur í kaffistovu"
                 hint="Ein greiður setningur er nokk."
               />
@@ -553,41 +555,43 @@ if (stig === "banki" && actor.kind === "staff") {
                 </div>
                 <details class="vertical-more" id="vertical-more" open={otherVerticalOpen}>
                   <summary>{fo.onboarding.otherVertical}</summary>
-                  <label class="vertical-search">
-                    <span class="visually-hidden">{fo.onboarding.searchVertical}</span>
-                    <input
-                      class="input field-input"
-                      id="vertical-search"
-                      type="search"
-                      placeholder={fo.onboarding.searchVertical}
-                    />
-                  </label>
-                  {otherVerticalGroups.map((group) => (
-                    <div class="vertical-group">
-                      <h3 class="vertical-group-title">{group.title}</h3>
-                      <div class="choice-grid" data-cols="1">
-                        {group.items.map((vertical) => (
-                          <div class="choice-grid-item" data-sector={vertical.sector}>
-                            <ChoiceCard
-                              name="vertical_key"
-                              value={vertical.key}
-                              title={vertical.label}
-                              hint={vertical.hint}
-                              checked={app.vertical_key === vertical.key}
-                            />
-                          </div>
-                        ))}
+                  <div class="vertical-more-body">
+                    <label class="vertical-search">
+                      <span class="visually-hidden">{fo.onboarding.searchVertical}</span>
+                      <input
+                        class="input field-input"
+                        id="vertical-search"
+                        type="search"
+                        placeholder={fo.onboarding.searchVertical}
+                      />
+                    </label>
+                    {otherVerticalGroups.map((group) => (
+                      <div class="vertical-group">
+                        <h3 class="vertical-group-title">{group.title}</h3>
+                        <div class="choice-grid" data-cols="1">
+                          {group.items.map((vertical) => (
+                            <div class="choice-grid-item" data-sector={vertical.sector}>
+                              <ChoiceCard
+                                name="vertical_key"
+                                value={vertical.key}
+                                title={vertical.label}
+                                hint={vertical.hint}
+                                checked={app.vertical_key === vertical.key}
+                              />
+                            </div>
+                          ))}
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </details>
               </div>
               <div class="vertical-guidance" id="vertical-guidance" aria-live="polite">
-                <div class="wizard-alert" data-routing="1" hidden={app.vertical_sector !== 1}>
+                <div class="wizard-alert" data-routing="1" hidden={selectedVerticalSector !== 1}>
                   <strong>Vit senda ikki hetta til Swedbank.</strong>
                   <span>{fo.onboarding.sector1}</span>
                 </div>
-                <div class="wizard-alert" data-routing="2" hidden={app.vertical_sector !== 2}>
+                <div class="wizard-alert" data-routing="2" hidden={selectedVerticalSector !== 2}>
                   <strong>Swedbank kann taka ímóti hesum.</strong>
                   <span>{fo.onboarding.sector2}</span>
                 </div>
@@ -786,6 +790,16 @@ if (stig === "banki" && actor.kind === "staff") {
                     )}
                   </>
                 ))}
+              </div>
+              <div class="vertical-guidance" id="answer-guidance" aria-live="polite">
+                <div class="wizard-alert" data-routing="1" hidden>
+                  <strong>Vit senda ikki hetta til Swedbank.</strong>
+                  <span>{fo.onboarding.sector1}</span>
+                </div>
+                <div class="wizard-alert" data-routing="2" hidden>
+                  <strong>Swedbank kann taka ímóti hesum.</strong>
+                  <span>{fo.onboarding.sector2}</span>
+                </div>
               </div>
               <div>
                 <p class="field-label">Talgildar pungar</p>
@@ -1402,7 +1416,8 @@ if (stig === "banki" && actor.kind === "staff") {
 
       function showRouting() {
         const selected = verticalForm?.querySelector('input[name="vertical_key"]:checked');
-        let sector = Number(selected?.closest("[data-sector]")?.dataset.sector ?? "0");
+        const verticalSector = Number(selected?.closest("[data-sector]")?.dataset.sector ?? "0");
+        let answerSector = verticalSector;
         const donations = verticalForm?.querySelector('input[name="donations"]:checked')?.value;
         const giftCards = verticalForm?.querySelector('input[name="gift_cards"]:checked')?.value;
         const productType = verticalForm?.querySelector('input[name="product_type"]:checked')?.value;
@@ -1410,13 +1425,17 @@ if (stig === "banki" && actor.kind === "staff") {
           const supervised = verticalForm?.querySelector(
             'input[name="donations_supervised"]:checked',
           )?.value;
-          sector = supervised === "yes" ? Math.max(sector, 2) : 1;
-        }
-        else if (giftCards === "yes" || productType === "digital" || productType === "both") {
-          sector = Math.max(sector, 2);
+          answerSector = supervised === "yes" ? Math.max(answerSector, 2) : 1;
+        } else if (giftCards === "yes" || productType === "digital" || productType === "both") {
+          answerSector = Math.max(answerSector, 2);
         }
         guidance?.querySelectorAll("[data-routing]").forEach((message) => {
-          message.hidden = Number(message.dataset.routing) !== sector;
+          message.hidden = Number(message.dataset.routing) !== verticalSector;
+        });
+        const answerGuidance = document.getElementById("answer-guidance");
+        const elevated = answerSector !== verticalSector;
+        answerGuidance?.querySelectorAll("[data-routing]").forEach((message) => {
+          message.hidden = !elevated || Number(message.dataset.routing) !== answerSector;
         });
       }
 
