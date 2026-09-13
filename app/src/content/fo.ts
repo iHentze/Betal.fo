@@ -27,6 +27,8 @@ export const fo = {
     margin: "Vinningur",
     leads: "Áhugaðir",
     support: "Stuðul",
+    applications: "Umsóknir",
+    design: "Snið",
     backToApp: "Aftur til skipanina",
   },
 
@@ -169,6 +171,69 @@ export const fo = {
     generic: "Okkurt gekk galið. Royn aftur.",
     // Surfaced when a money operation returned HTTP 200 but failed.
     operationFailed: "Gerðin miseydnaðist",
+  },
+
+  onboarding: {
+    title: "Umsókn",
+    saved: "Goymt",
+    back: "Aftur",
+    continue: "Halt áfram",
+    resume: "Halt áfram við umsóknini",
+    bannerTitle: "Gjaldingar eru ikki tøkar enn",
+    bannerDetail:
+      "Innloysarin hevur ikki góðkent pakkan. Tú kanst sitja í skipanini — vit siga tær, tá ið tú kanst taka ímóti korti.",
+    checklistTitle: "Hvat vantar",
+    steps: {
+      felag: "Felagið",
+      vinnugrein: "Virkið",
+      eigarar: "Eigarar og undirskrivarar",
+      roknskapur: "Búskapur",
+      banki: "Bankakonta",
+      skjol: "Skjøl",
+      undirskriva: "Undirskriva",
+      bida: "Bíða",
+    },
+    why: {
+      felag: "Finn felagið á eyga.fo og vátta almennu upplýsingarnar. Tað, sum ikki er alment, spyrja vit um.",
+      vinnugrein: "Greið stutt frá, hvat tit gera og selja. Tað avger, hvør innloysari hóskar.",
+      eigarar: "Vátta eigararnar frá Eyga og fyll bert privatu upplýsingarnar, sum ikki eru í almennu skránni.",
+      roknskapur: "Tvey stutt svar hjálpa okkum at velja røttu leiðina fyrstu ferð.",
+      banki: "Fyrst kontunummarið, so eitt forútfylt skjal til bankan at stempla.",
+      skjol: "Legg bert skjølini upp, sum innloysarin veruliga krevur.",
+      undirskriva: "Les forútfyltu FO-avtaluna og vel Samleikan ella undirskrift á pappíri.",
+      bida: "Pakkin er hjá okkum. Her sært tú, hvat hendir næst.",
+    },
+    eygaSearch: "Leita eftir navni ella skrásetingarnummari",
+    eygaSource: "Almennar upplýsingar frá eyga.fo",
+    eygaPrivate:
+      "Eyga vísir ikki P-tal ella privatar adressur. P-talið verður váttað trygt við Samleikanum — tú skalt ikki skriva tað her.",
+    sector1:
+      "Hendan greinin fer ikki til Swedbank. Vit mæla til Clearhaus, og starvsfólk taka støðu.",
+    sector2: "Hendan greinin kann fara til Swedbank, men krevur hægri prís og eyka skjøl.",
+    noSwedbankPdf: "Vit gera ikki eina Swedbank-avtalu, tá ið tilmælið er ein annar innloysari.",
+    skrivaBlocked:
+      "Skriva er stongt, til FO-avtalan er fylt og príslistin settur. Staging bíðar eisini eftir Klintra-brúkara.",
+    priceListMissing: "Príslistin er ikki settur. Vit senda ikki eina avtalu uttan FO-prísir.",
+    wetInk: "Undirskriva á pappír og send mynd av undirskrift og persónsprovi.",
+    waitSwedbank: "Swedbank hevur pakkan. Vit siga tær, tá ið teir hava tikið støðu.",
+    waitClearhaus: "Vit rætta hetta móti Clearhaus. Tú skalt ikki senda nakað til Swedbank.",
+    waitStaff: "Starvsfólk hjá Betal lesa pakkan. Vit skriva, um okkurt vantar.",
+    events: {
+      created: "Umsókn stovnað",
+      screened: "Skoðan",
+      document_uploaded: "Skjal lagt upp",
+      acknowledged_reroute: "Clearhaus-leið váttað",
+      wet_ink: "Undirskrivað á pappír",
+      submitted: "Sent til innloysara",
+      rerouted: "Flutt innloysara",
+      rejected: "Avvíst",
+      docs_requested: "Fleiri skjøl biðið um",
+      staff_sector: "Geiri sett við hond",
+      skriva_blocked_no_tenant: "Skriva ikki tøkt",
+      skriva_sent: "Undirskrift stovnað í Klintra",
+      skriva_signed: "Avtala undirskrivað við Samleikanum",
+      bank_request_sent: "Bankafyrispurningur sendur",
+    },
   },
 } as const;
 

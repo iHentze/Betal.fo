@@ -13,3 +13,20 @@ EPAY_PARTNER_KEY="..."
 # Where ePay should send webhooks. Must be a domain approved on the merchant's point
 # of sale, so for local testing this needs a tunnel rather than localhost.
 APP_URL="http://localhost:4321"
+
+# Eyga company API. Production uses the private EYGA_API service binding instead.
+# Keep the token in .dev.vars or a Worker secret, never in this file.
+# EYGA_API_BASE_URL="https://api.eyga.fo"
+# EYGA_API_TOKEN=""
+
+# Transactional bank requests. Verify betal.fo in Resend before using this sender.
+# RESEND_API_KEY=""
+# RESEND_BASE_URL="https://api.resend.com"
+# BANK_EMAIL_FROM="Betal <banki@betal.fo>"
+
+# Klintra Skriva. Empty means the Undirskriva step can preview a filled FO PDF
+# but will not create a signing request. Do not put a real password here.
+# SKRIVA_BASE_URL="https://klintraelectronicsigningapi.azurewebsites.net"
+# SKRIVA_EMAIL=""
+# SKRIVA_PASSWORD=""
+# SKRIVA_TENANT_ID="" # optional when the user belongs to exactly one tenant

@@ -1,0 +1,26 @@
+---
+import { env } from "~/lib/env";
+import { merchantScopeOrNull } from "~/lib/auth";
+import { getOrCreateApplication, loadPack } from "~/lib/onboarding/application";
+import { firstIncompleteStep } from "~/lib/onboarding/steps";
+import { wizardPath } from "~/lib/onboarding/access";
+
+export const prerender = false;
+
+const actor = Astro.locals.actor!;
+
+if (actor.kind === "staff" && !Astro.url.searchParams.get("handil")) {
+  return Astro.redirect("/betal/umbonir");
+}
+
+const merchantId = merchantScopeOrNull(actor, Astro.url.searchParams.get("handil"));
+if (!merchantId) return Astro.redirect("/betal/handlar");
+
+const application = await getOrCreateApplication(env.DB, merchantId, actor.email);
+const pack = await loadPack(env.DB, application.id);
+if (!pack) return Astro.redirect("/");
+
+return Astro.redirect(wizardPath(application.id, firstIncompleteStep(pack), actor, merchantId));
+---
+
+<p>Far til umsóknina…</p>

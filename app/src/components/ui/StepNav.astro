@@ -1,0 +1,37 @@
+---
+export interface StepItem {
+  slug: string;
+  label: string;
+  href: string;
+  state: "todo" | "current" | "done";
+}
+
+interface Props {
+  steps: StepItem[];
+}
+
+const { steps } = Astro.props;
+---
+
+<nav class="step-list" aria-label="Stig">
+  {
+    steps.map((step, index) => (
+      <a
+        class:list={[
+          "step",
+          step.state === "current" && "is-current",
+          step.state === "done" && "is-done",
+        ]}
+        href={step.href}
+        aria-current={step.state === "current" ? "step" : undefined}
+      >
+        {step.state === "done" ? (
+          <span class="step-tick" aria-hidden="true">✓</span>
+        ) : (
+          <span class="step-index tnum">{index + 1}</span>
+        )}
+        <span>{step.label}</span>
+      </a>
+    ))
+  }
+</nav>

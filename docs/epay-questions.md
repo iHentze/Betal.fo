@@ -10,24 +10,22 @@ published OpenAPI spec — these are gaps, not things we failed to look up.
 
 ## 1. Blocking: acquiring for Faroese merchants
 
-Betal is a Faroese payment company onboarding Faroese merchants as an ePay partner.
-Your go-live checklist assumes Danish infrastructure that our merchants do not have:
+**Partially answered, 8 Dec 2025 / forwarded 9 Sep 2026.** Swedbank Pay (Nicolai
+Christiansen) will onboard Faroese merchants. They want a FO-priced acquiring
+agreement signed with Samleikin or PDF + photo ID, skásetingar prógv, eigarabók,
+and a bank confirmation. Negative equity, negative operations, or a prohibited
+vertical is a refuse; Clearhaus / Shift4 is the fallback. The pack and the
+routing rules are in `docs/onboarding.md`.
 
-- It requires a **CVR number**. Faroese companies register with TAKS in **Vinnuskráin**
-  and receive a 6-digit **V-tal** instead.
-- It requires domain ownership verification **at Punktum.dk**. Our merchants use `.fo`
-  domains, administered separately.
+Still open for the *other* acquirers, and for ePay's own go-live checklist:
 
-We need to know, per acquirer available through ePay (Shift4, Clearhaus, Nets,
-Worldline):
-
-1. Will the acquirer onboard a Faroese-registered entity at all?
-2. Does a V-tal satisfy the company-registration requirement, or is a workaround needed?
-3. How is domain ownership verified for a `.fo` domain?
-4. Is there anything else Denmark-specific in the live-activation review that a Faroese
-   merchant would fail?
-
-This determines whether the business is viable, so it is the answer we need first.
+- The ePay checklist assumes a **CVR** and domain verification at **Punktum.dk**.
+  Faroese companies have a V-tal and a `.fo` domain. Swedbank has substituted
+  skásetingar prógv for the CVR printout. We still need to know whether ePay's
+  own review, and Clearhaus / Shift4 / Nets / Worldline, accept the same.
+- How is domain ownership verified for a `.fo` domain?
+- Is there anything else Denmark-specific in the live-activation review that a
+  Faroese merchant would fail?
 
 ---
 

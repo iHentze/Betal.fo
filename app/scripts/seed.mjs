@@ -78,6 +78,12 @@ for (const table of [
   "contract",
   "lead",
   "onboarding_step",
+  "onboarding_event",
+  "onboarding_signing",
+  "onboarding_document",
+  "onboarding_owner",
+  "onboarding_application",
+  "acquiring_price_list",
   "merchant",
 ]) {
   add(`DELETE FROM ${table};`);
@@ -436,6 +442,57 @@ add(`INSERT INTO acquiring_application (
   ${Date.UTC(2026, 1, 5)}, ${Date.UTC(2026, 1, 12)}
 );`);
 
+// --- Onboarding merchant --------------------------------------------------
+// The coffee shop is already approved and must not see the payouts-paused banner.
+// This second shop is mid-application so the wizard, staff queue and resume
+// banner have something real to open.
+
+const ONBOARD_ID = "44444444-4444-4444-8444-444444444444";
+const ONBOARD_ACCOUNT = "55555555-5555-4555-8555-555555555555";
+const ONBOARD_APP = "66666666-6666-4666-8666-666666666666";
+const ONBOARD_TOKEN = "dev-onboarding-session-token";
+const ONBOARD_USER = randomUUID();
+
+add(`INSERT INTO merchant (
+  id, epay_account_id, name, legal_name, environment, epay_status, status,
+  currency, timezone, domain, v_tal, country_code, city, postal_code,
+  address_line_one, invoice_email, payment_terms_days, collection_method,
+  acquirer, acquiring_status, created_at, created_at_ms
+) VALUES (
+  ${q(ONBOARD_ID)}, ${q(ONBOARD_ACCOUNT)}, 'Handilin við Bryggjuni',
+  'Handilin við Bryggjuni Sp/f', 'test', 'active', 'onboarding', 'DKK',
+  'Atlantic/Faroe', 'handilin.fo', '654321', 'FO', 'Tórshavn', '100',
+  'Bryggjubakki 4', 'rokning@handilin.fo', 14, 'manual', NULL, 'not_started',
+  '2026-09-01T09:00:00Z', ${Date.UTC(2026, 8, 1)}
+);`);
+
+add(`INSERT INTO app_user (id, email, name, kind, merchant_id, role, created_at)
+VALUES (
+  ${q(ONBOARD_USER)}, 'eigari@handilin.fo', 'Jóhanna', 'merchant',
+  ${q(ONBOARD_ID)}, 'owner', '2026-09-01T09:00:00Z'
+);`);
+
+add(`INSERT INTO session (id, user_id, expires_at_ms, created_at_ms)
+VALUES (${q(sha256(ONBOARD_TOKEN))}, ${q(ONBOARD_USER)}, ${farFuture}, ${TODAY});`);
+
+add(`INSERT INTO onboarding_application (
+  id, merchant_id, state, country_code, legal_name, v_tal, address_line_one,
+  postal_code, city, company_type, registry_source, company_details_confirmed,
+  website, sells, created_at_ms, updated_at_ms
+) VALUES (
+  ${q(ONBOARD_APP)}, ${q(ONBOARD_ID)}, 'draft', 'FO',
+  'Handilin við Bryggjuni Sp/f', '654321', 'Bryggjubakki 4', '100', 'Tórshavn',
+  'Sp/f', 'manual', 1, 'https://handilin.fo', 'Góðar vørur av bryggjuni',
+  ${Date.UTC(2026, 8, 10)}, ${Date.UTC(2026, 8, 12)}
+);`);
+
+add(`INSERT INTO onboarding_event (
+  id, application_id, kind, actor_email, payload, at_ms
+) VALUES (
+  ${q(randomUUID())}, ${q(ONBOARD_APP)}, 'created', 'eigari@handilin.fo',
+  ${q(JSON.stringify({ merchantId: ONBOARD_ID }))}, ${Date.UTC(2026, 8, 10)}
+);`);
+
 add("PRAGMA foreign_keys = ON;");
 
 process.stdout.write(lines.join("\n") + "\n");
@@ -449,6 +506,7 @@ process.stderr.write(
     "Sign in by setting a cookie on http://localhost:4321 :",
     `  Betal staff:  document.cookie = 'betal_session=${STAFF_TOKEN}; path=/'`,
     `  Merchant:     document.cookie = 'betal_session=${MERCHANT_TOKEN}; path=/'`,
+    `  Onboarding:   document.cookie = 'betal_session=${ONBOARD_TOKEN}; path=/'`,
     "",
   ].join("\n"),
 );

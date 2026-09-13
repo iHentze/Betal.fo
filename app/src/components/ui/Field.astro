@@ -1,0 +1,98 @@
+---
+/**
+ * A labelled control. The only way a page should render a form field — labels are
+ * Inter, muted, never Poppins, and the error ring is the failed status token.
+ */
+interface Props {
+  label: string;
+  name: string;
+  hint?: string;
+  error?: string;
+  type?: "text" | "email" | "url" | "number" | "textarea" | "checkbox" | "radio" | "tel" | "password";
+  value?: string | number | null;
+  required?: boolean;
+  placeholder?: string;
+  disabled?: boolean;
+  readonly?: boolean;
+  inputmode?: "none" | "text" | "tel" | "url" | "email" | "numeric" | "decimal" | "search";
+  autocomplete?: string;
+  id?: string;
+  rows?: number;
+  checked?: boolean;
+}
+
+const {
+  label,
+  name,
+  hint,
+  error,
+  type = "text",
+  value,
+  required = false,
+  placeholder,
+  disabled = false,
+  readonly = false,
+  inputmode,
+  autocomplete,
+  id = name,
+  rows,
+  checked,
+} = Astro.props;
+
+const isTextarea = type === "textarea";
+const isCheck = type === "checkbox" || type === "radio";
+---
+
+<div class:list={["field", error && "is-error"]}>
+  {
+    isCheck ? (
+      <label class="field-label" style="display:flex; align-items:center; gap:.5rem">
+        <input
+          id={id}
+          class="field-input"
+          type={type}
+          name={name}
+          value={value == null ? "1" : String(value)}
+          checked={checked}
+          required={required}
+          disabled={disabled}
+        />
+        <span>{label}</span>
+      </label>
+    ) : (
+      <>
+        <label class="field-label" for={id}>
+          {label}
+        </label>
+        {isTextarea ? (
+          <textarea
+            id={id}
+            class="input field-input"
+            name={name}
+            required={required}
+            disabled={disabled}
+            readonly={readonly}
+            placeholder={placeholder}
+            rows={rows ?? 3}
+          >{value ?? ""}</textarea>
+        ) : (
+          <input
+            id={id}
+            class="input field-input"
+            type={type}
+            name={name}
+            value={value ?? ""}
+            required={required}
+            disabled={disabled}
+            readonly={readonly}
+            placeholder={placeholder}
+            inputmode={inputmode}
+            autocomplete={autocomplete}
+          />
+        )}
+      </>
+    )
+  }
+  {hint && <p class="field-hint">{hint}</p>}
+  {error && <p class="field-error">{error}</p>}
+</div>

@@ -7,7 +7,7 @@
     {
       "binding": "DB",
       "database_name": "betal",
-      "database_id": "00000000-0000-0000-0000-000000000000",
+      "database_id": "b7f1450c-c93b-4eea-ad53-0f694a8cf2de",
       "migrations_dir": "migrations"
     }
   ],
@@ -15,7 +15,7 @@
     {
       // Merchant access tokens. Never leaves the worker.
       "binding": "TOKENS",
-      "id": "00000000000000000000000000000000"
+      "id": "2107b17ae3904d09812fc0368463b7ea"
     }
   ],
   // Producer only. The consumer lives in workers/ingest so webhook projection is not
@@ -23,7 +23,17 @@
   "queues": {
     "producers": [{ "binding": "INGEST_QUEUE", "queue": "betal-ingest" }]
   },
+  // Private company facts from api.eyga.fo. The API still requires the matching
+  // EYGA_API_TOKEN Worker secret. Local development uses EYGA_API_BASE_URL.
+  "services": [
+    {
+      "binding": "EYGA_API",
+      "service": "eyga-api"
+    }
+  ],
   "vars": {
-    "APP_URL": "https://app.betal.fo"
+    "APP_URL": "https://app.betal.fo",
+    "BANK_EMAIL_FROM": "Betal <banki@betal.fo>",
+    "SKRIVA_BASE_URL": "https://klintraelectronicsigningapi.azurewebsites.net"
   }
 }

@@ -1,0 +1,80 @@
+---
+import AppLayout from "~/layouts/AppLayout.astro";
+import StatusBadge from "~/components/ui/StatusBadge.astro";
+import { env } from "~/lib/env";
+import { fo } from "~/content/fo";
+import { navFor, formatAge } from "~/lib/nav";
+import { listApplications } from "~/lib/onboarding/application";
+import {
+  acquirerStatus,
+  applicationStatus,
+  financeStatus,
+  sectorStatus,
+} from "~/lib/status";
+
+export const prerender = false;
+
+const actor = Astro.locals.actor!;
+if (actor.kind !== "staff") return Astro.redirect("/");
+
+const rows = await listApplications(env.DB);
+const nav = navFor(actor);
+const COLUMNS = "minmax(0,1fr) 7rem 5rem 5rem 7rem 5rem 5rem";
+---
+
+<AppLayout
+  title={fo.nav.applications}
+  crumbs={[{ label: "Betal" }, { label: fo.nav.applications }]}
+  nav={nav}
+  context="Betal"
+>
+  <div class="page-header">
+    <div>
+      <div class="stat-label">Umsóknir</div>
+      <div class="stat-value">{rows.length}</div>
+      <div class="stat-sub">{rows.filter((r) => r.state !== "approved" && r.state !== "rejected").length} opnar</div>
+    </div>
+  </div>
+
+  {
+    rows.length === 0 ? (
+      <div class="empty">
+        <div class="empty-title">Ongar umsóknir enn</div>
+      </div>
+    ) : (
+      <div class="table" style={`--cols: ${COLUMNS}; --cols-sm: minmax(0,1fr) auto`}>
+        <div class="group-header">
+          <span class="group-title">Handil</span>
+          <span class="group-count">Støða</span>
+          <span class="group-count cell-hide-sm">Eginogn</span>
+          <span class="group-count cell-hide-sm">Drift</span>
+          <span class="group-count">Innloysari</span>
+          <span class="group-count cell-hide-sm">Skjøl</span>
+          <span class="group-count cell-num">Aldur</span>
+        </div>
+        {rows.map((row) => (
+          <a class="trow" href={`/betal/umbonir/${row.id}`}>
+            <span class="cell-primary">{row.merchant_name}</span>
+            <StatusBadge status={applicationStatus(row.state)} variant="pill" />
+            <span class="cell-hide-sm">
+              <StatusBadge status={financeStatus(row.equity)} variant="pill" />
+            </span>
+            <span class="cell-hide-sm">
+              <StatusBadge status={financeStatus(row.operations)} variant="pill" />
+            </span>
+            <span class="cell-quiet">
+              {acquirerStatus(row.recommended_acquirer).label}
+              {row.vertical_sector === 1 || row.vertical_sector === 2 ? (
+                <span style="margin-left:.35rem">
+                  <StatusBadge status={sectorStatus(row.vertical_sector)} variant="pill" />
+                </span>
+              ) : null}
+            </span>
+            <span class="cell-quiet cell-num cell-hide-sm">{row.missing_docs}</span>
+            <span class="cell-num tnum">{formatAge(row.created_at_ms)}</span>
+          </a>
+        ))}
+      </div>
+    )
+  }
+</AppLayout>

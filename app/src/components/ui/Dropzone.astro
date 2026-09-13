@@ -1,0 +1,30 @@
+---
+/**
+ * A dashed upload target. Requirements sit *above* this, in `.req-list`, so the
+ * merchant knows what the file must be before they hunt for it.
+ */
+interface Props {
+  name?: string;
+  accept?: string;
+  title?: string;
+  hint?: string;
+  error?: string;
+  disabled?: boolean;
+}
+
+const {
+  name = "file",
+  accept = "application/pdf,image/jpeg,image/png",
+  title = "Legg fílu her",
+  hint = "PDF, JPG ella PNG. Í mesta lagi 1,5 MB.",
+  error,
+  disabled = false,
+} = Astro.props;
+---
+
+<label class:list={["dropzone", error && "is-error"]}>
+  <input type="file" name={name} accept={accept} disabled={disabled} />
+  <span class="dropzone-title">{title}</span>
+  <span>{hint}</span>
+  {error && <span class="field-error">{error}</span>}
+</label>

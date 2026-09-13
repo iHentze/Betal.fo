@@ -1,0 +1,102 @@
+---
+import "~/styles/app.css";
+import Wordmark from "./Wordmark.astro";
+import type { StepItem } from "./StepNav.astro";
+import { fo } from "~/content/fo";
+
+/**
+ * Dedicated KYB document. Revolut-style: one centered task, quiet progress, no app
+ * sidebar and no permanent step rail competing with the form.
+ */
+interface Props {
+  title: string;
+  why?: string;
+  steps: StepItem[];
+  currentIndex: number;
+  savedLabel?: string;
+  backHref?: string | null;
+  continueLabel?: string;
+  formAction?: string;
+  hideContinue?: boolean;
+}
+
+const {
+  title,
+  why,
+  steps,
+  currentIndex,
+  savedLabel = fo.onboarding.saved,
+  backHref,
+  continueLabel = fo.onboarding.continue,
+  formAction,
+  hideContinue = false,
+} = Astro.props;
+
+const current = steps[currentIndex];
+const progress = `${currentIndex + 1}/${steps.length} · ${current?.label ?? title}`;
+const completion = `${((currentIndex + 1) / steps.length) * 100}%`;
+const hasFooter = (!hideContinue && Boolean(formAction)) || Astro.slots.has("foot");
+---
+
+<!doctype html>
+<html lang="fo">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title} · {fo.brand}</title>
+    <meta name="theme-color" content="#0d0033" />
+    <meta name="robots" content="noindex" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  </head>
+  <body>
+    <div class="wizard">
+      <header class="wizard-top">
+        <div class="wizard-top-inner">
+          <a href="/" aria-label="betal" class="wizard-top-wordmark">
+            <Wordmark width="4.75rem" />
+          </a>
+          <span class="wizard-top-progress tnum">{progress}</span>
+          <span class="wizard-top-status">{savedLabel}</span>
+        </div>
+        <div class="wizard-progress" aria-hidden="true">
+          <span style={`width:${completion}`} />
+        </div>
+      </header>
+
+      <main class="wizard-body">
+        <div class="wizard-main">
+          {
+            backHref && (
+              <a class="wizard-back" href={backHref}>
+                <span aria-hidden="true">←</span>
+                {fo.onboarding.back}
+              </a>
+            )
+          }
+          <header class="wizard-intro">
+          <div class="wizard-kicker tnum">{progress}</div>
+          <h1 class="wizard-title">{title}</h1>
+          {why && <p class="wizard-why">{why}</p>}
+          </header>
+          <slot />
+        </div>
+      </main>
+
+      {
+        hasFooter && (
+          <footer class="wizard-foot">
+            <div class="wizard-foot-inner">
+              <slot name="foot" />
+              <div class="wizard-foot-spacer" />
+              {!hideContinue && formAction && (
+                <button class="btn btn-primary wizard-continue" type="submit" form="wizard-form">
+                  {continueLabel}
+                </button>
+              )}
+            </div>
+          </footer>
+        )
+      }
+    </div>
+  </body>
+</html>
