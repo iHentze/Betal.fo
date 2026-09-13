@@ -156,6 +156,7 @@ export interface DocumentTemplate {
   source_sha256: string;
   r2_key: string;
   field_map_json: string;
+  approval_status?: string;
 }
 
 export async function getOfficialTemplate(
@@ -166,9 +167,11 @@ export async function getOfficialTemplate(
   if (!bucket) throw new Error("Goymslan við almennu skjølunum er ikki sett upp");
   const template = await db
     .prepare(
-      `SELECT id, kind, version, source_file_name, source_sha256, r2_key, field_map_json
+      `SELECT id, kind, version, source_file_name, source_sha256, r2_key, field_map_json,
+              approval_status
        FROM document_template
        WHERE kind = ?1 AND country_code = 'FO' AND active = 1
+         AND approval_status = 'approved'
        ORDER BY version DESC LIMIT 1`,
     )
     .bind(kind)

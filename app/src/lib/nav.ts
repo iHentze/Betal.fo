@@ -44,6 +44,7 @@ export function navFor(
       { label: fo.nav.periods, href: "/betal/tidarskeid", icon: "periods" },
       { label: fo.nav.margin, href: "/betal/vinningur", icon: "margin" },
       { label: fo.nav.applications, href: "/betal/umbonir", icon: "applications" },
+      { label: fo.nav.prices, href: "/betal/prislistar", icon: "prices" },
       { label: fo.nav.leads, href: "/betal/ahugadir", icon: "leads" },
       { label: fo.nav.support, href: "/betal/studul", icon: "support" },
       { label: fo.nav.design, href: "/betal/snid", icon: "design" },

@@ -12,7 +12,7 @@ import {
   type PriceList,
 } from "~/lib/onboarding/application";
 import { putDocument } from "~/lib/onboarding/documents";
-import { createFinalSnapshot, getActivePolicy } from "~/lib/onboarding/snapshot";
+import { createFinalSnapshot, getActivePolicy, snapshotDivergence } from "~/lib/onboarding/snapshot";
 import { createDocumentInstance } from "~/lib/onboarding/document-instances";
 import { PRICE_CATEGORIES, type DocumentTemplate } from "~/lib/onboarding/swedbank";
 import type { ObjectBucket } from "~/lib/db/types";
@@ -176,5 +176,18 @@ describe("production onboarding snapshot", () => {
     }, () => 11);
     expect(instance.sha256).toHaveLength(64);
     expect(store.objects.has(instance.r2_key)).toBe(true);
+
+    const unchanged = snapshotDivergence(pack, first);
+    expect(unchanged).toEqual([]);
+    await saveCompany(db, app.id, {
+      legal_name: "Handilin Nýtt Sp/f",
+      v_tal: "123456",
+      company_type: "Sp/F Smápartafelag",
+      address_line_one: "Gøta 1",
+      postal_code: "100",
+      city: "Tórshavn",
+    });
+    const moved = snapshotDivergence((await loadPack(db, app.id))!, first);
+    expect(moved.some((diff) => diff.path === "legal_name")).toBe(true);
   });
 });

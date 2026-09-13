@@ -14,6 +14,7 @@ import {
 import { businessAnswersComplete, type SalesRegions } from "./questionnaire";
 import { canGenerateSwedbankAgreement } from "./steps";
 import { sha256 } from "./documents";
+import { parseOfficialRates } from "./official-rates";
 import {
   AGREEMENT_CHECKBOX_FIELDS,
   AGREEMENT_CHECKBOX_PLACEMENTS,
@@ -23,26 +24,6 @@ import {
   PRICE_FIELD_COLUMNS,
   SWEDBANK_TEMPLATE_HASHES,
 } from "./swedbank";
-
-interface SchemeRate {
-  transactionMinor: number;
-  basisPoints: number;
-}
-
-interface OfficialRateSet {
-  establishmentFeeMinor: number;
-  monthlyFeeMinor: number;
-  minimumMonthlyPaymentMinor: number;
-  priceCategory: string;
-  cardRates: Record<
-    string,
-    {
-      visa: SchemeRate;
-      mastercard: SchemeRate;
-      diners: SchemeRate;
-    }
-  >;
-}
 
 function text(value: string | null | undefined): string {
   return (value ?? "").trim();
@@ -68,22 +49,6 @@ function formatMinor(value: number): string {
 
 function formatBasisPoints(value: number): string {
   return `${(value / 100).toFixed(2).replace(".", ",")}%`;
-}
-
-function parseOfficialRates(priceList: PriceList | null): OfficialRateSet | null {
-  if (!priceList) return null;
-  try {
-    const value = JSON.parse(priceList.rates_json) as OfficialRateSet;
-    if (
-      !value ||
-      typeof value !== "object" ||
-      !value.cardRates ||
-      PRICE_CATEGORIES.some((category) => !value.cardRates[category])
-    ) return null;
-    return value;
-  } catch {
-    return null;
-  }
 }
 
 function splitAccount(value: string): { registration: string; account: string } {
@@ -167,7 +132,7 @@ export function canSendToSkriva(
 ): { ok: true } | { ok: false; reason: string } {
   const fill = canFillAgreement(pack);
   if (!fill.ok) return fill;
-  if (!priceListHasRates(priceList) || !parseOfficialRates(priceList)) {
+  if (!priceListHasRates(priceList) || !parseOfficialRates(priceList?.rates_json)) {
     return {
       ok: false,
       reason: "Príslistin er ikki settur. Vit senda ikki eina avtalu uttan FO-prísir.",
@@ -189,7 +154,7 @@ export async function fillAgreementPdf(
 ): Promise<Uint8Array> {
   const check = canFillAgreement(pack);
   if (!check.ok) throw new Error(check.reason);
-  const rates = parseOfficialRates(priceList);
+  const rates = parseOfficialRates(priceList?.rates_json);
   if (!rates) throw new Error("Góðkendur FO-príslisti manglar");
   await assertTemplate(
     templateBytes,

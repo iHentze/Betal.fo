@@ -5,6 +5,7 @@ import { screenApplication, type Acquirer, type FinanceFlag } from "./screening"
 import { verticalByKey } from "./verticals";
 import { firstIncompleteStep, missingDocKinds, type StepSlug } from "./steps";
 import type { EygaCompany } from "./eyga";
+import { priceListHasOfficialRates } from "./official-rates";
 
 export interface OnboardingApplication {
   id: string;
@@ -131,6 +132,11 @@ export interface PriceList {
   currency: string;
   country_code: string;
   rates_json: string;
+  status?: string;
+  created_by?: string | null;
+  approved_by?: string | null;
+  approved_at_ms?: number | null;
+  source_note?: string | null;
 }
 
 export async function getApplication(
@@ -523,6 +529,18 @@ export async function saveOwners(
   }>,
   now: () => number = () => Date.now(),
 ): Promise<void> {
+  const signing = await db
+    .prepare(
+      `SELECT id FROM onboarding_signing
+        WHERE application_id = ?1 AND provider = 'skriva'
+        LIMIT 1`,
+    )
+    .bind(applicationId)
+    .first<{ id: string }>();
+  if (signing) {
+    throw new Error("Eigarar kunnu ikki broytast eftir at undirskrift er stovnað");
+  }
+
   const cleaned = owners.filter((owner) => owner.name.trim());
   await db
     .prepare(`DELETE FROM onboarding_owner WHERE application_id = ?1`)
@@ -807,7 +825,7 @@ export async function getActivePriceList(
   return db
     .prepare(
       `SELECT * FROM acquiring_price_list
-        WHERE kind = ?1
+        WHERE kind = ?1 AND status = 'approved'
         ORDER BY version DESC
         LIMIT 1`,
     )
@@ -816,20 +834,7 @@ export async function getActivePriceList(
 }
 
 export function priceListHasRates(list: PriceList | null): boolean {
-  if (!list) return false;
-  try {
-    const rates = JSON.parse(list.rates_json) as unknown;
-    if (Array.isArray(rates)) return rates.length > 0;
-    if (!rates || typeof rates !== "object") return false;
-    const cardRates = (rates as Record<string, unknown>).cardRates;
-    return Boolean(
-      cardRates &&
-      typeof cardRates === "object" &&
-      Object.keys(cardRates as Record<string, unknown>).length > 0,
-    );
-  } catch {
-    return false;
-  }
+  return priceListHasOfficialRates(list?.rates_json);
 }
 
 export function parsePriceRates(

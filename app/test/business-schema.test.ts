@@ -75,6 +75,11 @@ describe("business schema", () => {
           "06cfdbdb6d7d2ea023cc811d1e5b919d2686a02305f62a584e2f9a01c567fc60",
         r2_key: "templates/swedbank/agreement-online-fo-v1.pdf",
       });
+    expect(
+      db.query<{ approval_status: string; active: number }>(
+        `SELECT approval_status, active FROM document_template WHERE kind = 'agreement'`,
+      )[0],
+    ).toEqual({ approval_status: "approved", active: 1 });
   });
 
   it("extends merchant with the Faroese business fields", () => {

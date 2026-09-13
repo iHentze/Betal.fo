@@ -19,7 +19,7 @@ import {
   stepWhy,
   type StepSlug,
 } from "~/lib/onboarding/steps";
-import { VERTICALS } from "~/lib/onboarding/verticals";
+import { VERTICAL_GROUPS } from "~/lib/onboarding/verticals";
 import { formatDateTime } from "~/lib/nav";
 import {
   getEygaCompany,
@@ -554,19 +554,24 @@ if (stig === "banki" && actor.kind === "staff") {
             </section>
             <section>
               <h2 class="wizard-section-title">Hvør lýsing passar best?</h2>
-              <div class="choice-grid" data-cols="2">
-                {VERTICALS.map((vertical) => (
-                  <div class="choice-grid-item" data-sector={vertical.sector}>
-                    <ChoiceCard
-                      name="vertical_key"
-                      value={vertical.key}
-                      title={vertical.label}
-                      hint={vertical.hint}
-                      checked={app.vertical_key === vertical.key}
-                    />
+              {VERTICAL_GROUPS.map((group) => (
+                <div class="vertical-group">
+                  <h3 class="vertical-group-title">{group.title}</h3>
+                  <div class="choice-grid" data-cols={group.sector === 0 ? "2" : "1"}>
+                    {group.items.map((vertical) => (
+                      <div class="choice-grid-item" data-sector={vertical.sector}>
+                        <ChoiceCard
+                          name="vertical_key"
+                          value={vertical.key}
+                          title={vertical.label}
+                          hint={vertical.hint}
+                          checked={app.vertical_key === vertical.key}
+                        />
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
+                </div>
+              ))}
               <div class="vertical-guidance" id="vertical-guidance" aria-live="polite">
                 <div class="wizard-alert" data-routing="1" hidden={app.vertical_sector !== 1}>
                   <strong>Vit senda ikki hetta til Swedbank.</strong>
@@ -1331,7 +1336,12 @@ if (stig === "banki" && actor.kind === "staff") {
         const donations = verticalForm?.querySelector('input[name="donations"]:checked')?.value;
         const giftCards = verticalForm?.querySelector('input[name="gift_cards"]:checked')?.value;
         const productType = verticalForm?.querySelector('input[name="product_type"]:checked')?.value;
-        if (donations === "yes") sector = 1;
+        if (donations === "yes") {
+          const supervised = verticalForm?.querySelector(
+            'input[name="donations_supervised"]:checked',
+          )?.value;
+          sector = supervised === "yes" ? Math.max(sector, 2) : 1;
+        }
         else if (giftCards === "yes" || productType === "digital" || productType === "both") {
           sector = Math.max(sector, 2);
         }

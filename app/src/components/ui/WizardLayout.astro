@@ -126,6 +126,7 @@ const hasFooter = (!hideContinue && Boolean(formAction)) || Astro.slots.has("foo
           status.textContent = `Goymt · ${new Date(payload.savedAt).toLocaleTimeString("fo-FO", {
             hour: "2-digit",
             minute: "2-digit",
+            hour12: false,
           })}`;
         } catch (error) {
           if (error?.name !== "AbortError") status.textContent = "Ikki goymt · royn aftur";

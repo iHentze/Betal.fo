@@ -55,11 +55,13 @@ npm run templates:upload -- --remote
 
 Confirm:
 
-- `d1_migrations` contains every migration through `0009`.
+- `d1_migrations` contains every migration through `0011`.
 - `PRAGMA foreign_key_check` returns no rows.
-- All three R2 template objects match the hashes in `document_template`.
-- Approved `standard` and `sector2` price-list rows exist and contain all card
-  categories. Do not create a signing request while either list is empty.
+- All three R2 template objects match the hashes in `document_template` and have
+  `approval_status = approved`.
+- Staff enter commercially supplied FO rates at `/betal/prislistar` and approve
+  them. Do not invent numbers, and do not create a signing request while the
+  needed `standard` or `sector2` list is empty or still a draft.
 
 ## Deploy
 

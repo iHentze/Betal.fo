@@ -204,6 +204,86 @@ export async function createFinalSnapshot(
   return created;
 }
 
+export interface SnapshotDivergence {
+  path: string;
+  live: string;
+  frozen: string;
+}
+
+function display(value: unknown): string {
+  if (value === null || value === undefined || value === "") return "—";
+  if (typeof value === "string") return value;
+  return canonicalJson(value);
+}
+
+export function snapshotDivergence(
+  pack: ApplicationPack,
+  snapshot: SubmissionSnapshot,
+): SnapshotDivergence[] {
+  let payload: {
+    application?: Partial<ApplicationPack["application"]>;
+    answers?: Record<string, { value?: unknown }>;
+    owners?: Array<{ id: string; email: string | null; isSignatory?: boolean }>;
+    documents?: Array<{ id: string; sha256: string | null }>;
+    signers?: Array<{ ownerId: string; email: string | null }>;
+  };
+  try {
+    payload = JSON.parse(snapshot.payload_json) as typeof payload;
+  } catch {
+    return [{ path: "payload", live: "ógyldugt", frozen: snapshot.sha256 }];
+  }
+
+  const diffs: SnapshotDivergence[] = [];
+  const add = (path: string, live: unknown, frozen: unknown) => {
+    const left = display(live);
+    const right = display(frozen);
+    if (left !== right) diffs.push({ path, live: left, frozen: right });
+  };
+
+  const frozenApp = payload.application ?? {};
+  add("legal_name", pack.application.legal_name, frozenApp.legal_name);
+  add("v_tal", pack.application.v_tal, frozenApp.v_tal);
+  add("website", pack.application.website, frozenApp.website);
+  add("sells", pack.application.sells, frozenApp.sells);
+  add("bank_account", pack.application.bank_account, frozenApp.bank_account);
+  add("vertical_key", pack.application.vertical_key, frozenApp.vertical_key);
+
+  const liveAnswers = Object.fromEntries(
+    pack.answers.map((answer) => {
+      try {
+        return [answer.key, JSON.parse(answer.value_json)];
+      } catch {
+        return [answer.key, null];
+      }
+    }),
+  );
+  const keys = new Set([
+    ...Object.keys(liveAnswers),
+    ...Object.keys(payload.answers ?? {}),
+  ]);
+  for (const key of keys) {
+    add(`answer.${key}`, liveAnswers[key], payload.answers?.[key]?.value);
+  }
+
+  const liveSigners = pack.owners
+    .filter((owner) => owner.is_signatory)
+    .map((owner) => `${owner.id}:${owner.email ?? ""}`)
+    .sort()
+    .join("|");
+  const frozenSigners = (payload.signers ?? payload.owners?.filter((owner) => owner.isSignatory) ?? [])
+    .map((owner) => `${"ownerId" in owner ? owner.ownerId : owner.id}:${owner.email ?? ""}`)
+    .sort()
+    .join("|");
+  add("signers", liveSigners, frozenSigners);
+
+  for (const document of pack.documents) {
+    const frozen = payload.documents?.find((row) => row.id === document.id);
+    add(`document.${document.kind}`, document.sha256, frozen?.sha256 ?? null);
+  }
+
+  return diffs;
+}
+
 export async function supersedeFinalSnapshot(
   db: Database,
   applicationId: string,

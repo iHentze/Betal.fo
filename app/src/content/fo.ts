@@ -28,6 +28,7 @@ export const fo = {
     leads: "Áhugaðir",
     support: "Stuðul",
     applications: "Umsóknir",
+    prices: "Príslistar",
     design: "Snið",
     backToApp: "Aftur til skipanina",
   },
@@ -212,8 +213,8 @@ export const fo = {
     sector2: "Hendan greinin kann fara til Swedbank, men krevur hægri prís og eyka skjøl.",
     noSwedbankPdf: "Vit gera ikki eina Swedbank-avtalu, tá ið tilmælið er ein annar innloysari.",
     skrivaBlocked:
-      "Skriva er stongt, til FO-avtalan er fylt og príslistin settur. Staging bíðar eisini eftir Klintra-brúkara.",
-    priceListMissing: "Príslistin er ikki settur. Vit senda ikki eina avtalu uttan FO-prísir.",
+      "Skriva er stongt, til FO-avtalan er fylt og ein góðkendur FO-príslisti er settur. Staging bíðar eisini eftir Klintra-brúkara.",
+    priceListMissing: "Góðkendur FO-príslisti manglar. Starvsfólk seta tølini frá Swedbank — vit uppfinna tey ikki.",
     wetInk: "Undirskriva á pappír og send mynd av undirskrift og persónsprovi.",
     waitSwedbank: "Swedbank hevur pakkan. Vit siga tær, tá ið teir hava tikið støðu.",
     waitClearhaus: "Vit rætta hetta móti Clearhaus. Tú skalt ikki senda nakað til Swedbank.",

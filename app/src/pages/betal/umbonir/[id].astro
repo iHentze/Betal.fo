@@ -18,7 +18,8 @@ import {
 } from "~/lib/status";
 import { parseEygaSnapshot } from "~/lib/onboarding/eyga";
 import { applicationProgress } from "~/lib/onboarding/progress";
-import { getFinalSnapshot } from "~/lib/onboarding/snapshot";
+import { getFinalSnapshot, snapshotDivergence } from "~/lib/onboarding/snapshot";
+import { verticalByKey } from "~/lib/onboarding/verticals";
 
 export const prerender = false;
 
@@ -37,6 +38,20 @@ const wizard = wizardPath(id, "felag", actor, app.merchant_id);
 const registry = parseEygaSnapshot(app.registry_snapshot);
 const progress = applicationProgress(pack);
 const finalSnapshot = await getFinalSnapshot(env.DB, id);
+const snapshotDiffs = finalSnapshot ? snapshotDivergence(pack, finalSnapshot) : [];
+let snapshotPayload: {
+  application?: { legal_name?: string | null; v_tal?: string | null; vertical_key?: string | null };
+  priceList?: { kind?: string; version?: number };
+  agreementTemplate?: { id?: string; sha256?: string };
+  signers?: Array<{ name?: string; email?: string | null }>;
+} | null = null;
+if (finalSnapshot) {
+  try {
+    snapshotPayload = JSON.parse(finalSnapshot.payload_json);
+  } catch {
+    snapshotPayload = null;
+  }
+}
 const bankEmails = await env.DB
   .prepare(
     `SELECT bank_email, cc_email, status, sent_at_ms, delivered_at_ms, failure_reason
@@ -270,17 +285,62 @@ const merchant = await env.DB
 
     <Settings title="Endalig umsókn">
       {finalSnapshot ? (
-        <div style="padding:.875rem; display:grid; gap:.35rem">
+        <div class="snapshot-payload">
           <div>Snapshot <span class="tnum">{finalSnapshot.id}</span></div>
           <div class="field-hint">SHA-256 <span class="tnum">{finalSnapshot.sha256}</span></div>
           <div class="field-hint">
             Policy {finalSnapshot.policy_id} · príslisti {finalSnapshot.price_list_id}
           </div>
+          {snapshotPayload && (
+            <div class="field-hint">
+              {snapshotPayload.application?.legal_name}
+              {snapshotPayload.application?.v_tal ? ` · V-tal ${snapshotPayload.application.v_tal}` : ""}
+              {snapshotPayload.application?.vertical_key
+                ? ` · ${verticalByKey(snapshotPayload.application.vertical_key)?.label ?? snapshotPayload.application.vertical_key}`
+                : ""}
+              {snapshotPayload.priceList
+                ? ` · ${snapshotPayload.priceList.kind} v${snapshotPayload.priceList.version}`
+                : ""}
+            </div>
+          )}
+          {snapshotPayload?.signers && snapshotPayload.signers.length > 0 && (
+            <div class="field-hint">
+              Undirskrivarar: {snapshotPayload.signers.map((signer) => signer.name ?? signer.email).join(", ")}
+            </div>
+          )}
+          {snapshotPayload?.agreementTemplate?.sha256 && (
+            <div class="field-hint">
+              Avtalu-hash <span class="tnum">{snapshotPayload.agreementTemplate.sha256}</span>
+            </div>
+          )}
         </div>
       ) : (
         <div class="empty">Umsóknin er ikki læst til undirskrift enn</div>
       )}
     </Settings>
+
+    {finalSnapshot && (
+      <Settings
+        title="Samanbering við goymdu upplýsingarnar"
+        description={snapshotDiffs.length === 0
+          ? "Lívandi pakkin samsvarar við læsta snapshot."
+          : "Pakkin hevur broytt seg síðan undirskrift varð læst."}
+      >
+        {snapshotDiffs.length === 0 ? (
+          <div class="empty">Einki frávik</div>
+        ) : (
+          <div class="snapshot-diff">
+            {snapshotDiffs.map((diff) => (
+              <div class="snapshot-diff-row">
+                <strong>{diff.path}</strong>
+                <span class="field-hint">Nú: {diff.live}</span>
+                <span class="field-hint">Læst: {diff.frozen}</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </Settings>
+    )}
 
     <Settings title="Skjøl">
       {pack.documents.length === 0 ? (
