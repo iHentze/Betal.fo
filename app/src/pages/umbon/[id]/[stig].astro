@@ -170,6 +170,20 @@ const pageFormAction = hideContinue || stig === "undirskriva"
 const continueLabel = stig === "banki" && !app.bank_account
   ? "Ger bankaskjalið"
   : fo.onboarding.continue;
+const bankEmailReady = Boolean(env.RESEND_API_KEY);
+let clientEmail = actor.email;
+if (stig === "banki" && actor.kind === "staff") {
+  const contact = await env.DB
+    .prepare(
+      `SELECT email FROM app_user
+       WHERE kind = 'merchant' AND merchant_id = ?1
+       ORDER BY CASE role WHEN 'owner' THEN 0 ELSE 1 END, created_at
+       LIMIT 1`,
+    )
+    .bind(merchantId)
+    .first<{ email: string }>();
+  clientEmail = contact?.email ?? "";
+}
 ---
 
 <WizardLayout
@@ -574,7 +588,7 @@ const continueLabel = stig === "banki" && !app.bank_account
               <span class="task-number tnum">2</span>
               <div>
                 <h2>Bið bankan vátta kontuna</h2>
-                <p>Vit gera ein lidnan teldupost við bankaskjalinum viðheftum.</p>
+                <p>Betal sendir ein lidnan teldupost við bankaskjalinum viðheftum.</p>
               </div>
             </div>
             {bankEmailSent ? (
@@ -603,19 +617,24 @@ const continueLabel = stig === "banki" && !app.bank_account
                   hint="Til ráðgevan ella deildina, sum kann stempla skjalið."
                 />
                 <Field
-                  label="Tín teldupostur (CC)"
+                  label={actor.kind === "merchant"
+                    ? "Tín teldupostur (CC)"
+                    : "Teldupostur hjá viðskiftafólkinum (CC)"}
                   name="cc_email"
                   type="email"
-                  value={actor.email}
+                  value={clientEmail}
                   required
+                  readonly
                   autocomplete="email"
                   hint="Tú fært teldupostin og svarið frá bankanum beinleiðis."
                 />
-                <button class="btn task-action" type="submit">
+                <button class="btn task-action" type="submit" disabled={!bankEmailReady}>
                   Send til bankan
                 </button>
                 <p class="field-hint bank-email-note">
-                  Betal sendir teldupostin við bankaskjalinum viðheftum. Svarið fer til tín.
+                  {bankEmailReady
+                    ? "Svarið frá bankanum fer beinleiðis til tín."
+                    : "Resend er ikki sett upp enn. Tak bankaskjalið niður niðanfyri."}
                 </p>
               </form>
             )}

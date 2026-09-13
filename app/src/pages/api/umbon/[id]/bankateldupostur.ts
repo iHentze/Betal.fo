@@ -48,6 +48,23 @@ export const POST: APIRoute = async ({ params, request, locals, url }) => {
     const form = await request.formData();
     const to = cleanEmailAddress(String(form.get("bank_email") ?? ""), "bankan");
     const cc = cleanEmailAddress(String(form.get("cc_email") ?? ""), "CC");
+    let clientEmail = actor.email;
+    if (actor.kind === "staff") {
+      const contact = await env.DB
+        .prepare(
+          `SELECT email FROM app_user
+           WHERE kind = 'merchant' AND merchant_id = ?1
+           ORDER BY CASE role WHEN 'owner' THEN 0 ELSE 1 END, created_at
+           LIMIT 1`,
+        )
+        .bind(app.merchant_id)
+        .first<{ email: string }>();
+      clientEmail = contact?.email ?? "";
+    }
+    if (!clientEmail || cc.toLocaleLowerCase() !== clientEmail.toLocaleLowerCase()) {
+      return fail("CC skal vera telduposturin hjá innritaða viðskiftafólkinum");
+    }
+
     const attachment = await fillBankFormPdf(pack);
     const input = {
       from: env.BANK_EMAIL_FROM ?? "Betal <banki@betal.fo>",
@@ -67,6 +84,18 @@ export const POST: APIRoute = async ({ params, request, locals, url }) => {
       .bind(idempotencyKey)
       .first<{ provider_id: string }>();
     if (existing) return redirect(withMessage(back, "sent", "banki"));
+
+    const sentToday = await env.DB
+      .prepare(
+        `SELECT COUNT(*) AS count
+         FROM onboarding_bank_email
+         WHERE application_id = ?1 AND sent_at_ms >= ?2`,
+      )
+      .bind(id, Date.now() - 86_400_000)
+      .first<{ count: number }>();
+    if ((sentToday?.count ?? 0) >= 5) {
+      return fail("Ov nógvir bankafyrispurningar eru sendir í dag. Skriva til Betal.");
+    }
 
     const resend = new Resend(
       env.RESEND_API_KEY,

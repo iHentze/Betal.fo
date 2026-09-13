@@ -13,6 +13,7 @@ interface Props {
   required?: boolean;
   placeholder?: string;
   disabled?: boolean;
+  readonly?: boolean;
   inputmode?: "none" | "text" | "tel" | "url" | "email" | "numeric" | "decimal" | "search";
   autocomplete?: string;
   id?: string;
@@ -30,6 +31,7 @@ const {
   required = false,
   placeholder,
   disabled = false,
+  readonly = false,
   inputmode,
   autocomplete,
   id = name,
@@ -69,6 +71,7 @@ const isCheck = type === "checkbox" || type === "radio";
             name={name}
             required={required}
             disabled={disabled}
+            readonly={readonly}
             placeholder={placeholder}
             rows={rows ?? 3}
           >{value ?? ""}</textarea>
@@ -81,6 +84,7 @@ const isCheck = type === "checkbox" || type === "radio";
             value={value ?? ""}
             required={required}
             disabled={disabled}
+            readonly={readonly}
             placeholder={placeholder}
             inputmode={inputmode}
             autocomplete={autocomplete}
