@@ -130,6 +130,115 @@ export function progressForStep(slug: StepSlug, pack: ApplicationPack): StepProg
   }
 }
 
+const ITEM_LABELS: Record<string, string> = {
+  legal_name: "Felagsnavn",
+  v_tal: "V-tal",
+  company_type: "Felagsslag",
+  address: "Adressa",
+  country_fo: "Land",
+  company_confirmed: "Váttan av felagnum",
+  sells: "Hvat tit selja",
+  website: "Heimasíða",
+  vertical_key: "Vinnugrein",
+  annual_card_turnover_dkk: "Árlig kortsøla",
+  average_transaction_dkk: "Miðal keyp",
+  market_name: "Navn á sølustaðnum",
+  contact_name: "Kontaktpersónur",
+  contact_phone: "Telefon",
+  contact_email: "Teldupostur",
+  invoice_email: "Fakturapóstur",
+  product_type: "Vøruslag",
+  inventory: "Goymsla",
+  delivery_method: "Levering",
+  delivery_days: "Leveringardagar",
+  subscriptions: "Haldsgjøld",
+  gift_cards: "Gávukort",
+  donations: "Gávur",
+  primary_customers: "Kundar",
+  payment_link_mode: "Gjaldsleinki",
+  save_card: "Goymt kort",
+  wallets: "Pungar",
+  other_mit: "Endurtakandi gjøld",
+  website_terms: "Handilstreytir",
+  made_to_order: "Bílagdar vørur",
+  sales_regions: "Sølulond",
+  sales_regions_total: "Sølulond (100%)",
+  save_card_in_app: "Kort í app",
+  donations_supervised: "Eftirlit við gávum",
+  made_to_order_days: "Bíleggingartíð",
+  made_to_order_share_percent: "Partur av bíleggingum",
+  deposit: "Depositum",
+  final_payment_when: "Restin, nær",
+  final_payment_method: "Restin, hvussu",
+  deposit_share_percent: "Depositum %",
+  owners: "Eigarar",
+  owner_names: "Nøvn á eigarum",
+  signatory: "Undirskrivari",
+  signatory_email: "Teldupostur til undirskrift",
+  equity: "Eginogn",
+  operations: "Rakstur",
+  bank_account: "Bankakonta",
+  bank_confirmation: "Bankaváttan",
+  company_registration: "Skrásetingarprógv",
+  owners_book: "Eigaralisti",
+  annual_accounts: "Ársroknskapur",
+  industry_answers: "Vinnugreinaskjøl",
+  signers: "Undirskrivarar",
+  submitted_pack: "Innsending",
+};
+
+export function missingItemLabel(key: string): string {
+  if (key.startsWith("signer:")) return "Undirskrift";
+  return ITEM_LABELS[key] ?? key;
+}
+
+export type VinnugreinChapter = "virki" | "samband" | "sola" | "gjald" | "lond";
+
+function answered(pack: ApplicationPack, key: string): boolean {
+  const value = answerValue(pack, key);
+  return value !== null && value !== "" && value !== undefined;
+}
+
+export function vinnugreinChapter(pack: ApplicationPack): VinnugreinChapter {
+  const app = pack.application;
+  if (!app.sells || !app.website || !app.vertical_key || !answered(pack, "market_name")) {
+    return "virki";
+  }
+  if (
+    !answered(pack, "contact_name") ||
+    !answered(pack, "contact_phone") ||
+    !answered(pack, "contact_email") ||
+    !answered(pack, "invoice_email")
+  ) {
+    return "samband";
+  }
+  if (
+    !answered(pack, "annual_card_turnover_dkk") ||
+    !answered(pack, "average_transaction_dkk") ||
+    !answered(pack, "product_type") ||
+    !answered(pack, "inventory") ||
+    !answered(pack, "delivery_method") ||
+    !answered(pack, "delivery_days")
+  ) {
+    return "sola";
+  }
+  if (
+    !answered(pack, "payment_link_mode") ||
+    !answered(pack, "primary_customers") ||
+    !answered(pack, "subscriptions") ||
+    !answered(pack, "gift_cards") ||
+    !answered(pack, "donations") ||
+    !answered(pack, "save_card") ||
+    !answered(pack, "other_mit") ||
+    !answered(pack, "website_terms") ||
+    !answered(pack, "made_to_order") ||
+    !answered(pack, "wallets")
+  ) {
+    return "gjald";
+  }
+  return "lond";
+}
+
 export function applicationProgress(pack: ApplicationPack): {
   steps: StepProgress[];
   complete: number;

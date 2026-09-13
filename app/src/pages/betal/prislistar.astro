@@ -60,7 +60,7 @@ const kindLabel = (kind: string) => (kind === "sector2" ? "Geiri 2" : "Standard"
     <div>
       <div class="stat-label">Standard</div>
       <div class="stat-value" style="font-size:1.125rem">
-        <StatusBadge status={priceListStatus(approvedStandard ? "approved" : "draft")} variant="pill" />
+        <StatusBadge status={priceListStatus(approvedStandard?.status)} variant="pill" />
       </div>
       <div class="stat-sub">
         {approvedStandard ? `Útgáva ${approvedStandard.version}` : "Eingin góðkendur listi"}
@@ -69,7 +69,7 @@ const kindLabel = (kind: string) => (kind === "sector2" ? "Geiri 2" : "Standard"
     <div>
       <div class="stat-label">Geiri 2</div>
       <div class="stat-value" style="font-size:1.125rem">
-        <StatusBadge status={priceListStatus(approvedSector2 ? "approved" : "draft")} variant="pill" />
+        <StatusBadge status={priceListStatus(approvedSector2?.status)} variant="pill" />
       </div>
       <div class="stat-sub">
         {approvedSector2 ? `Útgáva ${approvedSector2.version}` : "Eingin góðkendur listi"}

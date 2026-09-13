@@ -57,7 +57,7 @@ const hasFooter = (!hideContinue && Boolean(formAction)) || Astro.slots.has("foo
           <a href="/" aria-label="betal" class="wizard-top-wordmark">
             <Wordmark width="4.75rem" />
           </a>
-          <span class="wizard-top-progress tnum">{progress}</span>
+          <span class="wizard-top-progress tnum" id="wizard-top-progress">{progress}</span>
           <span class="wizard-top-status" id="wizard-save-status">{savedLabel}</span>
         </div>
         <div class="wizard-progress" aria-hidden="true">
@@ -69,7 +69,7 @@ const hasFooter = (!hideContinue && Boolean(formAction)) || Astro.slots.has("foo
         <div class="wizard-main">
           {
             backHref && (
-              <a class="wizard-back" href={backHref}>
+              <a class="wizard-back" id="wizard-back" href={backHref}>
                 <span aria-hidden="true">←</span>
                 {fo.onboarding.back}
               </a>
@@ -77,8 +77,9 @@ const hasFooter = (!hideContinue && Boolean(formAction)) || Astro.slots.has("foo
           }
           <header class="wizard-intro">
           <div class="wizard-kicker tnum">{progress}</div>
-          <h1 class="wizard-title">{title}</h1>
-          {why && <p class="wizard-why">{why}</p>}
+          <h1 class="wizard-title" id="wizard-title">{title}</h1>
+          {why && <p class="wizard-why" id="wizard-why">{why}</p>}
+          <p class="wizard-chapter-index tnum" id="wizard-chapter-index" hidden></p>
           </header>
           <slot />
         </div>
@@ -91,7 +92,12 @@ const hasFooter = (!hideContinue && Boolean(formAction)) || Astro.slots.has("foo
               <slot name="foot" />
               <div class="wizard-foot-spacer" />
               {!hideContinue && formAction && (
-                <button class="btn btn-primary wizard-continue" type="submit" form="wizard-form">
+                <button
+                  class="btn btn-primary wizard-continue"
+                  id="wizard-continue"
+                  type="submit"
+                  form="wizard-form"
+                >
                   {continueLabel}
                 </button>
               )}

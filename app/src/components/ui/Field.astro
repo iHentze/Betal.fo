@@ -55,6 +55,7 @@ const isCheck = type === "checkbox" || type === "radio";
           value={value == null ? "1" : String(value)}
           checked={checked}
           required={required}
+          data-required={required || undefined}
           disabled={disabled}
         />
         <span>{label}</span>
@@ -70,6 +71,7 @@ const isCheck = type === "checkbox" || type === "radio";
             class="input field-input"
             name={name}
             required={required}
+            data-required={required || undefined}
             disabled={disabled}
             readonly={readonly}
             placeholder={placeholder}
@@ -83,6 +85,7 @@ const isCheck = type === "checkbox" || type === "radio";
             name={name}
             value={value ?? ""}
             required={required}
+            data-required={required || undefined}
             disabled={disabled}
             readonly={readonly}
             placeholder={placeholder}

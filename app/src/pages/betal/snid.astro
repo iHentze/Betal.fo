@@ -5,6 +5,7 @@ import Banner from "~/components/ui/Banner.astro";
 import Badge from "~/components/ui/Badge.astro";
 import Checklist from "~/components/ui/Checklist.astro";
 import ChoiceCard from "~/components/ui/ChoiceCard.astro";
+import YesNo from "~/components/ui/YesNo.astro";
 import Dropzone from "~/components/ui/Dropzone.astro";
 import Field from "~/components/ui/Field.astro";
 import StatusBadge from "~/components/ui/StatusBadge.astro";
@@ -175,6 +176,15 @@ const demoSteps = [
           hint="Geiri 1 — Swedbank tekur ikki ímóti"
         />
         <ChoiceCard name="demo-off" value="d" title="Óvirkin" hint="Ikki tøk" disabled />
+      </div>
+    </section>
+
+    <section class="ds-section">
+      <h2>Ja / nei</h2>
+      <div class="yesno-list" style="max-width:40rem">
+        <YesNo name="demo-yesno" label="Bjóða tit haldsgjøld?" value={false} />
+        <YesNo name="demo-yesno-2" label="Selja tit gávukort?" value={true} />
+        <YesNo name="demo-yesno-3" label="Taka tit ímóti gávum uttan mótveiting?" />
       </div>
     </section>
 

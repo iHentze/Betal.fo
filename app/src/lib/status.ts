@@ -217,5 +217,5 @@ export function sectorStatus(sector: number | null | undefined): StatusDescripto
 export function priceListStatus(status: string | null | undefined): StatusDescriptor {
   if (status === "approved") return { tone: "success", label: "Góðkendur" };
   if (status === "draft") return { tone: "pending", label: "Uppskot" };
-  return { tone: "voided", label: status ?? "—" };
+  return { tone: "voided", label: "Manglar" };
 }

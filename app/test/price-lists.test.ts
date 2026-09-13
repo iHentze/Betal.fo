@@ -12,7 +12,8 @@ import {
 } from "~/lib/onboarding/official-rates";
 import { approvePriceList, savePriceListDraft } from "~/lib/onboarding/price-lists";
 import { PRICE_CATEGORIES, getOfficialTemplate } from "~/lib/onboarding/swedbank";
-import { verticalByKey } from "~/lib/onboarding/verticals";
+import { missingItemLabel } from "~/lib/onboarding/progress";
+import { isFeaturedVertical, verticalByKey } from "~/lib/onboarding/verticals";
 import type { ObjectBucket } from "~/lib/db/types";
 
 function completeRates() {
@@ -134,6 +135,10 @@ describe("policy verticals", () => {
     expect(verticalByKey("gambling")).toBeNull();
     expect(verticalByKey("crypto")?.sector).toBe(1);
     expect(verticalByKey("cafe")?.sector).toBe(0);
+    expect(isFeaturedVertical("cafe")).toBe(true);
+    expect(isFeaturedVertical("crypto")).toBe(false);
+    expect(missingItemLabel("website")).toBe("Heimasíða");
+    expect(missingItemLabel("signer:abc")).toBe("Undirskrift");
   });
 });
 

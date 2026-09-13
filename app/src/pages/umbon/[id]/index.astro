@@ -10,7 +10,11 @@ import {
   stepLabel,
   type StepSlug,
 } from "~/lib/onboarding/steps";
-import { applicationProgress } from "~/lib/onboarding/progress";
+import {
+  applicationProgress,
+  missingItemLabel,
+  vinnugreinChapter,
+} from "~/lib/onboarding/progress";
 import { formatDateTime } from "~/lib/nav";
 
 export const prerender = false;
@@ -30,6 +34,8 @@ const first = firstIncompleteStep(pack);
 const currentIndex = STEP_SLUGS.indexOf(first);
 const progress = applicationProgress(pack);
 const href = (slug: string) => wizardPath(id, slug, actor, merchantId);
+const sectionHref = (slug: StepSlug) =>
+  slug === "vinnugrein" ? `${href(slug)}#${vinnugreinChapter(pack)}` : href(slug);
 const steps = STEP_SLUGS.map((slug) => ({
   slug,
   label: stepLabel(slug),
@@ -37,63 +43,59 @@ const steps = STEP_SLUGS.map((slug) => ({
   state: (slug === first
     ? "current"
     : isStepComplete(slug as StepSlug, pack)
-      ? "done"
-      : "todo") as "todo" | "current" | "done",
+    ? "done"
+    : "todo") as "todo" | "current" | "done",
 }));
 ---
 
 <WizardLayout
-  title="Umsóknin"
-  why="Tú kanst arbeiða í fleiri pørtum og koma aftur seinni. Alt verður goymt."
+  title={fo.onboarding.overviewTitle}
+  why={fo.onboarding.overviewWhy}
   steps={steps}
   currentIndex={currentIndex}
   savedLabel={`${fo.onboarding.saved} · ${formatDateTime(pack.application.updated_at_ms)}`}
   backHref="/"
   hideContinue
 >
-  <section class="wizard-panel application-progress-card">
-    <div class="application-progress-heading">
-      <div>
-        <span class="tnum application-progress-number">{progress.percentage}%</span>
-        <p>{progress.complete} av {progress.total} upplýsingum eru klárar</p>
-      </div>
-      <a class="btn btn-primary" href={href(first)}>{fo.onboarding.resume}</a>
-    </div>
-    <div class="application-progress-track" aria-label={`${progress.percentage}% liðugt`}>
-      <span style={`width:${progress.percentage}%`} />
-    </div>
-  </section>
+  <p class="application-progress-meta tnum">
+    {progress.percentage}% · {progress.complete} av {progress.total} upplýsingum
+  </p>
+  <div class="application-progress-track" aria-label={`${progress.percentage}% liðugt`}>
+    <span style={`width:${progress.percentage}%`} />
+  </div>
 
   <nav class="application-sections" aria-label="Partar í umsóknini">
-    {progress.steps.map((section) => (
-      <a class="application-section" href={href(section.slug)}>
-        <span class:list={["application-section-mark", section.complete === section.total && "is-done"]}>
-          {section.complete === section.total ? "✓" : STEP_SLUGS.indexOf(section.slug) + 1}
-        </span>
-        <span>
-          <strong>{stepLabel(section.slug)}</strong>
-          <small class="tnum">{section.complete}/{section.total}</small>
-        </span>
-        <span aria-hidden="true">›</span>
-      </a>
-    ))}
+    {progress.steps.map((section) => {
+      const done = section.complete === section.total;
+      const current = section.slug === first;
+      const preview = section.missing.slice(0, 2).map(missingItemLabel).join(" · ");
+      const extra = section.missing.length > 2 ? ` +${section.missing.length - 2}` : "";
+      return (
+        <a
+          class:list={["application-section", done && "is-done", current && "is-current"]}
+          href={sectionHref(section.slug)}
+        >
+          <span class:list={["application-section-mark", done && "is-done"]}>
+            {done ? "✓" : STEP_SLUGS.indexOf(section.slug) + 1}
+          </span>
+          <span class="application-section-body">
+            <span>
+              <strong>{stepLabel(section.slug)}</strong>
+              <small class="tnum">
+                {done ? fo.onboarding.done : fo.onboarding.missingCount(section.missing.length)}
+              </small>
+            </span>
+            {!done && preview && (
+              <em class="application-section-gap">{preview}{extra}</em>
+            )}
+          </span>
+          <span aria-hidden="true">›</span>
+        </a>
+      );
+    })}
   </nav>
 
-  <details class="wizard-panel missing-panel">
-    <summary>
-      <span>Sí tað, ið manglar</span>
-      <span class="tnum">{progress.missing}</span>
-    </summary>
-    <div class="missing-groups">
-      {progress.steps.filter((section) => section.missing.length > 0).map((section) => (
-        <a href={href(section.slug)} class="missing-group">
-          <span>
-            <strong>{stepLabel(section.slug)}</strong>
-            <small>{section.missing.length} mangla</small>
-          </span>
-          <span aria-hidden="true">Opna →</span>
-        </a>
-      ))}
-    </div>
-  </details>
+  <a slot="foot" class="btn btn-primary wizard-continue" href={sectionHref(first)}>
+    {fo.onboarding.resume}
+  </a>
 </WizardLayout>

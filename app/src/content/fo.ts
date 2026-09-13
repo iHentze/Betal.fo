@@ -180,6 +180,34 @@ export const fo = {
     back: "Aftur",
     continue: "Halt áfram",
     resume: "Halt áfram við umsóknini",
+    overviewTitle: "Halt fram har tú slapp",
+    overviewWhy: "Tú kanst arbeiða í fleiri pørtum og koma aftur seinni. Alt verður goymt.",
+    done: "Liðugt",
+    missingCount: (n: number) => (n === 1 ? "1 manglar" : `${n} mangla`),
+    otherVertical: "Onnur vinnugrein",
+    searchVertical: "Leita í vinnugreinum",
+    chapters: {
+      virki: {
+        title: "Hvat gera tit?",
+        why: "Ein stutt lýsing og tann vinnugreinin, ið passar best.",
+      },
+      samband: {
+        title: "Hvør tekur ímóti?",
+        why: "Vit brúka hetta til undirskrift, fakturar og spurningar.",
+      },
+      sola: {
+        title: "Hvussu er sølan?",
+        why: "Tølini skulu vera ein realistisk meting fyri Visa og Mastercard.",
+      },
+      gjald: {
+        title: "Hvussu rinda kundarnir?",
+        why: "Stutt ja og nei. Svarini ávirka screening, ikki prísin her.",
+      },
+      lond: {
+        title: "Hvar eru kundarnir?",
+        why: "Prosentini skulu vera 100 tilsamans.",
+      },
+    },
     bannerTitle: "Gjaldingar eru ikki tøkar enn",
     bannerDetail:
       "Innloysarin hevur ikki góðkent pakkan. Tú kanst sitja í skipanini — vit siga tær, tá ið tú kanst taka ímóti korti.",

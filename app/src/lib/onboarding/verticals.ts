@@ -92,9 +92,15 @@ export const VERTICAL_GROUPS: readonly VerticalGroup[] = [
   { sector: 1, title: "Geiri 1 — ikki Swedbank", items: SECTOR_ONE },
 ];
 
+export const FEATURED_VERTICALS: readonly Vertical[] = STANDARD;
+
 export const VERTICALS: readonly Vertical[] = VERTICAL_GROUPS.flatMap((group) => group.items);
 
 export function verticalByKey(key: string | null | undefined): Vertical | null {
   if (!key) return null;
   return VERTICALS.find((item) => item.key === key) ?? null;
+}
+
+export function isFeaturedVertical(key: string | null | undefined): boolean {
+  return Boolean(key && FEATURED_VERTICALS.some((item) => item.key === key));
 }
