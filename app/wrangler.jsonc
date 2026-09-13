@@ -23,6 +23,15 @@
   "queues": {
     "producers": [{ "binding": "INGEST_QUEUE", "queue": "betal-ingest" }]
   },
+  // Private company facts from api.eyga.fo. The API still requires the matching
+  // EYGA_API_TOKEN Worker secret; `remote` lets local Wrangler use the deployed API.
+  "services": [
+    {
+      "binding": "EYGA_API",
+      "service": "eyga-api",
+      "remote": true
+    }
+  ],
   "vars": {
     "APP_URL": "https://app.betal.fo"
   }

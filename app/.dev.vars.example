@@ -16,7 +16,7 @@ APP_URL="http://localhost:4321"
 
 # Eyga company API. Production uses the private EYGA_API service binding instead.
 # Keep the token in .dev.vars or a Worker secret, never in this file.
-# EYGA_API_BASE_URL="http://localhost:8788"
+# EYGA_API_BASE_URL="https://api.eyga.fo"
 # EYGA_API_TOKEN=""
 
 # Klintra Skriva. Empty means the Undirskriva step can preview a filled FO PDF

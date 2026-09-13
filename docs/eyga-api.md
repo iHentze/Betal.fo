@@ -1,107 +1,60 @@
 # Eyga → Betal company API
 
-Betal consumes Eyga as a server-to-server API. The browser only calls Betal; it never
-receives an Eyga credential or calls the registry directly.
+Betal consumes the live, read-only `api.eyga.fo` service. The browser only calls
+Betal; it never receives the Eyga credential.
 
-## Transport
+## Transport and authentication
 
-Production uses a private Cloudflare Worker service binding named `EYGA_API`. The
-Eyga API Worker should have no public route. For local or staging development, Betal
-can use `EYGA_API_BASE_URL` and the secret `EYGA_API_TOKEN`.
-
-The Betal Worker binding, once the Eyga API Worker exists:
+Production calls the `eyga-api` Worker through a private Cloudflare service binding:
 
 ```jsonc
 {
   "services": [
     {
       "binding": "EYGA_API",
-      "service": "eyga-api"
+      "service": "eyga-api",
+      "remote": true
     }
   ]
 }
 ```
 
-The binding is intentionally not added to `wrangler.jsonc` until `eyga-api` is
-deployed; an unresolved binding would break local startup and deployments.
+Eyga still requires `Authorization: Bearer <token>`, including service-binding calls.
+Set the same `EYGA_API_TOKEN` secret on `eyga-api` and the Betal app Worker. For local
+development, `EYGA_API_BASE_URL=https://api.eyga.fo` uses normal HTTPS instead.
 
-## Endpoints
+## Live endpoints
 
-### Search companies
+| Endpoint | Betal use |
+|---|---|
+| `GET /v1/leita?q=&limit=8` | Find a company by name or registration number |
+| `GET /v1/felag/{regnr}` | Company type, status, address, management and signing rules |
+| `GET /v1/felag/{regnr}/eigarar` | Direct and beneficial ownership |
+| `GET /v1/heilsa` | API/register health |
 
-`GET /v1/companies?query=banki&limit=8`
+The live API uses Faroese field names. Betal maps them at the server boundary:
 
-```json
-{
-  "results": [
-    {
-      "id": "10",
-      "name": "P/F Føroya Banki",
-      "companyType": "P/F Partafelag",
-      "location": "110 Tórshavn",
-      "registryNumber": "10",
-      "status": "active",
-      "statusLabel": "Virkið",
-      "href": "https://eyga.fo/felag/10"
-    }
-  ]
-}
-```
+| Eyga | Betal |
+|---|---|
+| `regnr` | `registryNumber` |
+| `navn` | `name` |
+| `slag` | `legalForm` / display company type |
+| `stoda` | normalized application status |
+| `heimstadur.postnr/bygd/adressa` | registered address |
+| `eigarar[].partur_prosent` | `ownershipBps` |
+| `veruligir_eigarar` | beneficial owners |
+| `leidsla` + `nevnd` | management |
 
-Only companies are returned. Search by company name or Skráseting Føroya number.
-
-### Company detail
-
-`GET /v1/companies/10`
-
-```json
-{
-  "id": "10",
-  "registryNumber": "10",
-  "name": "P/F Føroya Banki",
-  "legalForm": "P/F",
-  "companyType": "P/F Partafelag",
-  "status": "active",
-  "statusLabel": "Virkið",
-  "address": "Oknarvegur 5",
-  "postalCode": "110",
-  "city": "Tórshavn",
-  "updatedAt": "2026-04-10",
-  "sourceUrl": "https://eyga.fo/felag/10",
-  "owners": [
-    {
-      "name": "Føroya Landsstýri",
-      "kind": "entity",
-      "reference": "eind/17515",
-      "description": "Landstýrið · Føroyar",
-      "ownershipBps": 3482,
-      "role": null
-    }
-  ],
-  "beneficialOwners": [],
-  "management": [
-    {
-      "name": "Turið Finnbogadóttir Arge",
-      "kind": "person",
-      "reference": "personur/15520",
-      "description": "Stjóri · Tórshavn",
-      "ownershipBps": null,
-      "role": "Stjóri"
-    }
-  ]
-}
-```
-
-`ownershipBps` is basis points (`3482` = `34.82%`). Lists may be empty but must be
-present.
+Search returns `{ "urslit": [...] }`. Company and ownership are separate API requests
+and are combined before the merchant sees the confirmation screen.
 
 ## Data boundaries
 
 - Eyga provides public registry facts: legal name, company type, status, registered
-  address, ownership and management.
-- Skráseting Føroya's number is **not** the merchant's TAKS V-tal.
-- Eyga never provides P-tal or private residential addresses.
-- The signing person's P-tal comes back from Samleikin/Skriva and is not typed into
-  the ownership form.
+  address, ownership, management and signing rules.
+- Skráseting Føroya's `regnr` is **not** the merchant's TAKS V-tal.
+- Eyga withholds residential street addresses and never provides P-tal.
+- The signing person's P-tal comes from Samleikin/Skriva and is not typed into the
+  ownership form.
 - Betal stores the confirmed public response as `registry_snapshot` for review and
-  audit. It never stores an Eyga access token.
+  audit. It never stores the Eyga token in D1 or sends it to the browser.

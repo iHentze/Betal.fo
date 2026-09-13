@@ -1,11 +1,8 @@
 import type { ServiceFetcher } from "../db/types";
 
 /**
- * Contract consumed from the private Eyga API.
- *
- * Production should use the `EYGA_API` service binding. `EYGA_API_BASE_URL` plus a
- * bearer token exists for local/staging environments where that binding is not
- * available. Neither path is called from the browser.
+ * Production uses the private `EYGA_API` service binding. A base URL is supported for
+ * local/staging use. The Bearer token is always server-side.
  */
 export interface EygaApiEnv {
   EYGA_API?: ServiceFetcher;
@@ -61,24 +58,42 @@ export class EygaApiError extends Error {
   }
 }
 
+const STATUS: Record<string, { code: string; label: string }> = {
+  virkid: { code: "active", label: "Virkið" },
+  tvingsil: { code: "forced_dissolution", label: "Tvingsilsavtøka" },
+  likvidation: { code: "liquidation", label: "Likvidatión" },
+  konkurs: { code: "bankruptcy", label: "Konkurs" },
+  strikad: { code: "closed", label: "Strikað" },
+  ovist: { code: "unknown", label: "Óvist" },
+};
+
+const COMPANY_TYPES: Record<string, string> = {
+  "P/F": "P/F Partafelag",
+  "Sp/F": "Sp/F Smápartafelag",
+  "Sp/f": "Sp/F Smápartafelag",
+  ÍVF: "ÍVF Íverksetarafelag",
+  "Í/F": "Í/F Íognarfelag",
+  Gr: "Grunnur",
+  Fil: "Filialur",
+};
+
 function apiRequest(env: EygaApiEnv, path: string): Promise<Response> {
   const headers = new Headers({ accept: "application/json" });
-
-  if (env.EYGA_API) {
-    return env.EYGA_API.fetch(
-      new Request(`https://eyga.internal${path}`, { headers }),
-    );
-  }
-
-  const baseUrl = env.EYGA_API_BASE_URL?.trim().replace(/\/+$/, "");
-  if (!baseUrl) {
-    throw new EygaApiError("Eyga API er ikki sett upp", 503);
-  }
-
   if (env.EYGA_API_TOKEN) {
     headers.set("authorization", `Bearer ${env.EYGA_API_TOKEN}`);
   }
-  return fetch(`${baseUrl}${path}`, { headers });
+
+  // A local URL deliberately wins over the production binding.
+  const baseUrl = env.EYGA_API_BASE_URL?.trim().replace(/\/+$/, "");
+  if (baseUrl) return fetch(`${baseUrl}${path}`, { headers });
+
+  if (env.EYGA_API) {
+    return env.EYGA_API.fetch(
+      new Request(`https://api.eyga.fo${path}`, { headers }),
+    );
+  }
+
+  throw new EygaApiError("Eyga API er ikki sett upp", 503);
 }
 
 function string(value: unknown): string {
@@ -94,9 +109,91 @@ function numberOrNull(value: unknown): number | null {
   return typeof value === "number" && Number.isFinite(value) ? value : null;
 }
 
-function person(value: unknown): EygaPerson | null {
-  if (!value || typeof value !== "object") return null;
-  const row = value as Record<string, unknown>;
+function record(value: unknown): Record<string, unknown> {
+  return value && typeof value === "object" ? value as Record<string, unknown> : {};
+}
+
+function status(value: unknown): { code: string; label: string } {
+  const key = string(value);
+  return STATUS[key] ?? { code: key || "unknown", label: key || "Óvist" };
+}
+
+function companyType(value: unknown): string {
+  const legalForm = string(value);
+  return COMPANY_TYPES[legalForm] ?? legalForm;
+}
+
+function mapSearchResult(value: unknown): EygaSearchResult | null {
+  const row = record(value);
+  const id = string(row.regnr);
+  const name = string(row.navn);
+  if (!id || !name) return null;
+  const home = record(row.heimstadur);
+  const state = status(row.stoda);
+  const postalCode = string(home.postnr);
+  const city = string(home.bygd);
+  return {
+    id,
+    name,
+    companyType: companyType(row.slag),
+    location: [postalCode, city].filter(Boolean).join(" "),
+    registryNumber: id,
+    status: state.code,
+    statusLabel: state.label,
+    href: `https://eyga.fo/felag/${id}`,
+  };
+}
+
+function mapOwner(value: unknown): EygaPerson | null {
+  const row = record(value);
+  const name = string(row.navn);
+  if (!name) return null;
+  const registrationNumber = nullableString(row.regnr);
+  const rawKind = string(row.slag);
+  const kind = registrationNumber
+    ? "company"
+    : /pers[oó]n/i.test(rawKind)
+      ? "person"
+      : "entity";
+  const description = [rawKind, string(row.land)].filter(Boolean).join(" · ");
+  const percent = numberOrNull(row.partur_prosent);
+  return {
+    name,
+    kind,
+    reference: registrationNumber ? `felag/${registrationNumber}` : null,
+    description: description || null,
+    ownershipBps: percent == null ? null : Math.round(percent * 100),
+    role: null,
+  };
+}
+
+function mapOwners(value: unknown): EygaPerson[] {
+  return Array.isArray(value)
+    ? value.map(mapOwner).filter((entry): entry is EygaPerson => Boolean(entry))
+    : [];
+}
+
+function mapManagement(value: unknown): EygaPerson[] {
+  if (!Array.isArray(value)) return [];
+  return value.flatMap((item) => {
+    const row = record(item);
+    const name = string(row.navn) || string(row.name);
+    if (!name) return [];
+    const role = string(row.leiklutur) || string(row.role) || string(row.stoda);
+    const place = string(row.bygd) || string(row.town);
+    return [{
+      name,
+      kind: "person" as const,
+      reference: null,
+      description: [role, place].filter(Boolean).join(" · ") || null,
+      ownershipBps: null,
+      role: role || null,
+    }];
+  });
+}
+
+function parseSnapshotPerson(value: unknown): EygaPerson | null {
+  const row = record(value);
   const name = string(row.name);
   if (!name) return null;
   const kind = row.kind === "company" || row.kind === "entity" ? row.kind : "person";
@@ -110,109 +207,126 @@ function person(value: unknown): EygaPerson | null {
   };
 }
 
-function people(value: unknown): EygaPerson[] {
+function parseSnapshotPeople(value: unknown): EygaPerson[] {
   return Array.isArray(value)
-    ? value.map(person).filter((entry): entry is EygaPerson => Boolean(entry))
+    ? value.map(parseSnapshotPerson).filter((entry): entry is EygaPerson => Boolean(entry))
     : [];
 }
 
-function parseSearchResult(value: unknown): EygaSearchResult | null {
-  if (!value || typeof value !== "object") return null;
-  const row = value as Record<string, unknown>;
-  const id = string(row.id);
-  const name = string(row.name);
-  if (!id || !name) return null;
-  return {
-    id,
-    name,
-    companyType: string(row.companyType),
-    location: string(row.location),
-    registryNumber: string(row.registryNumber) || id,
-    status: string(row.status),
-    statusLabel: string(row.statusLabel),
-    href: string(row.href) || `https://eyga.fo/felag/${id}`,
-  };
-}
-
-function parseCompany(value: unknown): EygaCompany {
-  if (!value || typeof value !== "object") {
-    throw new EygaApiError("Eyga sendi eitt ógyldugt svar");
-  }
-  const row = value as Record<string, unknown>;
+function parseSnapshotCompany(value: unknown): EygaCompany {
+  const row = record(value);
   const id = string(row.id);
   const registryNumber = string(row.registryNumber) || id;
   const name = string(row.name);
-  const companyType = string(row.companyType);
-  if (!id || !registryNumber || !name || !companyType) {
+  const type = string(row.companyType);
+  if (!id || !registryNumber || !name || !type) {
     throw new EygaApiError("Eyga-svarið manglar felagsupplýsingar");
   }
-
   return {
     id,
     registryNumber,
     name,
     legalForm: string(row.legalForm),
-    companyType,
+    companyType: type,
     status: string(row.status),
     statusLabel: string(row.statusLabel),
     address: string(row.address),
     postalCode: string(row.postalCode),
     city: string(row.city),
     updatedAt: nullableString(row.updatedAt),
-    owners: people(row.owners),
-    beneficialOwners: people(row.beneficialOwners),
-    management: people(row.management),
+    owners: parseSnapshotPeople(row.owners),
+    beneficialOwners: parseSnapshotPeople(row.beneficialOwners),
+    management: parseSnapshotPeople(row.management),
     sourceUrl: string(row.sourceUrl) || `https://eyga.fo/felag/${id}`,
   };
 }
 
 async function json(response: Response): Promise<unknown> {
   if (!response.ok) {
+    let detail = "";
+    try {
+      detail = string(record(await response.json()).error);
+    } catch {
+      // Keep the user-facing fallback below.
+    }
     throw new EygaApiError(
-      response.status === 404 ? "Felagið varð ikki funnið á Eyga" : "Eyga svarar ikki beint nú",
+      response.status === 401
+        ? "Eyga API-lykilin manglar ella er skeivur"
+        : response.status === 404
+          ? "Felagið varð ikki funnið á Eyga"
+          : detail || "Eyga svarar ikki beint nú",
       response.status,
     );
   }
-  const contentType = response.headers.get("content-type") ?? "";
-  if (!contentType.includes("application/json")) {
+  if (!(response.headers.get("content-type") ?? "").includes("application/json")) {
     throw new EygaApiError("Eyga API sendi ikki JSON");
   }
   return response.json();
 }
 
-/** GET /v1/companies?query=… → { results: EygaSearchResult[] } */
+/** Maps GET /v1/leita?q=… from api.eyga.fo. */
 export async function searchEygaCompanies(
   env: EygaApiEnv,
   query: string,
 ): Promise<EygaSearchResult[]> {
   const clean = query.trim().slice(0, 80);
-  if (clean.length < 2 && !/^\d{1,5}$/.test(clean)) return [];
-  const payload = await json(
-    await apiRequest(env, `/v1/companies?query=${encodeURIComponent(clean)}&limit=8`),
+  if (clean.length < 2 && !/^\d{1,6}$/.test(clean)) return [];
+  const payload = record(
+    await json(await apiRequest(env, `/v1/leita?q=${encodeURIComponent(clean)}&limit=8`)),
   );
-  const results = payload && typeof payload === "object"
-    ? (payload as Record<string, unknown>).results
-    : null;
-  return Array.isArray(results)
-    ? results.map(parseSearchResult).filter((entry): entry is EygaSearchResult => Boolean(entry))
+  return Array.isArray(payload.urslit)
+    ? payload.urslit
+      .map(mapSearchResult)
+      .filter((entry): entry is EygaSearchResult => Boolean(entry))
     : [];
 }
 
-/** GET /v1/companies/:registrationNumber → EygaCompany */
+/** Combines company facts and ownership from the two read-only Eyga endpoints. */
 export async function getEygaCompany(
   env: EygaApiEnv,
   id: string,
 ): Promise<EygaCompany> {
-  if (!/^\d{1,5}$/.test(id)) throw new EygaApiError("Ógilt skrásetingarnummar", 400);
-  return parseCompany(
-    await json(await apiRequest(env, `/v1/companies/${encodeURIComponent(id)}`)),
-  );
+  if (!/^\d{1,6}$/.test(id)) throw new EygaApiError("Ógilt skrásetingarnummar", 400);
+  const [companyPayload, ownersPayload] = await Promise.all([
+    apiRequest(env, `/v1/felag/${encodeURIComponent(id)}`).then(json),
+    apiRequest(env, `/v1/felag/${encodeURIComponent(id)}/eigarar`).then(json),
+  ]);
+  const company = record(companyPayload);
+  const owners = record(ownersPayload);
+  const home = record(company.heimstadur);
+  const sources = record(company.kelda);
+  const state = status(company.stoda);
+  const registrationNumber = string(company.regnr) || id;
+  const name = string(company.navn);
+  const legalForm = string(company.slag);
+  if (!name || !legalForm) throw new EygaApiError("Eyga-svarið manglar felagsupplýsingar");
+
+  return {
+    id: registrationNumber,
+    registryNumber: registrationNumber,
+    name,
+    legalForm,
+    companyType: companyType(legalForm),
+    status: state.code,
+    statusLabel: state.label,
+    address: string(home.adressa),
+    postalCode: string(home.postnr),
+    city: string(home.bygd),
+    updatedAt: nullableString(sources.seinasta_kunngerd) ?? nullableString(sources.leidsla_dagur),
+    owners: mapOwners(owners.eigarar),
+    beneficialOwners: mapOwners(owners.veruligir_eigarar),
+    management: [
+      ...mapManagement(company.leidsla),
+      ...mapManagement(company.nevnd),
+    ],
+    sourceUrl: `https://eyga.fo/felag/${registrationNumber}`,
+  };
 }
 
 export function parseEygaSnapshot(value: string | null): EygaCompany | null {
   if (!value) return null;
   try {
-    return parseCompany(JSON.parse(value));
+    return parseSnapshotCompany(JSON.parse(value));
   } catch {
     return null;
   }
