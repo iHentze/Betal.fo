@@ -40,7 +40,7 @@
   ],
   "vars": {
     "APP_URL": "https://app.betal.fo",
-    "BANK_EMAIL_FROM": "Betal <banki@betal.fo>",
+    "BANK_EMAIL_FROM": "Betal <banki@send.betal.fo>",
     "SKRIVA_BASE_URL": "https://klintraelectronicsigningapi.azurewebsites.net"
   }
 }

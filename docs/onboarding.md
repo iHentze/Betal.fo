@@ -275,7 +275,7 @@ Needed before the first staging signature and bank request:
 | `SKRIVA_PASSWORD` | secret |
 | `SKRIVA_TENANT_ID` | optional secret/var; only needed if login returns several tenants |
 | `RESEND_API_KEY` | secret |
-| `BANK_EMAIL_FROM` | var, verified sender such as `Betal <banki@betal.fo>` |
+| `BANK_EMAIL_FROM` | var, verified sender `Betal <banki@send.betal.fo>` |
 | R2 bucket `DOCUMENTS` | wrangler binding, private |
 | Cron, ~every minute | poll open Skriva tokens |
 

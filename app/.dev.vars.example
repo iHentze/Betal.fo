@@ -23,7 +23,7 @@ APP_URL="http://localhost:4321"
 # RESEND_API_KEY=""
 # RESEND_WEBHOOK_SECRET=""
 # RESEND_BASE_URL="https://api.resend.com"
-# BANK_EMAIL_FROM="Betal <banki@betal.fo>"
+# BANK_EMAIL_FROM="Betal <banki@send.betal.fo>"
 
 # Klintra Skriva. Empty means the Undirskriva step can preview a filled FO PDF
 # but will not create a signing request. Do not put a real password here.
