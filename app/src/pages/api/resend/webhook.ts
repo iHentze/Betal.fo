@@ -25,11 +25,11 @@ export const POST: APIRoute = async ({ request }) => {
     const event = new Resend(env.RESEND_API_KEY).webhooks.verify({
       payload,
       headers: {
-        "svix-id": id,
-        "svix-timestamp": timestamp,
-        "svix-signature": signature,
+        id,
+        timestamp,
+        signature,
       },
-      secret: env.RESEND_WEBHOOK_SECRET,
+      webhookSecret: env.RESEND_WEBHOOK_SECRET,
     });
     const data = event.data as unknown as Record<string, unknown>;
     const providerEmailId = string(data.email_id) || string(data.id);

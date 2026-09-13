@@ -23,7 +23,7 @@ export async function encryptPersonalIdentificationNumber(
   const keyBytes = decodeKey(base64Key);
   const key = await crypto.subtle.importKey(
     "raw",
-    keyBytes,
+    keyBytes.buffer as ArrayBuffer,
     { name: "AES-GCM" },
     false,
     ["encrypt"],
@@ -53,15 +53,18 @@ export async function decryptPersonalIdentificationNumber(
   if (payload.byteLength < 29) throw new Error("Invalid encrypted identity");
   const key = await crypto.subtle.importKey(
     "raw",
-    decodeKey(base64Key),
+    decodeKey(base64Key).buffer as ArrayBuffer,
     { name: "AES-GCM" },
     false,
     ["decrypt"],
   );
   const decrypted = await crypto.subtle.decrypt(
-    { name: "AES-GCM", iv: payload.slice(0, 12) },
+    {
+      name: "AES-GCM",
+      iv: payload.slice(0, 12).buffer as ArrayBuffer,
+    },
     key,
-    payload.slice(12),
+    payload.slice(12).buffer as ArrayBuffer,
   );
   return new TextDecoder().decode(decrypted);
 }
