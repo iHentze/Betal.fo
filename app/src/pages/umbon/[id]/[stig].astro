@@ -578,6 +578,7 @@ const continueLabel = stig === "banki" && !app.bank_account
             </div>
             <form
               class="bank-email-form"
+              id="bank-email-form"
               method="POST"
               action={`/api/umbon/${id}/bankateldupostur${q}`}
               target="_blank"
@@ -587,7 +588,7 @@ const continueLabel = stig === "banki" && !app.bank_account
                 name="bank_email"
                 type="email"
                 required
-                autocomplete="email"
+                autocomplete="off"
                 placeholder="radgevi@banki.fo"
                 hint="Til ráðgevan ella deildina, sum kann stempla skjalið."
               />
@@ -606,6 +607,10 @@ const continueLabel = stig === "banki" && !app.bank_account
               <p class="field-hint bank-email-note">
                 Betal sendir einki. Telduposturin verður latin upp sum eitt uppskot;
                 tú kannar hann og trýstir Send.
+              </p>
+              <p class="bank-email-success" id="bank-email-success" role="status" hidden>
+                <span aria-hidden="true">✓</span>
+                Telduposturin er tikin niður. Opna <strong>.eml</strong>-fíluna og kanna hana.
               </p>
             </form>
             <a class="bank-pdf-fallback" href={`/api/umbon/${id}/bankaskjal.pdf${q}`}>
@@ -852,6 +857,17 @@ const continueLabel = stig === "banki" && !app.bank_account
     )
   }
 </WizardLayout>
+
+{
+  stig === "banki" && (
+    <script is:inline>
+      document.getElementById("bank-email-form")?.addEventListener("submit", () => {
+        const status = document.getElementById("bank-email-success");
+        if (status) status.hidden = false;
+      });
+    </script>
+  )
+}
 
 {
   stig === "vinnugrein" && (
