@@ -12,8 +12,7 @@ Production calls the `eyga-api` Worker through a private Cloudflare service bind
   "services": [
     {
       "binding": "EYGA_API",
-      "service": "eyga-api",
-      "remote": true
+      "service": "eyga-api"
     }
   ]
 }
