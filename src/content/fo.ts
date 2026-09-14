@@ -105,35 +105,6 @@ export const products = [
       photoAlt: "Betal á telefon og telduborði",
     },
   },
-  {
-    id: "lon",
-    href: "/lon/",
-    nav: "Løn",
-    eyebrow: "Betal løn",
-    title: "Løn til føroyska veruleikan",
-    card: "Vit byggja hetta nú. Sig okkum tín tørv.",
-    comingSoon: true,
-    lead: "Eitt lønarkervi, ið er sniðgivið til føroysk viðurskifti. Skipanin er undir menning — lat okkum hoyra tín tørv, so loysnin passar til tín gerandisdag.",
-    audience: "Føroyskar fyritøkur og bókhaldarar, ið vilja hava løn, skatt, TAKS og útgjald á einum stað — uttan ótíðarhóskandi handarbeiði.",
-    points: [
-      {
-        title: "Skraddaraseymað til Føroyar",
-        text: "Løn, TAKS, ALS, heilsutrygd og eftirløn eftir galdandi føroyskum reglum. Eingin útlendsk neyðloysn við føroyskum plástri.",
-      },
-      {
-        title: "Slepp undan óneyðugum Excel-arbeiði",
-        text: "Sjálvvirkandi útrokningar, færri mannagongdir og beinleiðis samantvinnan við banka og TAKS.",
-      },
-      {
-        title: "Alt savnað hjá Betal",
-        text: "Tá loysnin er klár, fært tú alt savnað á einum stað: gjaldsloysn, nándgjald, hald og løn við somu føroysku tænastu.",
-      },
-      {
-        title: "Ver við frá byrjan",
-        text: "Vit menna skipanina í løtuni. Tíni ynski og viðmerkingar eru við til at mynda endaligu loysnina.",
-      },
-    ],
-  },
 ] as const;
 
 export type ProductId = (typeof products)[number]["id"];
