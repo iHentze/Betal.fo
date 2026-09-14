@@ -15,6 +15,7 @@ terminalurin
 
 # Page slugs
 privativ
+umbon
 
 # Code identifiers, tooling and technical terms
 backoffice

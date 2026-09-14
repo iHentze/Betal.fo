@@ -152,6 +152,7 @@ export const fo = {
     home: "Heim",
     products: "Loysnir",
     contact: "Samband",
+    login: "Innrita",
     menu: "Valmynd",
     close: "Lat aftur",
   },
