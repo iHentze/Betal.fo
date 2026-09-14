@@ -13,6 +13,8 @@
  * not compete.
  */
 
+import { methods } from "../content/methods";
+
 interface Props {
   name: string;
 }
@@ -20,6 +22,8 @@ interface Props {
 const { name } = Astro.props;
 
 const MUTED = "rgba(255,255,255,0.32)";
+const applePay = methods.find((m) => m.name === "Apple Pay")!;
+const googlePay = methods.find((m) => m.name === "Google Pay")!;
 const GREEN = "#7bd865";
 ---
 
@@ -68,12 +72,37 @@ const GREEN = "#7bd865";
   {
     name === "wallet" && (
       <g>
-        {/* One tap, approved — no fields typed */}
-        <rect x="5" y="9" width="36" height="23" rx="3.5" stroke={MUTED} />
-        <path d="M5 16h36" stroke={MUTED} />
-        <path d="M11 25h7" stroke={MUTED} />
-        <circle cx="52" cy="20.5" r="8.5" stroke={GREEN} />
-        <path d="m48.2 20.6 2.8 2.9 5-5.6" stroke={GREEN} />
+        {/* The two buttons the customer actually taps, and the result */}
+        <rect x="1" y="4" width="41" height="13" rx="3.2" stroke={MUTED} />
+        <svg
+          x="8"
+          y="7"
+          width="27"
+          height="7"
+          viewBox={applePay.viewBox}
+          preserveAspectRatio="xMidYMid meet"
+          fill="rgba(255,255,255,0.78)"
+          stroke="none"
+        >
+          <path d={applePay.path} />
+        </svg>
+
+        <rect x="1" y="21" width="41" height="13" rx="3.2" stroke={MUTED} />
+        <svg
+          x="8"
+          y="24"
+          width="27"
+          height="7"
+          viewBox={googlePay.viewBox}
+          preserveAspectRatio="xMidYMid meet"
+          fill="rgba(255,255,255,0.78)"
+          stroke="none"
+        >
+          <path d={googlePay.path} />
+        </svg>
+
+        <circle cx="54" cy="19" r="7.5" stroke={GREEN} />
+        <path d="m50.6 19.1 2.5 2.6 4.4-5" stroke={GREEN} />
       </g>
     )
   }
