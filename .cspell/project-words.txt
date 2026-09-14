@@ -8,7 +8,6 @@ Softpay
 
 # Faroese loanwords and forms the upstream wordlist is missing
 appin
-avstemming
 haldaraskipan
 ikoni
 integratiónir
