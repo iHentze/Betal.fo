@@ -128,9 +128,10 @@ export const fo = {
     close: "Lat aftur",
   },
   home: {
-    eyebrow: "Føroyskar gjaldsloysnir",
-    title: "Tak ímóti gjaldi, har tú selur.",
-    lead: "Kort, Apple Pay og Google Pay — á síðuni, við borðið ella í handlinum. Vit seta tað upp. Og tá tað brennur á, svarar eitt føroyskt nummar.",
+    eyebrow: "Føroysk gjaldsloysn",
+    title: "Gjaldsloysn til títt virksemi.",
+    kicker: "Kom skjótt í gongd – Vit hjálpa tær",
+    lead: "Við gjaldsloysn frá betal kanst tú taka ímóti flest gjaldskortum, so sum VISA, MasterCard, Apple Pay, Google Pay og meira. Loysnin lýkur øll nútímans trygdarkrøv og stuðlar 3D-Secure gjaldingar.",
     primary: "Sí loysnir",
     secondary: "Skriva til okkum",
     pills: ["Roynd og trygg tøkni", "Føroysk tænasta", "Eingin bindandi leiga"],
