@@ -251,3 +251,50 @@ body {
     transition: none;
   }
 }
+
+/* ---------------------------------------------------------------- *
+ * Cross-document view transitions
+ *
+ * Every click was a bare document swap: the old page vanished, the new one
+ * arrived, and every reveal replayed. The browser now cross-fades between
+ * documents instead. Native CSS, no router and no client-side JS — browsers
+ * without support simply navigate as before.
+ *
+ * The header is named so it stays put across the swap rather than fading out
+ * and back in; it is identical on every page, and cross-fading it is what made
+ * navigation feel like a reload.
+ * ---------------------------------------------------------------- */
+@view-transition {
+  navigation: auto;
+}
+
+[data-header] {
+  view-transition-name: site-header;
+}
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 260ms;
+  animation-timing-function: var(--ease-out-expo);
+}
+
+/* The header should not animate at all — it is the fixed point. */
+::view-transition-old(site-header),
+::view-transition-new(site-header) {
+  animation: none;
+}
+
+/*
+ * Content already on screen when the page loads should simply be there.
+ * Animating it means the page appears to assemble itself on every navigation,
+ * which is what made the hero look like it was growing.
+ */
+.js [data-reveal].reveal-instant {
+  transition: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  @view-transition {
+    navigation: none;
+  }
+}

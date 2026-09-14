@@ -33,7 +33,19 @@ function initReveal(): void {
     });
   });
 
-  targets.forEach((el) => observer.observe(el));
+  // Anything already on screen at load is not a "reveal" — it is just the page.
+  // Observing it means every navigation replays the whole above-the-fold
+  // animation, which reads as the layout assembling itself.
+  const viewport = window.innerHeight || document.documentElement.clientHeight;
+  targets.forEach((el) => {
+    const box = el.getBoundingClientRect();
+    if (box.top < viewport && box.bottom > 0) {
+      el.style.setProperty("--reveal-delay", "0ms");
+      el.classList.add("reveal-instant", "is-visible");
+      return;
+    }
+    observer.observe(el);
+  });
 }
 
 function initSpotlight(): void {
