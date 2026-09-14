@@ -1,4 +1,5 @@
 ---
+import { ClientRouter } from "astro:transitions";
 import "../styles/global.css";
 import Header from "../components/Header.astro";
 import Footer from "../components/Footer.astro";
@@ -39,6 +40,11 @@ const canonical = new URL(Astro.url.pathname, site.url).href;
       // Reveal animations are opt-in on scripting being available.
       document.documentElement.classList.add("js");
     </script>
+    {/* Client-side routing, so the page transition works in Safari too. The
+        cross-document @view-transition rule stays as the no-JS fallback: if
+        this never loads, Chrome still transitions and every browser still
+        navigates. */}
+    <ClientRouter />
   </head>
   <body class="min-h-dvh bg-navy text-white antialiased">
     <a

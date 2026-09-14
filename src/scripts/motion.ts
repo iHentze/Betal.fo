@@ -144,8 +144,9 @@ function init(): void {
   initCountUp();
 }
 
-if (document.readyState === "loading") {
-  document.addEventListener("DOMContentLoaded", init, { once: true });
-} else {
-  init();
-}
+/*
+ * astro:page-load fires on the first load and after every client-side
+ * navigation, so this covers both. Without it the reveals, spotlights and
+ * counters would only ever be wired up on the first page a visitor lands on.
+ */
+document.addEventListener("astro:page-load", init);

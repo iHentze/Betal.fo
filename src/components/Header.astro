@@ -100,33 +100,49 @@ const path = Astro.url.pathname;
 </header>
 
 <script>
-  const button = document.querySelector<HTMLButtonElement>("[data-menu-button]");
-  const menu = document.getElementById("mobile-menu");
+  /*
+   * Re-run on every client-side navigation, not just the first load: the header
+   * is re-rendered each time, so its buttons are new elements.
+   */
+  function initHeader() {
+    const button = document.querySelector<HTMLButtonElement>("[data-menu-button]");
+    const menu = document.getElementById("mobile-menu");
 
-  if (button && menu) {
-    button.addEventListener("click", () => {
-      const open = !menu.hasAttribute("hidden");
-      menu.hidden = open;
-      menu.classList.toggle("hidden", open);
-      button.setAttribute("aria-expanded", String(!open));
-    });
+    if (button && menu) {
+      button.addEventListener("click", () => {
+        const open = !menu.hasAttribute("hidden");
+        menu.hidden = open;
+        menu.classList.toggle("hidden", open);
+        button.setAttribute("aria-expanded", String(!open));
+      });
 
-    // Close the menu when a link is followed or the viewport grows to desktop.
-    menu.addEventListener("click", (event) => {
-      if (!(event.target instanceof HTMLAnchorElement)) return;
-      menu.hidden = true;
-      menu.classList.add("hidden");
-      button.setAttribute("aria-expanded", "false");
-    });
-  }
+      // Close the menu when a link is followed or the viewport grows to desktop.
+      menu.addEventListener("click", (event) => {
+        if (!(event.target instanceof HTMLAnchorElement)) return;
+        menu.hidden = true;
+        menu.classList.add("hidden");
+        button.setAttribute("aria-expanded", "false");
+      });
+    }
 
-  const header = document.querySelector<HTMLElement>("[data-header]");
-  if (header) {
+    const header = document.querySelector<HTMLElement>("[data-header]");
+    if (!header) return;
+
     const onScroll = () => {
       if (window.scrollY > 8) header.setAttribute("data-stuck", "");
       else header.removeAttribute("data-stuck");
     };
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
+
+    // The listener is on window, which survives the swap, so it has to be
+    // removed before the next page adds its own — otherwise they stack up.
+    document.addEventListener(
+      "astro:before-swap",
+      () => window.removeEventListener("scroll", onScroll),
+      { once: true },
+    );
   }
+
+  document.addEventListener("astro:page-load", initHeader);
 </script>

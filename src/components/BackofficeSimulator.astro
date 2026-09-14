@@ -188,9 +188,5 @@ const area = `${line} L${w},${h} L0,${h} Z`;
     panels.forEach((p) => io.observe(p));
   }
 
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", boot, { once: true });
-  } else {
-    boot();
-  }
+  document.addEventListener("astro:page-load", boot);
 </script>
