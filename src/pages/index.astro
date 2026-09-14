@@ -1,6 +1,7 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
 import ProductBento from "../components/ProductBento.astro";
+import ValueGraphic from "../components/ValueGraphic.astro";
 import MethodsRow from "../components/MethodsRow.astro";
 import ClientMarquee from "../components/ClientMarquee.astro";
 import HeroShowcase from "../components/HeroShowcase.astro";
@@ -127,6 +128,7 @@ import { fo, products } from "../content/fo";
             data-reveal
           >
             <span class="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-green/70 to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
+            <ValueGraphic name={item.icon} />
             <dt class="text-xl font-bold tracking-[-0.02em] text-white transition-colors duration-300 group-hover:text-green">
               {item.title}
             </dt>

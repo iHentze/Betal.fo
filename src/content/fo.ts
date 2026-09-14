@@ -211,26 +211,32 @@ export const fo = {
     eyebrow: "Hví Betal",
     items: [
       {
+        icon: "window",
         title: "Gjaldsvindeyga í tínum litum",
         text: "Litir, búmerki og snið eftir tínum vørumerki. Kundin fer ongantíð av tínari síðu.",
       },
       {
+        icon: "link",
         title: "Gjaldsleinki uttan nethandil",
         text: "Send eina rokning við telduposti ella SMS og fá inn gjaldið samstundis.",
       },
       {
+        icon: "wallet",
         title: "Apple Pay og Google Pay",
         text: "Kundin er liðugur upp á fá sekund, uttan at skriva eitt einasta tal.",
       },
       {
+        icon: "phone",
         title: "Telefonin sum terminalur",
         text: "Softpay ger iPhone ella Android til ein fullgildan nándgjaldsterminal. Eingin leiga.",
       },
       {
+        icon: "backoffice",
         title: "Fult yvirlit í backoffice",
         text: "Fylg hvørjum gjaldi, tak endurgjald við einum klikki og síggj avrokningina.",
       },
       {
+        icon: "support",
         title: "Vit svara á føroyskum",
         text: "Eitt telefonnummar og fólk, ið kenna tína loysn. Eingin bíðirøð.",
       },
