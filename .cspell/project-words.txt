@@ -18,6 +18,7 @@ privativ
 umbon
 
 # Code identifiers, tooling and technical terms
+HSTS
 backoffice
 bento
 etal

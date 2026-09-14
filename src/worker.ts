@@ -9,7 +9,9 @@
  */
 
 interface Env {
-  ASSETS: Fetcher;
+  // Structural type rather than Cloudflare's `Fetcher`, so this needs no
+  // @cloudflare/workers-types dependency just for one field.
+  ASSETS: { fetch(request: Request): Promise<Response> };
 }
 
 // Six months. Deliberately without `includeSubDomains` or `preload`: app.betal.fo
