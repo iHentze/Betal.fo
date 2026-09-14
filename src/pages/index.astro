@@ -118,30 +118,6 @@ import { fo, products } from "../content/fo";
   <MethodsRow />
   <ClientMarquee />
 
-  <!-- ============================ VALUES ============================ -->
-  <section class="mx-auto max-w-6xl px-5 py-16 sm:px-8 sm:py-20">
-    <p class="text-[11px] font-semibold uppercase tracking-[0.24em] text-green" data-reveal>
-      {fo.values.eyebrow}
-    </p>
-    <dl class="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3" data-reveal-group="110">
-      {
-        fo.values.items.map((item) => (
-          <div
-            class="spotlight group relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-b from-white/[0.05] to-white/[0.012] p-7 transition-all duration-500 hover:-translate-y-1 hover:border-green/40"
-            data-reveal
-          >
-            <span class="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-green/70 to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
-            <ValueGraphic name={item.icon} />
-            <dt class="text-xl font-bold tracking-[-0.02em] text-white transition-colors duration-300 group-hover:text-green">
-              {item.title}
-            </dt>
-            <dd class="mt-3 text-sm leading-relaxed text-white/60">{item.text}</dd>
-          </div>
-        ))
-      }
-    </dl>
-  </section>
-
   <!-- =========================== PRODUCTS =========================== -->
   <section id="loysnir" class="relative isolate scroll-mt-24 overflow-hidden">
     <div class="aurora -right-40 top-32 h-[30rem] w-[30rem] bg-[#4b1fa8]/25"></div>
@@ -177,6 +153,30 @@ import { fo, products } from "../content/fo";
         }
       </dl>
     </div>
+  </section>
+
+  <!-- ============================ VALUES ============================ -->
+  <section class="mx-auto max-w-6xl px-5 py-16 sm:px-8 sm:py-20">
+    <p class="text-[11px] font-semibold uppercase tracking-[0.24em] text-green" data-reveal>
+      {fo.values.eyebrow}
+    </p>
+    <dl class="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3" data-reveal-group="110">
+      {
+        fo.values.items.map((item) => (
+          <div
+            class="spotlight group relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-b from-white/[0.05] to-white/[0.012] p-7 transition-all duration-500 hover:-translate-y-1 hover:border-green/40"
+            data-reveal
+          >
+            <span class="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-green/70 to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
+            <ValueGraphic name={item.icon} />
+            <dt class="text-xl font-bold tracking-[-0.02em] text-white transition-colors duration-300 group-hover:text-green">
+              {item.title}
+            </dt>
+            <dd class="mt-3 text-sm leading-relaxed text-white/60">{item.text}</dd>
+          </div>
+        ))
+      }
+    </dl>
   </section>
 
   <!-- ========================= ONLINE / EPAY ========================= -->
