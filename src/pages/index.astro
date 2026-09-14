@@ -2,7 +2,6 @@
 import BaseLayout from "../layouts/BaseLayout.astro";
 import ProductBento from "../components/ProductBento.astro";
 import ValueGraphic from "../components/ValueGraphic.astro";
-import StepGraphic from "../components/StepGraphic.astro";
 import MethodsRow from "../components/MethodsRow.astro";
 import ClientMarquee from "../components/ClientMarquee.astro";
 import HeroShowcase from "../components/HeroShowcase.astro";
@@ -322,73 +321,72 @@ import { fo, products } from "../content/fo";
   </section>
 
   <!-- ============================= STEPS ============================= -->
-  {/* The one section on the page with no card, no border and no fill. PRODUCTS
-      is already three equal glass cards with mono 01/02/03 markers a few
-      screens up, and repeating that shape here is what made the page feel
-      same-y — so this is a register instead: type, rule and space on the bare
-      navy, left-aligned on one spine, read top to bottom rather than across.
-      No .spotlight either; there is no surface to light.
+  {/* No card, no border, no fill on the rows — PRODUCTS is already three glass
+      cards a few screens up, and repeating that shape here is what made the
+      page read as one thing twice. Three elements only: a numeral, a sentence,
+      and the bar under them.
 
-      The hairline under each step is the progress. It is green from the left
-      edge out to a third, two thirds, then the full width, so reading down the
-      page you watch a 1px bar march out across the right margin and stop at a
-      terminal mark — "frá byrjan til sølu" drawn as a line. */}
-  <section class="mx-auto max-w-6xl px-5 pb-20 sm:px-8 sm:pb-28">
-    <div class="max-w-3xl" data-reveal-group="90">
-      <p class="text-[11px] font-semibold uppercase tracking-[0.24em] text-green" data-reveal>
-        {fo.steps.eyebrow}
-      </p>
-      <h2
-        class="mt-3 text-balance text-3xl font-bold leading-[1.05] tracking-[-0.03em] text-white sm:text-5xl"
-        data-reveal
-      >
-        {fo.steps.title}
-      </h2>
-    </div>
+      The bar is the content. It runs green from the left edge to a third, two
+      thirds, then the whole width, with a lit head at the point it has reached,
+      so reading down the page you watch it fill and stop at the last step.
 
-    {/* The start line: nothing has happened yet, so no green in it. */}
-    <div class="mt-12 h-px w-full bg-white/10 sm:mt-16" aria-hidden="true"></div>
+      The section gets its own darker ground rather than sitting on the page's:
+      with no surfaces inside it, the band is what stops three thin rows from
+      reading as a gap between two other sections. */}
+  <section class="grain relative isolate mb-16 overflow-hidden border-y border-white/[0.07] bg-navy-deep sm:mb-24">
+    <div class="aurora -bottom-48 -left-32 h-[30rem] w-[34rem] bg-green/10"></div>
 
-    {/* role="list" because Preflight strips list-style and VoiceOver drops list
-        semantics with it. The visible digits are decoration — the list already
-        announces "1 of 3" — so they stay out of the accessibility tree. */}
-    <ol role="list" data-reveal-group="110">
-      {
-        fo.steps.items.map((text, index) => {
-          const last = index === fo.steps.items.length - 1;
-          return (
+    <div class="relative mx-auto max-w-6xl px-5 py-16 sm:px-8 sm:py-24">
+      <div class="max-w-3xl" data-reveal-group="90">
+        <p class="text-[11px] font-semibold uppercase tracking-[0.24em] text-green" data-reveal>
+          {fo.steps.eyebrow}
+        </p>
+        <h2
+          class="mt-3 text-balance text-3xl font-bold leading-[1.05] tracking-[-0.03em] text-white sm:text-5xl"
+          data-reveal
+        >
+          {fo.steps.title}
+        </h2>
+      </div>
+
+      {/* Nothing has happened yet, so this one has no green in it. */}
+      <div class="mt-12 h-px w-full bg-white/10 sm:mt-16" aria-hidden="true"></div>
+
+      {/* role="list" because Preflight strips list-style and VoiceOver drops
+          list semantics with it. The digits are decoration — the list already
+          announces "1 of 3" — so they stay out of the accessibility tree. */}
+      <ol role="list" data-reveal-group="110">
+        {
+          fo.steps.items.map((text, index) => (
             <li class="group" data-reveal style={`--tick:${Math.round(((index + 1) / fo.steps.items.length) * 100)}%`}>
               {/*
-                Explicit placement rather than auto-flow, because the three cells
-                land differently at the two sizes: on a phone the numeral and the
-                drawing share the first row and the prose runs full width under
-                them; from sm up all three sit on one row with the drawing out in
-                the right margin, which is the space this layout would otherwise
-                waste. The numeral is taller than the prose at every breakpoint,
-                so it — not the copy — sets the row height, and step 2 being two
-                and a half times longer gains a line instead of a taller box.
+                The numeral column is a fixed width, not auto: "1" is narrower
+                than "2" and "3", so an auto column would step the prose's left
+                edge sideways by 18px between rows and the list would not align
+                down the page.
+
+                The numeral is also taller than the prose at every breakpoint, so
+                it — not the copy — sets the row height. That is what absorbs
+                step 2 at two and a half times the length of its neighbours: it
+                gains a line, not a taller box, and the bars stay evenly spaced.
               */}
-              <div class="grid grid-cols-[auto_1fr] items-center gap-x-6 gap-y-5 py-8 sm:grid-cols-[3.5rem_minmax(0,1fr)_auto] sm:items-start sm:gap-x-8 sm:py-12 lg:grid-cols-[5rem_minmax(0,1fr)_auto] lg:gap-x-10 lg:py-14">
+              <div class="grid gap-y-2 py-9 sm:grid-cols-[4.5rem_minmax(0,1fr)] sm:gap-x-10 sm:gap-y-0 sm:py-10 lg:grid-cols-[6rem_minmax(0,1fr)] lg:gap-x-14 lg:py-11">
                 <span
                   aria-hidden="true"
-                  class="col-start-1 row-start-1 text-[2.5rem] font-light leading-none text-white/85 proportional-nums transition-colors duration-500 group-hover:text-white sm:text-[3.5rem] lg:text-[4rem]"
+                  class="text-[2.75rem] font-light leading-none text-white/90 transition-colors duration-500 group-hover:text-green sm:text-[4rem] lg:text-[5rem]"
                 >
                   {index + 1}
                 </span>
-                <p class="col-span-2 col-start-1 row-start-2 max-w-[34rem] text-[0.9375rem] leading-[1.75] text-white/80 [overflow-wrap:break-word] transition-colors duration-500 group-hover:text-white sm:col-span-1 sm:col-start-2 sm:row-start-1 sm:text-[1.0625rem] lg:max-w-[38rem]">
+                <p class="max-w-[42rem] text-base leading-[1.75] text-white/75 [overflow-wrap:break-word] transition-colors duration-500 group-hover:text-white/95 sm:pt-2 sm:text-[1.0625rem] lg:pt-3 lg:text-[1.125rem]">
                   {text}
                 </p>
-                <StepGraphic
-                  step={(index + 1) as 1 | 2 | 3}
-                  class="col-start-2 row-start-1 w-20 justify-self-end sm:col-start-3 sm:w-24 lg:w-28"
-                />
               </div>
-              <div class:list={["step-rule h-px w-full", last && "step-rule--end"]} aria-hidden="true" />
+              <div class="step-rule" aria-hidden="true"></div>
             </li>
-          );
-        })
-      }
-    </ol>
+          ))
+        }
+      </ol>
+    </div>
   </section>
 
   <!-- ============================= ABOUT ============================= -->
@@ -427,15 +425,15 @@ import { fo, products } from "../content/fo";
 
 <style>
   /*
-   * The hairline under each step is a progress bar: green from the left edge
-   * out to --tick, ordinary rule after it. Registering --tick as a real
-   * percentage is what makes it animatable, so the green grows as the row
-   * arrives rather than appearing at full length.
+   * The bar under each step. Green from the left edge out to --tick, track
+   * after it, and a lit head sitting exactly on the boundary. Registering
+   * --tick as a real percentage is what makes it animatable, so the fill grows
+   * and the head travels with it rather than both appearing finished.
    *
    * inherits: true is deliberate. The value is written on the <li>, next to the
-   * step it belongs to, and inherits down to the rule — which leaves the rule's
-   * own declaration free for the pending state below. An inline value on the
-   * rule itself could never be overridden.
+   * step it belongs to, and inherits down to the bar and its head — which
+   * leaves the bar's own declaration free for the pending state below. An
+   * inline value on the bar itself could never be overridden.
    */
   @property --tick {
     syntax: "<percentage>";
@@ -444,41 +442,46 @@ import { fo, products } from "../content/fo";
   }
 
   .step-rule {
+    position: relative;
+    height: 2px;
+    width: 100%;
     background-image: linear-gradient(
       to right,
       var(--color-green) var(--tick, 0%),
-      rgba(255, 255, 255, 0.1) var(--tick, 0%)
+      rgba(255, 255, 255, 0.09) var(--tick, 0%)
     );
     transition: --tick 1100ms var(--ease-out-expo);
     /* --reveal-delay is written on the <li> by the reveal script and inherits
-       in, so each rule fills with its own row instead of all three at once. */
+       in, so each bar fills with its own row instead of all three at once. */
     transition-delay: calc(var(--reveal-delay, 0ms) + 220ms);
   }
 
   /*
-   * The last rule runs the full width in green, which on its own reads as a
-   * section divider rather than the end of a sequence. The cap stops it.
+   * The head. No transition of its own: `left` is driven by --tick, which is
+   * already animating, so it rides the fill exactly. The navy ring punches it
+   * out of the bar so the two never merge into a lump.
    */
-  .step-rule--end {
-    position: relative;
-  }
-
-  .step-rule--end::after {
+  .step-rule::after {
     content: "";
     position: absolute;
-    right: 0;
-    top: -3px;
-    width: 2px;
-    height: 7px;
+    left: var(--tick, 0%);
+    top: 50%;
+    height: 9px;
+    width: 9px;
+    margin-top: -4.5px;
+    margin-left: -4.5px;
+    border-radius: 9999px;
     background: var(--color-green);
+    box-shadow:
+      0 0 0 3px var(--color-navy-deep),
+      0 0 18px rgba(123, 216, 101, 0.55);
   }
 
   /*
-   * Going pending is instant; only the fill animates. Same reasoning as the
-   * reveal itself — without this the rules drain backwards to 0% the moment the
-   * script marks them, which is visible on a row sitting just under the fold.
-   * If the script never runs, the class never appears and every rule simply
-   * renders at its final width.
+   * Going pending is instant; only the fill animates. Without this the bars
+   * drain backwards to 0% the moment the script marks them, which is visible on
+   * a row sitting just under the fold. If the script never runs the class never
+   * appears and every bar simply renders at its final width.
    */
   [data-reveal].reveal-pending .step-rule {
     --tick: 0%;
