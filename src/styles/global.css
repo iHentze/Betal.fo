@@ -312,9 +312,19 @@ body {
   animation: none;
 }
 
+/*
+ * Reduced motion is handled by neutralising the animations, NOT by a second
+ * @view-transition rule. That at-rule is only honoured at the top level of a
+ * stylesheet: nested in @media the condition is ignored but the rule still
+ * parses, so "navigation: none" won unconditionally and no transition ran for
+ * anyone. The transition still happens here, it simply does not move.
+ */
 @media (prefers-reduced-motion: reduce) {
-  @view-transition {
-    navigation: none;
+  ::view-transition-old(root),
+  ::view-transition-new(root),
+  ::view-transition-old(nav-pill),
+  ::view-transition-new(nav-pill) {
+    animation: none;
   }
 }
 
