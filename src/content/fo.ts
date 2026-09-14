@@ -161,6 +161,10 @@ export const fo = {
       },
     ],
     moreAbout: "Les meira um",
+    specs: [
+      { label: "Frá undirskrift til fyrsta gjald", value: "1–2 vikur" },
+      { label: "Útgjald", value: "Hvønn dag" },
+    ],
     ribbonLabel: "Gjaldsloysnir til føroyska vinnu",
     ribbonTitle: "Eitt samband — alt gjaldið.",
     ribbonText: "Á alnetinum, á staðnum og tá tú vilt, at vit røkja tað.",
