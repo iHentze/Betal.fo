@@ -19,7 +19,7 @@ import { site } from "../content/site";
         placeholder={fo.contact.namePlaceholder}
         autocomplete="name"
         required
-        class="rounded-2xl border border-white/15 bg-white/[0.04] px-4 py-3.5 text-base font-normal text-white outline-none ring-green/50 placeholder:text-white/30 focus:border-green focus:ring-2 transition"
+        class="w-full min-w-0 rounded-2xl border border-white/15 bg-white/[0.04] px-4 py-3.5 text-base font-normal text-white outline-none ring-green/50 placeholder:text-white/30 focus:border-green focus:ring-2 transition"
       />
     </label>
     <label class="grid gap-2 text-sm font-medium text-white">
@@ -29,7 +29,7 @@ import { site } from "../content/site";
         type="text"
         placeholder={fo.contact.companyPlaceholder}
         autocomplete="organization"
-        class="rounded-2xl border border-white/15 bg-white/[0.04] px-4 py-3.5 text-base font-normal text-white outline-none ring-green/50 placeholder:text-white/30 focus:border-green focus:ring-2 transition"
+        class="w-full min-w-0 rounded-2xl border border-white/15 bg-white/[0.04] px-4 py-3.5 text-base font-normal text-white outline-none ring-green/50 placeholder:text-white/30 focus:border-green focus:ring-2 transition"
       />
     </label>
     <label class="grid gap-2 text-sm font-medium text-white">
@@ -39,7 +39,7 @@ import { site } from "../content/site";
         type="tel"
         placeholder={fo.contact.phonePlaceholder}
         autocomplete="tel"
-        class="rounded-2xl border border-white/15 bg-white/[0.04] px-4 py-3.5 text-base font-normal text-white outline-none ring-green/50 placeholder:text-white/30 focus:border-green focus:ring-2 transition"
+        class="w-full min-w-0 rounded-2xl border border-white/15 bg-white/[0.04] px-4 py-3.5 text-base font-normal text-white outline-none ring-green/50 placeholder:text-white/30 focus:border-green focus:ring-2 transition"
       />
     </label>
     <label class="grid gap-2 text-sm font-medium text-white">
@@ -50,7 +50,7 @@ import { site } from "../content/site";
         placeholder={fo.contact.emailPlaceholder}
         autocomplete="email"
         required
-        class="rounded-2xl border border-white/15 bg-white/[0.04] px-4 py-3.5 text-base font-normal text-white outline-none ring-green/50 placeholder:text-white/30 focus:border-green focus:ring-2 transition"
+        class="w-full min-w-0 rounded-2xl border border-white/15 bg-white/[0.04] px-4 py-3.5 text-base font-normal text-white outline-none ring-green/50 placeholder:text-white/30 focus:border-green focus:ring-2 transition"
       />
     </label>
   </div>
@@ -60,7 +60,7 @@ import { site } from "../content/site";
     <div class="relative">
       <select
         name="product"
-        class="w-full appearance-none rounded-2xl border border-white/15 bg-navy px-4 py-3.5 text-base font-normal text-white outline-none ring-green/50 focus:border-green focus:ring-2 transition cursor-pointer"
+        class="w-full min-w-0 appearance-none rounded-2xl border border-white/15 bg-navy px-4 py-3.5 text-base font-normal text-white outline-none ring-green/50 focus:border-green focus:ring-2 transition cursor-pointer"
       >
         <option value="">{fo.contact.productAny}</option>
         {
@@ -86,9 +86,20 @@ import { site } from "../content/site";
       rows="5"
       placeholder={fo.contact.messagePlaceholder}
       required
-      class="resize-y rounded-2xl border border-white/15 bg-white/[0.04] px-4 py-3.5 text-base font-normal text-white outline-none ring-green/50 placeholder:text-white/30 focus:border-green focus:ring-2 transition"
+      class="w-full min-w-0 resize-y rounded-2xl border border-white/15 bg-white/[0.04] px-4 py-3.5 text-base font-normal text-white outline-none ring-green/50 placeholder:text-white/30 focus:border-green focus:ring-2 transition"
     ></textarea>
   </label>
+
+  {/* Bots fill every field they find. Hidden from people and from assistive
+      technology, and never reachable by keyboard. */}
+  <input
+    type="text"
+    name="website"
+    tabindex="-1"
+    autocomplete="off"
+    aria-hidden="true"
+    class="pointer-events-none absolute h-px w-px opacity-0"
+  />
 
   <p data-form-error class="hidden text-sm text-red-300 bg-red-900/30 border border-red-500/30 rounded-xl p-3" role="alert"></p>
 
