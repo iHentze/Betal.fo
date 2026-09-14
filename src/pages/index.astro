@@ -159,15 +159,19 @@ import { fo, products } from "../content/fo";
       <ProductBento />
 
       <!-- Hard numbers under the solutions: what you get, and when -->
+      {/* Same surface as the product cards above: gradient fill, hairline border
+          and the cursor spotlight, rather than flat panels on the page colour.
+          The divider is a real divide rule now, so the cells can be transparent
+          and let the container's gradient show through. */}
       <dl
-        class="mt-5 grid gap-px overflow-hidden rounded-[1.75rem] border border-white/10 bg-white/10 sm:grid-cols-2"
+        class="spotlight mt-5 grid divide-y divide-white/10 overflow-hidden rounded-[1.75rem] border border-white/10 bg-gradient-to-b from-white/[0.05] to-white/[0.012] sm:grid-cols-2 sm:divide-x sm:divide-y-0"
         data-reveal
       >
         {
           fo.home.specs.map((spec) => (
-            <div class="flex flex-col gap-1 bg-navy px-7 py-6">
+            <div class="flex flex-col gap-1 px-7 py-6">
               <dt class="text-[11px] font-semibold uppercase tracking-[0.18em] text-white/40">{spec.label}</dt>
-              <dd class="text-xl font-bold tracking-[-0.02em] text-green tabular-nums">{spec.value}</dd>
+              <dd class="text-xl font-bold tracking-[-0.02em] text-white tabular-nums">{spec.value}</dd>
             </div>
           ))
         }
