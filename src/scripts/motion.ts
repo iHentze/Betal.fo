@@ -145,8 +145,29 @@ function init(): void {
 }
 
 /*
- * astro:page-load fires on the first load and after every client-side
- * navigation, so this covers both. Without it the reveals, spotlights and
- * counters would only ever be wired up on the first page a visitor lands on.
+ * Timing matters here more than anywhere else on the page.
+ *
+ * initReveal hides whatever is below the fold. On a client-side navigation
+ * astro:page-load fires after the new page has already painted, so the content
+ * appeared and was then hidden a frame later — a visible blink before it
+ * revealed again.
+ *
+ * astro:after-swap fires immediately after the DOM swap and before that paint,
+ * so the marking lands while the new page is still being composed. It does not
+ * fire on the very first load, which is what astro:page-load covers; the flag
+ * keeps a navigation from initialising twice.
  */
-document.addEventListener("astro:page-load", init);
+let handledBySwap = false;
+
+document.addEventListener("astro:after-swap", () => {
+  handledBySwap = true;
+  init();
+});
+
+document.addEventListener("astro:page-load", () => {
+  if (handledBySwap) {
+    handledBySwap = false;
+    return;
+  }
+  init();
+});
