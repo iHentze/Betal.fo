@@ -13,7 +13,7 @@
  * not compete.
  */
 
-import { methods } from "../content/methods";
+import { methods, applePayBare } from "../content/methods";
 
 interface Props {
   name: string;
@@ -22,7 +22,6 @@ interface Props {
 const { name } = Astro.props;
 
 const MUTED = "rgba(255,255,255,0.32)";
-const applePay = methods.find((m) => m.name === "Apple Pay")!;
 const googlePay = methods.find((m) => m.name === "Google Pay")!;
 const GREEN = "#7bd865";
 ---
@@ -76,22 +75,22 @@ const GREEN = "#7bd865";
             outlines shrinking them to illegibility. */}
         <svg
           x="0"
-          y="0"
+          y="5"
           width="36"
-          height="23"
-          viewBox={applePay.viewBox}
+          height="15.3"
+          viewBox={applePayBare.viewBox}
           preserveAspectRatio="xMinYMid meet"
           fill="rgba(255,255,255,0.88)"
           stroke="none"
         >
-          <path d={applePay.path} />
+          <path d={applePayBare.path} />
         </svg>
 
         <svg
           x="0"
-          y="26"
+          y="23"
           width="36"
-          height="14"
+          height="14.3"
           viewBox={googlePay.viewBox}
           preserveAspectRatio="xMinYMid meet"
           fill="rgba(255,255,255,0.88)"
