@@ -1,9 +1,15 @@
 {
   "name": "betal-fo",
+  // Keep the workers.dev URL alive alongside the custom domain: betal.fo does
+  // not resolve until the nameservers move off nic.fo.
+  "workers_dev": true,
   "compatibility_date": "2026-08-27",
   "assets": {
     "directory": "./dist",
     "not_found_handling": "404-page",
     "html_handling": "auto-trailing-slash"
-  }
+  },
+  "routes": [
+    { "pattern": "betal.fo", "custom_domain": true }
+  ]
 }
