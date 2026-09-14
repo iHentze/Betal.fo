@@ -33,7 +33,10 @@ import { fo, products } from "../content/fo";
     <div class="relative mx-auto max-w-6xl px-5 pb-14 pt-14 sm:px-8 sm:pb-20 sm:pt-20">
       <!-- A definite second track: an auto track would size itself to the
            checkout's content, so the window width would shift between states. -->
-      <div class="grid items-center gap-16 lg:grid-cols-[1fr_23rem]">
+      {/* The showcase's floating chip sits above its container (bottom-full),
+          overhanging it by ~62px. At gap-16 that left a 2px visual gap on
+          mobile, so the stacked layout needs a row gap that accounts for it. */}
+      <div class="grid items-center gap-x-16 gap-y-32 lg:gap-16 lg:grid-cols-[1fr_23rem]">
         <div data-reveal-group="90">
           <div data-reveal>
             <Wordmark
