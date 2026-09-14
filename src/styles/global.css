@@ -312,17 +312,6 @@ body {
   animation: none;
 }
 
-/*
- * Product card to product page. The card carries the same view-transition-name
- * as that product's hero, so clicking it morphs the card into the page heading
- * instead of both cross-fading. Names are per product, so only one pair is ever
- * live at a time.
- */
-::view-transition-group(.product-morph) {
-  animation-duration: 420ms;
-  animation-timing-function: var(--ease-out-expo);
-}
-
 @media (prefers-reduced-motion: reduce) {
   @view-transition {
     navigation: none;
