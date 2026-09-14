@@ -142,7 +142,7 @@ export const fo = {
       "Vit eru føroyingar, ið byggja gjaldsloysnir til føroyska vinnu. Vit kenna, hvussu tað er at standa í handlinum ein trongan fríggjadag, tá gjaldið ikki fer ígjøgnum. Tí svara vit, tá tú ringir — og tí sleppa vit ikki, fyrr enn tað virkar.",
     contrast:
       "Eitt samband til innloysing, gjaldsloysn og Softpay. Veksur virksemið, víðka vit. Minkar tað, minka vit.",
-    explore: "Kanna loysn",
+    explore: "Les meira",
     onlineTitle: "Eitt gjaldsvindeyga, ið er bygt til at selja.",
     onlineLead:
       "Apple Pay og Google Pay ovast. Sjálvvirkandi kortkanning. 3D Secure, ið bert steðgar, tá tað veruliga er neyðugt. Alt í tínum litum, á tínum navni.",
