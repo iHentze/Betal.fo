@@ -321,71 +321,69 @@ import { fo, products } from "../content/fo";
   </section>
 
   <!-- ============================= STEPS ============================= -->
-  {/* No card, no border, no fill on the rows — PRODUCTS is already three glass
-      cards a few screens up, and repeating that shape here is what made the
-      page read as one thing twice. Three elements only: a numeral, a sentence,
-      and the bar under them.
+  {/* The section pins for three screens and the steps change under it while the
+      bar fills continuously. Progressive enhancement, not decoration: the
+      markup below is a plain readable list, and the script switches on the pin
+      only when it can actually run it. With no JS, or under reduced motion, you
+      get the three steps stacked and the bar full.
 
-      The bar is the content. It runs green from the left edge to a third, two
-      thirds, then the whole width, with a lit head at the point it has reached,
-      so reading down the page you watch it fill and stop at the last step.
+      Two things this depends on, both easy to break again:
+      - No overflow-hidden on the band. It would make the band a scroll
+        container, and a sticky descendant can never stick past the edge of one.
+        The glow is clipped by its own layer instead.
+      - No data-reveal on the section or the track. The reveal system animates
+        `transform`, and a transformed ancestor turns a sticky descendant into a
+        static one. */}
+  <section class="grain relative isolate mb-16 border-y border-white/[0.07] bg-navy-deep sm:mb-24" data-pin>
+    <div class="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
+      <div class="aurora -bottom-48 -left-32 h-[30rem] w-[34rem] bg-green/10"></div>
+    </div>
 
-      The section gets its own darker ground rather than sitting on the page's:
-      with no surfaces inside it, the band is what stops three thin rows from
-      reading as a gap between two other sections. */}
-  <section class="grain relative isolate mb-16 overflow-hidden border-y border-white/[0.07] bg-navy-deep sm:mb-24">
-    <div class="aurora -bottom-48 -left-32 h-[30rem] w-[34rem] bg-green/10"></div>
+    <div class="pin-track relative" data-pin-track>
+      <div class="pin-stage">
+        <div class="mx-auto w-full max-w-6xl px-5 py-16 sm:px-8 sm:py-24">
+          <div class="max-w-3xl">
+            <p class="text-[11px] font-semibold uppercase tracking-[0.24em] text-green">
+              {fo.steps.eyebrow}
+            </p>
+            <h2 class="mt-3 text-balance text-3xl font-bold leading-[1.05] tracking-[-0.03em] text-white sm:text-5xl">
+              {fo.steps.title}
+            </h2>
+          </div>
 
-    <div class="relative mx-auto max-w-6xl px-5 py-16 sm:px-8 sm:py-24">
-      <div class="max-w-3xl" data-reveal-group="90">
-        <p class="text-[11px] font-semibold uppercase tracking-[0.24em] text-green" data-reveal>
-          {fo.steps.eyebrow}
-        </p>
-        <h2
-          class="mt-3 text-balance text-3xl font-bold leading-[1.05] tracking-[-0.03em] text-white sm:text-5xl"
-          data-reveal
-        >
-          {fo.steps.title}
-        </h2>
+          {/* Where you are, discretely. The bar says the same thing
+              continuously; this says it in threes. */}
+          <div class="pin-dots mt-8 flex gap-2 sm:mt-10" aria-hidden="true" data-pin-dots>
+            {fo.steps.items.map(() => <span />)}
+          </div>
+
+          {/* role="list" because Preflight strips list-style and VoiceOver drops
+              list semantics with it. Every step stays in the document and stays
+              readable to a screen reader — only the painting is one at a time —
+              so the list is announced in full regardless of scroll position. */}
+          <ol role="list" class="pin-panels mt-8 sm:mt-10" data-pin-panels>
+            {
+              fo.steps.items.map((text, index) => (
+                <li class="pin-panel">
+                  <span
+                    aria-hidden="true"
+                    class="block text-[2.75rem] font-light leading-none text-white/90 sm:text-[4rem] lg:text-[5rem]"
+                  >
+                    {index + 1}
+                  </span>
+                  <p class="mt-4 max-w-[42rem] text-base leading-[1.75] text-white/75 [overflow-wrap:break-word] sm:text-[1.0625rem] lg:text-[1.125rem]">
+                    {text}
+                  </p>
+                </li>
+              ))
+            }
+          </ol>
+
+          {/* Starts full so that a reader without JS sees a finished bar rather
+              than an empty one. The script sets it every frame from there. */}
+          <div class="step-rule mt-12 sm:mt-16" style="--tick: 100%" aria-hidden="true" data-pin-bar></div>
+        </div>
       </div>
-
-      {/* Nothing has happened yet, so this one has no green in it. */}
-      <div class="mt-12 h-px w-full bg-white/10 sm:mt-16" aria-hidden="true"></div>
-
-      {/* role="list" because Preflight strips list-style and VoiceOver drops
-          list semantics with it. The digits are decoration — the list already
-          announces "1 of 3" — so they stay out of the accessibility tree. */}
-      <ol role="list" data-reveal-group="110">
-        {
-          fo.steps.items.map((text, index) => (
-            <li class="group" data-reveal style={`--tick:${Math.round(((index + 1) / fo.steps.items.length) * 100)}%`}>
-              {/*
-                The numeral column is a fixed width, not auto: "1" is narrower
-                than "2" and "3", so an auto column would step the prose's left
-                edge sideways by 18px between rows and the list would not align
-                down the page.
-
-                The numeral is also taller than the prose at every breakpoint, so
-                it — not the copy — sets the row height. That is what absorbs
-                step 2 at two and a half times the length of its neighbours: it
-                gains a line, not a taller box, and the bars stay evenly spaced.
-              */}
-              <div class="grid gap-y-2 py-9 sm:grid-cols-[4.5rem_minmax(0,1fr)] sm:gap-x-10 sm:gap-y-0 sm:py-10 lg:grid-cols-[6rem_minmax(0,1fr)] lg:gap-x-14 lg:py-11">
-                <span
-                  aria-hidden="true"
-                  class="text-[2.75rem] font-light leading-none text-white/90 transition-colors duration-500 group-hover:text-green sm:text-[4rem] lg:text-[5rem]"
-                >
-                  {index + 1}
-                </span>
-                <p class="max-w-[42rem] text-base leading-[1.75] text-white/75 [overflow-wrap:break-word] transition-colors duration-500 group-hover:text-white/95 sm:pt-2 sm:text-[1.0625rem] lg:pt-3 lg:text-[1.125rem]">
-                  {text}
-                </p>
-              </div>
-              <div class="step-rule" aria-hidden="true"></div>
-            </li>
-          ))
-        }
-      </ol>
     </div>
   </section>
 
@@ -425,15 +423,11 @@ import { fo, products } from "../content/fo";
 
 <style>
   /*
-   * The bar under each step. Green from the left edge out to --tick, track
-   * after it, and a lit head sitting exactly on the boundary. Registering
-   * --tick as a real percentage is what makes it animatable, so the fill grows
-   * and the head travels with it rather than both appearing finished.
-   *
-   * inherits: true is deliberate. The value is written on the <li>, next to the
-   * step it belongs to, and inherits down to the bar and its head — which
-   * leaves the bar's own declaration free for the pending state below. An
-   * inline value on the bar itself could never be overridden.
+   * The bar under the steps. Green from the left edge out to --tick, track
+   * after it, and a lit head sitting on the boundary. Registering --tick as a
+   * real percentage makes it animatable, but while the section is pinned the
+   * script writes it every frame, so the value is driven rather than eased —
+   * the bar tracks the scroll exactly instead of chasing it.
    */
   @property --tick {
     syntax: "<percentage>";
@@ -450,17 +444,11 @@ import { fo, products } from "../content/fo";
       var(--color-green) var(--tick, 0%),
       rgba(255, 255, 255, 0.09) var(--tick, 0%)
     );
-    transition: --tick 1100ms var(--ease-out-expo);
-    /* --reveal-delay is written on the <li> by the reveal script and inherits
-       in, so each bar fills with its own row instead of all three at once. */
-    transition-delay: calc(var(--reveal-delay, 0ms) + 220ms);
   }
 
-  /*
-   * The head. No transition of its own: `left` is driven by --tick, which is
-   * already animating, so it rides the fill exactly. The navy ring punches it
-   * out of the bar so the two never merge into a lump.
-   */
+  /* The head. `left` is driven by --tick, so it rides the fill exactly. The
+     ring is navy-deep, the band's ground, so the head punches out of the bar
+     rather than merging with it. */
   .step-rule::after {
     content: "";
     position: absolute;
@@ -477,20 +465,152 @@ import { fo, products } from "../content/fo";
       0 0 18px rgba(123, 216, 101, 0.55);
   }
 
-  /*
-   * Going pending is instant; only the fill animates. Without this the bars
-   * drain backwards to 0% the moment the script marks them, which is visible on
-   * a row sitting just under the fold. If the script never runs the class never
-   * appears and every bar simply renders at its final width.
-   */
-  [data-reveal].reveal-pending .step-rule {
-    --tick: 0%;
-    transition: none;
+  .pin-dots span {
+    display: block;
+    height: 3px;
+    width: 1.75rem;
+    border-radius: 9999px;
+    background: rgba(255, 255, 255, 0.16);
+    transition: background 300ms var(--ease-out-expo);
   }
 
+  .pin-dots span.is-on {
+    background: var(--color-green);
+  }
+
+  /*
+   * Unpinned is the authored state: a plain stacked list that reads correctly
+   * with no script at all. Everything below only applies once the script has
+   * confirmed it can run the pin.
+   */
+  .pin-panel + .pin-panel {
+    margin-top: 2.5rem;
+  }
+
+  [data-pin].is-pinned .pin-track {
+    height: 260vh;
+  }
+
+  [data-pin].is-pinned .pin-stage {
+    position: sticky;
+    /* Clears the sticky header — 4rem on phones, 4.5rem from sm up. Anything
+       that sticks at 0 slides underneath it. */
+    top: 4rem;
+    min-height: calc(100vh - 4rem);
+    min-height: calc(100svh - 4rem);
+    display: flex;
+    align-items: center;
+  }
+
+  /* Panels share one grid cell, so the row is as tall as the longest step and
+     the bar below never jumps as they swap. */
+  [data-pin].is-pinned .pin-panels {
+    display: grid;
+  }
+
+  [data-pin].is-pinned .pin-panel {
+    grid-area: 1 / 1;
+    margin-top: 0;
+    opacity: 0;
+    transform: translateY(20px);
+    transition:
+      opacity 420ms var(--ease-out-expo),
+      transform 420ms var(--ease-out-expo);
+  }
+
+  [data-pin].is-pinned .pin-panel.is-on {
+    opacity: 1;
+    transform: none;
+  }
+
+  @media (min-width: 40rem) {
+    [data-pin].is-pinned .pin-track {
+      height: 300vh;
+    }
+
+    [data-pin].is-pinned .pin-stage {
+      top: 4.5rem;
+      min-height: calc(100vh - 4.5rem);
+      min-height: calc(100svh - 4.5rem);
+    }
+  }
+
+  /* The script never pins under this preference, so .is-pinned is absent and
+     the stacked list stands. This only neutralises the dot easing. */
   @media (prefers-reduced-motion: reduce) {
-    .step-rule {
+    .pin-dots span {
       transition: none;
     }
   }
 </style>
+
+<script>
+  /*
+   * Maps scroll position through the tall track onto the three steps.
+   *
+   * Runs on every client-side navigation, not just the first load: ClientRouter
+   * replaces the DOM, so these are new elements each time and the window
+   * listener from the previous page has to come off.
+   */
+  function initPin() {
+    const section = document.querySelector<HTMLElement>("[data-pin]");
+    if (!section) return;
+
+    const track = section.querySelector<HTMLElement>("[data-pin-track]");
+    const bar = section.querySelector<HTMLElement>("[data-pin-bar]");
+    const panels = Array.from(section.querySelectorAll<HTMLElement>("[data-pin-panels] > li"));
+    const dots = Array.from(section.querySelectorAll<HTMLElement>("[data-pin-dots] > span"));
+    if (!track || !bar || panels.length === 0) return;
+
+    // Taking three screens of someone's scroll is a motion effect. Under this
+    // preference the authored stacked list is the right answer, so leave it.
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      dots.forEach((dot) => dot.classList.add("is-on"));
+      return;
+    }
+
+    section.classList.add("is-pinned");
+
+    let queued = false;
+
+    const frame = () => {
+      queued = false;
+
+      const rect = track.getBoundingClientRect();
+      // How far the track can travel while the stage is stuck to the top.
+      const travel = rect.height - window.innerHeight;
+      const progress = travel > 0 ? Math.min(1, Math.max(0, -rect.top / travel)) : 0;
+
+      // floor() would put the last step on screen for a single pixel at exactly
+      // 1, so the final index is clamped instead.
+      const active = Math.min(panels.length - 1, Math.floor(progress * panels.length));
+
+      panels.forEach((panel, i) => panel.classList.toggle("is-on", i === active));
+      dots.forEach((dot, i) => dot.classList.toggle("is-on", i <= active));
+      bar.style.setProperty("--tick", `${(progress * 100).toFixed(2)}%`);
+    };
+
+    const onScroll = () => {
+      if (queued) return;
+      queued = true;
+      requestAnimationFrame(frame);
+    };
+
+    frame();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll, { passive: true });
+
+    // The listeners are on window, which survives the swap, so they have to be
+    // removed before the next page adds its own.
+    document.addEventListener(
+      "astro:before-swap",
+      () => {
+        window.removeEventListener("scroll", onScroll);
+        window.removeEventListener("resize", onScroll);
+      },
+      { once: true },
+    );
+  }
+
+  document.addEventListener("astro:page-load", initPin);
+</script>
