@@ -6,10 +6,16 @@
 @import "tailwindcss";
 
 @theme {
-  /* Official Betal brand palette, taken from the supplied logo artwork. */
-  --color-navy: #0e0032;
-  --color-navy-deep: #08001d;
-  --color-navy-soft: #170945;
+  /* Betal brand palette from the supplied logo artwork, with the navies lifted.
+     The artwork navy is #0e0032 — oklch(0.160 0.093 286). At that lightness, across
+     the large flat areas this page has, it reads as black rather than as navy: a dark
+     chromatic colour only shows its hue next to something lighter, and there is
+     nothing lighter beside it. The hue and chroma are the artwork's; only lightness
+     moves, so the brand colour is recognisable rather than replaced. Navy-deep stays
+     below navy so the footer still reads as the deeper band. */
+  --color-navy: #190d41; /* oklch(0.215 0.093 286) */
+  --color-navy-deep: #0f042d; /* oklch(0.165 0.078 288) */
+  --color-navy-soft: #231b4d; /* oklch(0.265 0.088 286) */
   --color-green: #7bd865;
   --color-green-bright: #93e57f;
   --color-mist: #98a8aa;
