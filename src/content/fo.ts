@@ -237,7 +237,7 @@ export const fo = {
       },
       {
         icon: "support",
-        title: "Føroysk hjálp tá tað brennur á",
+        title: "Føroysk hjálp",
         text: "Ongar langar bíðiraðir hjá útlendskum veitarum. Tú fært fatur á einum føroyingi, sum altíð er til reiðar at hjálpa.",
       },
     ],
