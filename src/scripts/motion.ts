@@ -35,10 +35,36 @@ function initReveal(): void {
   // Hide only what is below the fold. Anything already on screen stays exactly
   // as the browser first painted it, so a first visit never shows a gap.
   const viewport = window.innerHeight || document.documentElement.clientHeight;
+  const hidden: HTMLElement[] = [];
+
   targets.forEach((el) => {
     const box = el.getBoundingClientRect();
     if (box.top < viewport && box.bottom > 0) return;
+    hidden.push(el);
+  });
+
+  /*
+   * Going hidden must not animate — only the reveal should.
+   *
+   * Adding the class alone starts a 0.7s opacity transition from visible to
+   * hidden. On a client-side navigation that happens inside the view
+   * transition, where the browser leaves it stuck at currentTime 0: the element
+   * stays fully visible while marked pending, and then jumps when the observer
+   * removes the class. That was the flicker.
+   *
+   * Suppressing the transition while the class is applied makes the hidden
+   * state instant. One forced reflow for the whole batch commits it before the
+   * transition is restored, so the reveal still animates.
+   */
+  hidden.forEach((el) => {
+    el.style.transition = "none";
     el.classList.add("reveal-pending");
+  });
+
+  void document.body.offsetHeight;
+
+  hidden.forEach((el) => {
+    el.style.transition = "";
     observer.observe(el);
   });
 }

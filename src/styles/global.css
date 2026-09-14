@@ -74,15 +74,22 @@ body {
  * Instead the script marks only the elements below the fold, before the reader
  * can reach them. Anything on screen at load is never hidden at all, and if the
  * script fails the page is simply static and complete.
+ *
+ * Deliberately not scoped to a .js class on <html>. ClientRouter copies the
+ * html attributes from the incoming document, which never carries a
+ * runtime-added class, so the scope was silently lost on every navigation and
+ * restored a frame later — the content flickered. The scope is unnecessary
+ * anyway: reveal-pending is only ever added by the script, so without scripting
+ * nothing is hidden.
  */
-.js [data-reveal] {
+[data-reveal] {
   transition:
     opacity 0.7s var(--ease-out-expo),
     transform 0.7s var(--ease-out-expo);
   transition-delay: var(--reveal-delay, 0ms);
 }
 
-.js [data-reveal].reveal-pending {
+[data-reveal].reveal-pending {
   opacity: 0;
   transform: translateY(18px);
   will-change: opacity, transform;
@@ -244,7 +251,7 @@ body {
     animation-delay: 0ms !important;
   }
 
-  .js [data-reveal] {
+  [data-reveal] {
     opacity: 1;
     transform: none;
     transition: none;

@@ -36,10 +36,6 @@ const canonical = new URL(Astro.url.pathname, site.url).href;
     <meta property="og:image" content={new URL("/og.jpg", site.url).href} />
     <meta property="og:image:alt" content="betal" />
     <meta name="twitter:card" content="summary_large_image" />
-    <script is:inline>
-      // Reveal animations are opt-in on scripting being available.
-      document.documentElement.classList.add("js");
-    </script>
     {/* Client-side routing, so the page transition works in Safari too. The
         cross-document @view-transition rule stays as the no-JS fallback: if
         this never loads, Chrome still transitions and every browser still
