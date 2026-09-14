@@ -24,19 +24,36 @@ const canonical = new URL(Astro.url.pathname, site.url).href;
     <meta name="description" content={description} />
     <link rel="canonical" href={canonical} />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-    <meta name="theme-color" content="#0D0033" />
+    <link rel="mask-icon" href="/brand/glyph-b.svg" color="#7bd865" />
+    <meta name="theme-color" content="#0e0032" />
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
     <meta property="og:url" content={canonical} />
     <meta property="og:type" content="website" />
     <meta property="og:locale" content="fo_FO" />
     <meta property="og:site_name" content={site.name} />
+    <meta property="og:image" content={new URL("/og.jpg", site.url).href} />
+    <meta property="og:image:alt" content="betal" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <script is:inline>
+      // Reveal animations are opt-in on scripting being available.
+      document.documentElement.classList.add("js");
+    </script>
   </head>
   <body class="min-h-dvh bg-navy text-white antialiased">
+    <a
+      href="#main"
+      class="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[100] focus:rounded-full focus:bg-green focus:px-5 focus:py-2.5 focus:text-sm focus:font-semibold focus:text-navy"
+    >
+      Leyp til innihald
+    </a>
     <Header />
-    <main>
+    <main id="main">
       <slot />
     </main>
     <Footer />
+    <script>
+      import "../scripts/motion";
+    </script>
   </body>
 </html>

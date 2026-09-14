@@ -3,16 +3,23 @@ import { fo, products } from "../content/fo";
 import { site } from "../content/site";
 ---
 
-<form class="grid gap-5" data-contact-form>
+<!--
+  novalidate suppresses the browser's built-in validation bubbles, which appear
+  in the browser's own language rather than Faroese. The fields keep `required`
+  so assistive technology still announces them, and the script below reports
+  problems using the Faroese copy.
+-->
+<form class="grid gap-6" novalidate data-contact-form>
   <div class="grid gap-5 sm:grid-cols-2">
     <label class="grid gap-2 text-sm font-medium text-white">
       {fo.contact.name}
       <input
         name="name"
         type="text"
+        placeholder={fo.contact.namePlaceholder}
         autocomplete="name"
         required
-        class="rounded-xl border border-white/15 bg-white/5 px-4 py-3 text-base font-normal text-white outline-none ring-green placeholder:text-white/30 focus:border-green focus:ring-2"
+        class="rounded-2xl border border-white/15 bg-white/[0.04] px-4 py-3.5 text-base font-normal text-white outline-none ring-green/50 placeholder:text-white/30 focus:border-green focus:ring-2 transition"
       />
     </label>
     <label class="grid gap-2 text-sm font-medium text-white">
@@ -20,8 +27,9 @@ import { site } from "../content/site";
       <input
         name="company"
         type="text"
+        placeholder={fo.contact.companyPlaceholder}
         autocomplete="organization"
-        class="rounded-xl border border-white/15 bg-white/5 px-4 py-3 text-base font-normal text-white outline-none ring-green placeholder:text-white/30 focus:border-green focus:ring-2"
+        class="rounded-2xl border border-white/15 bg-white/[0.04] px-4 py-3.5 text-base font-normal text-white outline-none ring-green/50 placeholder:text-white/30 focus:border-green focus:ring-2 transition"
       />
     </label>
     <label class="grid gap-2 text-sm font-medium text-white">
@@ -29,8 +37,9 @@ import { site } from "../content/site";
       <input
         name="phone"
         type="tel"
+        placeholder={fo.contact.phonePlaceholder}
         autocomplete="tel"
-        class="rounded-xl border border-white/15 bg-white/5 px-4 py-3 text-base font-normal text-white outline-none ring-green placeholder:text-white/30 focus:border-green focus:ring-2"
+        class="rounded-2xl border border-white/15 bg-white/[0.04] px-4 py-3.5 text-base font-normal text-white outline-none ring-green/50 placeholder:text-white/30 focus:border-green focus:ring-2 transition"
       />
     </label>
     <label class="grid gap-2 text-sm font-medium text-white">
@@ -38,54 +47,70 @@ import { site } from "../content/site";
       <input
         name="email"
         type="email"
+        placeholder={fo.contact.emailPlaceholder}
         autocomplete="email"
         required
-        class="rounded-xl border border-white/15 bg-white/5 px-4 py-3 text-base font-normal text-white outline-none ring-green placeholder:text-white/30 focus:border-green focus:ring-2"
+        class="rounded-2xl border border-white/15 bg-white/[0.04] px-4 py-3.5 text-base font-normal text-white outline-none ring-green/50 placeholder:text-white/30 focus:border-green focus:ring-2 transition"
       />
     </label>
   </div>
 
   <label class="grid gap-2 text-sm font-medium text-white">
     {fo.contact.product}
-    <select
-      name="product"
-      class="rounded-xl border border-white/15 bg-navy px-4 py-3 text-base font-normal text-white outline-none ring-green focus:border-green focus:ring-2"
-    >
-      <option value="">{fo.contact.productAny}</option>
-      {
-        products.map((product) => (
-          <option value={product.eyebrow} data-id={product.id}>
-            {product.eyebrow}
-          </option>
-        ))
-      }
-    </select>
+    <div class="relative">
+      <select
+        name="product"
+        class="w-full appearance-none rounded-2xl border border-white/15 bg-navy px-4 py-3.5 text-base font-normal text-white outline-none ring-green/50 focus:border-green focus:ring-2 transition cursor-pointer"
+      >
+        <option value="">{fo.contact.productAny}</option>
+        {
+          products.map((product) => (
+            <option value={product.eyebrow} data-id={product.id}>
+              {product.eyebrow}
+            </option>
+          ))
+        }
+      </select>
+      <div class="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-white/50">
+        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+        </svg>
+      </div>
+    </div>
   </label>
 
   <label class="grid gap-2 text-sm font-medium text-white">
     {fo.contact.message}
     <textarea
       name="message"
-      rows="6"
+      rows="5"
+      placeholder={fo.contact.messagePlaceholder}
       required
-      class="resize-y rounded-xl border border-white/15 bg-white/5 px-4 py-3 text-base font-normal text-white outline-none ring-green placeholder:text-white/30 focus:border-green focus:ring-2"
+      class="resize-y rounded-2xl border border-white/15 bg-white/[0.04] px-4 py-3.5 text-base font-normal text-white outline-none ring-green/50 placeholder:text-white/30 focus:border-green focus:ring-2 transition"
     ></textarea>
   </label>
 
-  <p data-form-error class="hidden text-sm text-white" role="alert"></p>
+  <p data-form-error class="hidden text-sm text-red-300 bg-red-900/30 border border-red-500/30 rounded-xl p-3" role="alert"></p>
 
-  <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
+  <div class="flex flex-col gap-4 sm:flex-row sm:items-center">
     <button
       type="submit"
-      class="rounded-full bg-green px-6 py-3 text-sm font-semibold text-navy transition hover:brightness-110"
+      class="rounded-full bg-green px-8 py-3.5 text-sm font-semibold text-navy transition-all duration-200 hover:brightness-110 hover:shadow-[0_0_20px_rgba(122,217,102,0.4)] active:scale-[0.99] cursor-pointer"
     >
       {fo.contact.submit}
     </button>
-    <p class="text-sm text-mist">{fo.contact.mailtoHint}</p>
+    <p class="text-xs text-mist">{fo.contact.mailtoHint}</p>
   </div>
 </form>
 
-<script define:vars={{ emailTo: site.email, requiredText: fo.contact.required }}>
+<script
+  is:inline
+  define:vars={{
+    emailTo: site.email,
+    requiredText: fo.contact.required,
+    invalidEmailText: fo.contact.invalidEmail,
+  }}
+>
   const form = document.querySelector("[data-contact-form]");
   const error = document.querySelector("[data-form-error]");
   if (form instanceof HTMLFormElement) {
@@ -105,13 +130,26 @@ import { site } from "../content/site";
       const product = String(data.get("product") ?? "").trim();
       const message = String(data.get("message") ?? "").trim();
 
-      if (!name || !email || !message) {
+      const fail = (text, field) => {
         if (error instanceof HTMLElement) {
-          error.textContent = requiredText;
+          error.textContent = text;
           error.classList.remove("hidden");
         }
+        const invalid = form.querySelector(`[name=${field}]`);
+        if (invalid instanceof HTMLElement) invalid.focus();
+      };
+
+      if (!name || !email || !message) {
+        fail(requiredText, !name ? "name" : !email ? "email" : "message");
         return;
       }
+
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        fail(invalidEmailText, "email");
+        return;
+      }
+
+      if (error instanceof HTMLElement) error.classList.add("hidden");
 
       const subject = product ? `Betal: ${product}` : "Betal: samband";
       const body = [

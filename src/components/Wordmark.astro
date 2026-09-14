@@ -1,0 +1,22 @@
+---
+import { BETAL_VIEWBOX, BETAL_PATH_B, BETAL_PATH_ETAL } from "../content/logo";
+
+interface Props {
+  class?: string;
+  title?: string;
+}
+
+const { class: className = "h-8 w-auto", title } = Astro.props;
+---
+
+<svg
+  viewBox={BETAL_VIEWBOX}
+  class:list={["block", className]}
+  fill="currentColor"
+  role={title ? "img" : "presentation"}
+  aria-label={title}
+  aria-hidden={title ? undefined : "true"}
+>
+  <path d={BETAL_PATH_B}></path>
+  <path d={BETAL_PATH_ETAL}></path>
+</svg>

@@ -1,0 +1,32 @@
+---
+import { methods } from "../content/methods";
+import { fo } from "../content/fo";
+---
+
+<section class="border-y border-white/8 bg-white/[0.015]">
+  <div
+    class="mx-auto flex max-w-6xl flex-col items-center justify-center gap-6 px-5 py-8 sm:flex-row sm:gap-12 sm:px-8"
+  >
+    <p class="text-[11px] font-semibold uppercase tracking-[0.24em] whitespace-nowrap text-mist">
+      {fo.methods.label}
+    </p>
+
+    <ul class="flex flex-wrap items-center justify-center gap-x-10 gap-y-6 sm:gap-x-14">
+      {
+        methods.map((method) => (
+          <li>
+            <svg
+              viewBox={method.viewBox}
+              class:list={[method.height, "w-auto text-white/70 transition-colors duration-300 hover:text-white"]}
+              fill="currentColor"
+              role="img"
+              aria-label={method.name}
+            >
+              <path d={method.path} />
+            </svg>
+          </li>
+        ))
+      }
+    </ul>
+  </div>
+</section>

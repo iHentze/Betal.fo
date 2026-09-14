@@ -1,17 +1,56 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
 import { fo } from "../content/fo";
+import { site } from "../content/site";
+
+// The copy carries an {email} placeholder so the contact address lives in one
+// place instead of being spelled out again in the privacy text.
+const paragraphs = fo.privacy.body.map((paragraph) => paragraph.split("{email}"));
 ---
 
-<BaseLayout title={`Privatlív — betal`} description={fo.privacy.lead}>
-  <section class="relative overflow-hidden">
-    <div class="pointer-events-none absolute inset-y-0 left-0 hidden w-20 bg-green sm:block md:w-28 slab-thin"></div>
-    <div class="relative mx-auto max-w-6xl px-5 py-16 sm:px-8 sm:py-24 sm:pl-32 md:pl-40">
-      <p class="text-xs font-semibold uppercase tracking-[0.22em] text-green">{fo.privacy.eyebrow}</p>
-      <h1 class="mt-4 max-w-2xl text-4xl font-semibold tracking-tight sm:text-6xl">{fo.privacy.title}</h1>
-      <p class="mt-6 max-w-xl text-lg leading-relaxed text-white/75">{fo.privacy.lead}</p>
-      <div class="mt-10 max-w-2xl space-y-5 text-base leading-relaxed text-white/70">
-        {fo.privacy.body.map((paragraph) => <p>{paragraph}</p>)}
+<BaseLayout title="Privatlív — betal" description={fo.privacy.lead}>
+  <section class="grain relative isolate overflow-hidden">
+    <div class="aurora -left-40 -top-32 h-[26rem] w-[26rem] bg-green/12"></div>
+
+    <div class="relative mx-auto max-w-6xl px-5 py-16 sm:px-8 sm:py-24">
+      <div data-reveal-group="90">
+        <span
+          class="inline-flex items-center rounded-full border border-green/25 bg-green/8 px-3.5 py-1.5 text-[11px] font-semibold uppercase tracking-[0.22em] text-green"
+          data-reveal
+        >
+          {fo.privacy.eyebrow}
+        </span>
+
+        <h1
+          class="mt-6 max-w-2xl text-[2.5rem] font-bold leading-[1.02] tracking-[-0.035em] text-white sm:text-5xl"
+          data-reveal
+        >
+          {fo.privacy.title}
+        </h1>
+
+        <p class="mt-5 max-w-xl text-base leading-relaxed text-white/70" data-reveal>{fo.privacy.lead}</p>
+
+        <div
+          class="mt-10 max-w-2xl space-y-5 rounded-[2rem] border border-white/10 bg-white/[0.03] p-7 text-sm leading-relaxed text-white/65 backdrop-blur-xl sm:p-10 sm:text-base"
+          data-reveal
+        >
+          {
+            paragraphs.map((parts) => (
+              <p>
+                {parts.map((part, index) => (
+                  <>
+                    {index > 0 && (
+                      <a href={`mailto:${site.email}`} class="text-green underline decoration-green/40 underline-offset-4 transition-colors hover:decoration-green">
+                        {site.email}
+                      </a>
+                    )}
+                    {part}
+                  </>
+                ))}
+              </p>
+            ))
+          }
+        </div>
       </div>
     </div>
   </section>

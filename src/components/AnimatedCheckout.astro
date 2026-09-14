@@ -1,0 +1,275 @@
+---
+/**
+ * ePay-style payment window. The card details are rendered already filled —
+ * the window arrives complete and only the authorisation plays out:
+ * filled -> processing -> approved, then back.
+ */
+import { methods } from "../content/methods";
+
+interface Props {
+  class?: string;
+  amount?: string;
+}
+
+const { class: className = "", amount = "499,00" } = Astro.props;
+
+const googlePay = methods.find((m) => m.name === "Google Pay")!;
+
+// The official Apple Pay button is the  Pay lockup on a plain button, so the
+// glyph is drawn directly rather than using the boxed brand mark.
+const APPLE_GLYPH =
+  "M150.37 130.25c-2.45 5.66-5.35 10.87-8.71 15.66-4.58 6.53-8.33 11.05-11.22 13.56-4.48 4.12-9.28 6.23-14.42 6.35-3.69 0-8.14-1.05-13.32-3.18-5.19-2.12-9.97-3.17-14.34-3.17-4.58 0-9.49 1.05-14.75 3.17-5.26 2.13-9.5 3.24-12.74 3.35-4.35.13-9.16-1.9-14.42-6.08-3.69-3.04-7.69-7.86-12-14.46-6.09-9.35-10.86-19.9-14.32-31.65-3.46-11.75-5.19-22.85-5.19-33.3 0-13.48 3.51-24.66 10.53-33.53 7.02-8.87 15.83-13.39 26.43-13.56 5.13.12 10.56 1.44 16.3 3.97 5.74 2.53 9.4 3.86 10.98 3.97 1.35-.11 5.19-1.49 11.53-4.13 6.34-2.64 11.95-3.85 16.84-3.63 12.18.98 21.68 5.68 28.5 14.1-10.76 6.53-16.03 15.44-15.82 26.74.22 8.91 3.58 16.42 10.09 22.52 6.51 6.1 14.19 9.68 23.04 10.77-2.39 7.18-5.33 14.46-8.81 21.84zM119.22 33.74c0-7.39 2.61-14.13 7.84-20.21 5.23-6.09 11.85-10.22 19.86-12.4 1.09 6.85.05 13.59-3.12 20.21-3.17 6.63-8.21 11.74-15.12 15.33-.87-.87-1.96-1.52-3.26-1.96-3.8-1.3-6.2-1.96-7.2-1.96z";
+---
+
+<div class:list={["relative w-full max-w-[23rem]", className]} data-checkout>
+  <div class="pointer-events-none absolute -inset-6 rounded-[2.5rem] bg-green/12 blur-3xl"></div>
+
+  <div
+    class="relative overflow-hidden rounded-[1.75rem] border border-white/12 bg-navy/95 shadow-[0_30px_70px_-20px_rgba(0,0,0,0.8)] backdrop-blur-2xl"
+  >
+    <div class="h-[3px] w-full bg-gradient-to-r from-transparent via-green to-transparent"></div>
+
+    <!-- Merchant bar -->
+    <div class="flex items-center justify-between border-b border-white/8 px-5 py-3.5">
+      <div class="flex items-center gap-2.5">
+        <span class="grid h-7 w-7 place-items-center rounded-lg bg-green/12 text-green">
+          <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4">
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+            ></path>
+          </svg>
+        </span>
+        <div class="leading-tight">
+          <p class="text-[11px] font-semibold text-white">Trygt gjald</p>
+          <p class="text-[10px] text-white/45">betal.fo</p>
+        </div>
+      </div>
+      <div class="text-right leading-tight">
+        <p class="text-[10px] text-white/45">At gjalda</p>
+        <p class="tnum text-sm font-bold tracking-tight text-white">{amount} kr.</p>
+      </div>
+    </div>
+
+    <div class="relative min-h-[19.5rem]">
+      <!--
+        FORM — stays in flow even when the receipt is showing. Removing it
+        would shrink the window to fit whatever is left, so the two states
+        would not be the same size.
+      -->
+      <div class="space-y-4 p-5 transition-opacity duration-300" data-checkout-form>
+        <div class="grid grid-cols-2 gap-2.5">
+          <div class="flex items-center justify-center gap-1.5 rounded-xl bg-white py-2.5 text-[11px] font-semibold text-black">
+            <svg class="h-3.5 w-auto fill-current" viewBox="0 0 170 170" aria-hidden="true">
+              <path d={APPLE_GLYPH}></path>
+            </svg>
+            <span>Pay</span>
+          </div>
+          <div class="flex items-center justify-center rounded-xl border border-white/12 bg-white/8 py-2.5">
+            <svg viewBox={googlePay.viewBox} class="h-[15px] w-auto text-white" fill="currentColor" aria-hidden="true">
+              <path d={googlePay.path}></path>
+            </svg>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-3">
+          <span class="h-px flex-1 bg-white/10"></span>
+          <span class="text-[10px] font-medium uppercase tracking-widest text-white/35">ella við korti</span>
+          <span class="h-px flex-1 bg-white/10"></span>
+        </div>
+
+        <div class="space-y-2.5">
+          <div>
+            <p class="mb-1.5 text-[10px] font-medium text-white/50">Kortnummar</p>
+            <div class="flex items-center justify-between rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2.5">
+              <span class="font-mono text-xs tracking-[0.06em] text-white">4571 8842 1907 8820</span>
+              <span class="rounded bg-green/20 px-1.5 py-0.5 text-[8px] font-bold text-green">VISA</span>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-2.5">
+            <div>
+              <p class="mb-1.5 text-[10px] font-medium text-white/50">Gildugt til</p>
+              <div class="rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2.5">
+                <span class="font-mono text-xs text-white">08 / 29</span>
+              </div>
+            </div>
+            <div>
+              <p class="mb-1.5 text-[10px] font-medium text-white/50">CVC</p>
+              <div class="rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2.5">
+                <span class="font-mono text-xs text-white">•••</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!--
+          Fixed height with both captions overlaid, so swapping to the busy
+          state cannot change the button's size and therefore the window's.
+        -->
+        <div
+          class="relative h-10 w-full overflow-hidden rounded-xl bg-green text-xs font-bold text-navy shadow-lg shadow-green/20"
+        >
+          <span class="absolute inset-0 flex items-center justify-center gap-2" data-pay-label>
+            Rinda {amount} kr.
+          </span>
+          <span class="absolute inset-0 flex items-center justify-center gap-2" data-pay-busy>
+            <span class="h-3.5 w-3.5 animate-spin rounded-full border-2 border-navy/25 border-t-navy"></span>
+            <span>Viðgerð…</span>
+          </span>
+        </div>
+      </div>
+
+      <!-- RECEIPT — overlays the form, so it never affects the window size. -->
+      <div class="absolute inset-0 flex flex-col items-center justify-center gap-3 p-6 text-center" data-checkout-done>
+        <span class="grid h-16 w-16 place-items-center rounded-full bg-green/12">
+          <svg class="h-9 w-9" viewBox="0 0 52 52" fill="none" stroke="currentColor" aria-hidden="true">
+            <circle cx="26" cy="26" r="23" class="stroke-green/30" stroke-width="3"></circle>
+            <path
+              d="M15 27.5 L22.5 35 L37.5 19"
+              class="stroke-green"
+              stroke-width="4"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-dasharray="40"
+              stroke-dashoffset="40"
+              data-check
+            ></path>
+          </svg>
+        </span>
+        <div>
+          <p class="text-lg font-bold text-white">Goldið</p>
+          <p class="tnum mt-0.5 text-xs text-white/55">{amount} kr.</p>
+        </div>
+        <span
+          class="mt-1 rounded-full border border-green/25 bg-green/8 px-3 py-1 text-[10px] font-semibold text-green"
+        >
+          Kvittan send til kundan
+        </span>
+      </div>
+    </div>
+
+    <div class="flex items-center justify-between border-t border-white/8 px-5 py-2.5 text-[9px] text-white/40">
+      <span class="flex items-center gap-1">
+        <svg class="h-3 w-3 text-green" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+          <path
+            fill-rule="evenodd"
+            d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+            clip-rule="evenodd"></path>
+        </svg>
+        3D Secure 2 • SCA
+      </span>
+      <span>PCI-DSS Level 1</span>
+    </div>
+  </div>
+</div>
+
+<style>
+  /*
+   * Both states occupy the same box: the form keeps its space and only its
+   * visibility changes, and the receipt is absolutely positioned on top.
+   */
+  [data-checkout-done] {
+    opacity: 0;
+    visibility: hidden;
+    transition:
+      opacity 0.3s var(--ease-out-expo),
+      visibility 0.3s;
+  }
+
+  [data-checkout-form] {
+    transition:
+      opacity 0.3s var(--ease-out-expo),
+      visibility 0.3s;
+  }
+
+  [data-checkout].is-done [data-checkout-form] {
+    opacity: 0;
+    visibility: hidden;
+  }
+
+  [data-checkout].is-done [data-checkout-done] {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  [data-pay-label],
+  [data-pay-busy] {
+    transition: opacity 0.2s var(--ease-out-expo);
+  }
+
+  [data-pay-busy] {
+    opacity: 0;
+  }
+
+  [data-checkout].is-busy [data-pay-label] {
+    opacity: 0;
+  }
+
+  [data-checkout].is-busy [data-pay-busy] {
+    opacity: 1;
+  }
+
+  [data-check] {
+    transition: stroke-dashoffset 0.5s var(--ease-out-expo) 0.12s;
+  }
+
+  [data-checkout].is-done [data-check] {
+    stroke-dashoffset: 0;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    [data-check] {
+      stroke-dashoffset: 0;
+      transition: none;
+    }
+  }
+</style>
+
+<script>
+  function run(root: HTMLElement) {
+    const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
+    let running = false;
+
+    // State lives entirely in classes, so nothing is ever removed from flow.
+    async function cycle() {
+      root.classList.remove("is-done", "is-busy");
+      await wait(2200);
+
+      root.classList.add("is-busy");
+      await wait(1250);
+
+      root.classList.add("is-done");
+      await wait(3600);
+    }
+
+    async function loop() {
+      running = true;
+      while (running) await cycle();
+    }
+
+    // Only animate while the widget is actually on screen.
+    const io = new IntersectionObserver(
+      (entries) => {
+        for (const e of entries) {
+          if (e.isIntersecting && !running) void loop();
+          else if (!e.isIntersecting) running = false;
+        }
+      },
+      { threshold: 0.3 },
+    );
+    io.observe(root);
+  }
+
+  function boot() {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    document.querySelectorAll<HTMLElement>("[data-checkout]").forEach(run);
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", boot, { once: true });
+  } else {
+    boot();
+  }
+</script>

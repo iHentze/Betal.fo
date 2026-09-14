@@ -6,23 +6,35 @@ import { site } from "../content/site";
 const year = new Date().getFullYear();
 ---
 
-<footer class="border-t border-white/10">
-  <div class="mx-auto grid max-w-6xl gap-10 px-5 py-14 sm:px-8 md:grid-cols-[1.4fr_1fr_1fr]">
+<footer class="relative isolate overflow-hidden border-t border-white/8 bg-navy-deep">
+  <div class="aurora -bottom-40 left-1/4 h-[22rem] w-[22rem] bg-green/8"></div>
+
+  <div class="relative mx-auto grid max-w-6xl gap-10 px-5 py-16 sm:px-8 md:grid-cols-[1.5fr_1fr_1fr]">
     <div>
       <Logo />
-      <p class="mt-4 max-w-xs text-sm leading-relaxed text-mist">{fo.footer.tagline}</p>
-      <a href={`mailto:${site.email}`} class="mt-4 inline-block text-sm text-white hover:text-green">
+      <p class="mt-4 max-w-xs text-sm leading-relaxed text-white/50">{fo.footer.tagline}</p>
+      <a
+        href={`mailto:${site.email}`}
+        class="mt-6 inline-flex items-center gap-2 text-sm font-semibold text-green transition-opacity hover:opacity-80"
+      >
+        <svg class="h-4 w-4" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+          <path d="M2.5 5.5h15v9h-15z" stroke-linejoin="round"></path>
+          <path d="m2.5 6 7.5 5 7.5-5" stroke-linecap="round" stroke-linejoin="round"></path>
+        </svg>
         {site.email}
       </a>
     </div>
 
     <div>
-      <p class="text-xs font-semibold uppercase tracking-[0.18em] text-mist">{fo.footer.products}</p>
-      <ul class="mt-4 space-y-2">
+      <p class="text-[11px] font-semibold uppercase tracking-[0.2em] text-mist">{fo.footer.products}</p>
+      <ul class="mt-4 space-y-2.5">
         {
           products.map((product) => (
             <li>
-              <a href={product.href} class="text-sm text-white/85 hover:text-white">
+              <a
+                href={product.href}
+                class="inline-block text-sm text-white/70 transition-colors duration-200 hover:text-green"
+              >
                 {product.eyebrow}
               </a>
             </li>
@@ -32,18 +44,26 @@ const year = new Date().getFullYear();
     </div>
 
     <div>
-      <p class="text-xs font-semibold uppercase tracking-[0.18em] text-mist">{fo.footer.legal}</p>
-      <ul class="mt-4 space-y-2">
+      <p class="text-[11px] font-semibold uppercase tracking-[0.2em] text-mist">{fo.footer.legal}</p>
+      <ul class="mt-4 space-y-2.5">
         <li>
-          <a href="/samband/" class="text-sm text-white/85 hover:text-white">{fo.footer.contact}</a>
+          <a href="/samband/" class="inline-block text-sm text-white/70 transition-colors hover:text-green">
+            {fo.footer.contact}
+          </a>
         </li>
         <li>
-          <a href="/privativ/" class="text-sm text-white/85 hover:text-white">{fo.footer.privacy}</a>
+          <a href="/privativ/" class="inline-block text-sm text-white/70 transition-colors hover:text-green">
+            {fo.footer.privacy}
+          </a>
         </li>
       </ul>
     </div>
   </div>
-  <div class="mx-auto max-w-6xl border-t border-white/10 px-5 py-5 text-xs text-mist sm:px-8">
-    © {year} {site.name}
+
+  <div
+    class="relative mx-auto flex max-w-6xl flex-col items-center justify-between gap-3 border-t border-white/8 px-5 py-6 text-xs text-white/40 sm:flex-row sm:px-8"
+  >
+    <span>© {year} {site.name}</span>
+    <span class="font-mono text-[11px] text-white/30">{fo.footer.builtOn}</span>
   </div>
 </footer>

@@ -6,7 +6,11 @@
   "scripts": {
     "dev": "astro dev",
     "build": "astro build",
+    "check": "astro check",
     "preview": "astro preview",
+    "spell": "cspell --no-progress \"src/**/*.{astro,ts,css}\" \"*.{md,mjs,json}\"",
+    "spell:build": "node scripts/build-fo-dictionary.mjs",
+    "spell:audit": "node scripts/audit-fo-copy.mjs",
     "deploy": "astro build && wrangler deploy"
   },
   "dependencies": {
@@ -15,5 +19,12 @@
     "astro": "^7.2.9",
     "tailwindcss": "^4.3.3",
     "wrangler": "^4.127.0"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.10",
+    "@cspell/cspell-tools": "^9.8.0",
+    "cspell": "^9.8.0",
+    "dictionary-fo": "^3.0.0",
+    "typescript": "^6.0.3"
   }
 }

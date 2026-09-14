@@ -1,0 +1,44 @@
+{
+  "$schema": "https://raw.githubusercontent.com/streetsidesoftware/cspell/main/cspell.schema.json",
+  "version": "0.2",
+  "language": "en,en-GB",
+  "dictionaryDefinitions": [
+    {
+      "name": "faroese",
+      "description": "Faroese wordlist from Fróðskaparsetur Føroya. Rebuild with `npm run spell:build`.",
+      "path": "./.cspell/fo.trie.gz",
+      "useCompounds": true
+    },
+    {
+      "name": "betal",
+      "description": "Brand, product and tooling names used on betal.fo.",
+      "path": "./.cspell/project-words.txt",
+      "addWords": true
+    }
+  ],
+  "dictionaries": ["faroese", "betal"],
+  "ignorePaths": [
+    "node_modules/**",
+    "dist/**",
+    ".astro/**",
+    ".wrangler/**",
+    ".cspell/**",
+    "public/**",
+    "package-lock.json",
+    "src/content/logo.ts",
+    "src/content/methods.ts"
+  ],
+  "patterns": [
+    {
+      "name": "svg-path-data",
+      "description": "Coordinate soup inside inlined SVG path strings.",
+      "pattern": "/[Mm][\\s\\d.,-]*[a-zA-Z][\\d.,\\s-]{30,}/g"
+    },
+    {
+      "name": "tailwind-arbitrary-value",
+      "description": "Tailwind bracket syntax such as bg-white/[0.04] or grid-cols-[1fr_23rem].",
+      "pattern": "/\\[[^\\]\\s]*\\]/g"
+    }
+  ],
+  "ignoreRegExpList": ["svg-path-data", "tailwind-arbitrary-value", "Urls", "HexValues"]
+}

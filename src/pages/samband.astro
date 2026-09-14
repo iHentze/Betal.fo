@@ -5,20 +5,55 @@ import { fo } from "../content/fo";
 import { site } from "../content/site";
 ---
 
-<BaseLayout title={`Samband — betal`} description={fo.contact.lead}>
-  <section class="relative overflow-hidden">
-    <div class="pointer-events-none absolute inset-y-0 left-0 hidden w-20 bg-green sm:block md:w-28 slab-thin"></div>
-    <div class="relative mx-auto max-w-6xl px-5 py-16 sm:px-8 sm:py-24 sm:pl-32 md:pl-40">
-      <p class="text-xs font-semibold uppercase tracking-[0.22em] text-green">{fo.contact.eyebrow}</p>
-      <h1 class="mt-4 max-w-2xl text-4xl font-semibold tracking-tight sm:text-6xl">{fo.contact.title}</h1>
-      <p class="mt-6 max-w-xl text-lg leading-relaxed text-white/75">{fo.contact.lead}</p>
-      <a href={`mailto:${site.email}`} class="mt-4 inline-block text-sm text-green hover:underline">{site.email}</a>
-    </div>
-  </section>
+<BaseLayout title="Samband — betal" description={fo.contact.lead}>
+  <section class="grain relative isolate overflow-hidden">
+    <div class="aurora -left-40 -top-32 h-[28rem] w-[28rem] bg-green/14"></div>
+    <div class="aurora -right-40 top-24 h-[28rem] w-[28rem] bg-[#4b1fa8]/25"></div>
 
-  <section class="mx-auto max-w-6xl px-5 pb-24 sm:px-8 sm:pl-32 md:pl-40">
-    <div class="max-w-2xl">
-      <ContactForm />
+    <div class="relative mx-auto max-w-6xl px-5 py-16 sm:px-8 sm:py-24">
+      <div class="grid gap-14 lg:grid-cols-[0.85fr_1.15fr] lg:items-start">
+        <div data-reveal-group="90">
+          <span
+            class="inline-flex items-center rounded-full border border-green/25 bg-green/8 px-3.5 py-1.5 text-[11px] font-semibold uppercase tracking-[0.22em] text-green"
+            data-reveal
+          >
+            {fo.contact.eyebrow}
+          </span>
+
+          <h1
+            class="mt-6 text-[2.5rem] font-bold leading-[1.02] tracking-[-0.035em] text-white sm:text-5xl"
+            data-reveal
+          >
+            {fo.contact.title}
+          </h1>
+
+          <p class="mt-5 max-w-md text-base leading-relaxed text-white/70" data-reveal>{fo.contact.lead}</p>
+
+          <a
+            href={`mailto:${site.email}`}
+            class="mt-8 inline-flex items-center gap-2.5 rounded-2xl border border-white/10 bg-white/[0.03] px-5 py-4 transition-colors hover:border-green/35"
+            data-reveal
+          >
+            <span class="grid h-9 w-9 place-items-center rounded-xl bg-green/12 text-green">
+              <svg class="h-4 w-4" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+                <path d="M2.5 5.5h15v9h-15z" stroke-linejoin="round"></path>
+                <path d="m2.5 6 7.5 5 7.5-5" stroke-linecap="round" stroke-linejoin="round"></path>
+              </svg>
+            </span>
+            <span class="leading-tight">
+              <span class="block text-[11px] text-white/45">{fo.contact.direct}</span>
+              <span class="block text-sm font-semibold text-white">{site.email}</span>
+            </span>
+          </a>
+        </div>
+
+        <div
+          class="rounded-[2rem] border border-white/10 bg-gradient-to-b from-white/[0.05] to-white/[0.012] p-6 shadow-[0_30px_70px_-30px_rgba(0,0,0,0.9)] backdrop-blur-xl sm:p-9"
+          data-reveal
+        >
+          <ContactForm />
+        </div>
+      </div>
     </div>
   </section>
 </BaseLayout>

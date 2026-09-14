@@ -1,0 +1,16 @@
+---
+import { productIcons, type ProductIconId } from "../content/brand";
+
+interface Props {
+  id: string;
+}
+
+const { id } = Astro.props;
+const asset = productIcons[id as ProductIconId] ?? productIcons.lon;
+---
+
+<img
+  src={asset.src}
+  alt={asset.alt}
+  class="mx-auto h-40 w-auto drop-shadow-[0_18px_40px_rgba(0,0,0,0.45)] sm:h-52"
+/>
