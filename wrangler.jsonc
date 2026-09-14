@@ -10,6 +10,7 @@
     "html_handling": "auto-trailing-slash"
   },
   "routes": [
-    { "pattern": "betal.fo", "custom_domain": true }
+    { "pattern": "betal.fo", "custom_domain": true },
+    { "pattern": "www.betal.fo", "custom_domain": true }
   ]
 }
