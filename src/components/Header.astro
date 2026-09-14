@@ -12,30 +12,34 @@ const path = Astro.url.pathname;
   <div class="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-5 sm:h-[4.5rem] sm:px-8">
     <Logo />
 
-    <nav class="hidden items-center gap-1 lg:flex" aria-label="Høvuðsvalmynd">
-      {
-        products.map((product) => {
-          const active = path.startsWith(product.href);
-          return (
-            <a
-              href={product.href}
-              aria-current={active ? "page" : undefined}
-              class:list={[
-                "relative rounded-full px-3.5 py-2 text-sm font-medium transition-colors duration-200",
-                active ? "text-green" : "text-white/70 hover:text-white",
-              ]}
-            >
-              {product.nav}
-              {active && (
-                <span class="absolute inset-x-3.5 -bottom-0.5 h-px rounded-full bg-green" aria-hidden="true" />
-              )}
-            </a>
-          );
-        })
-      }
+    <nav class="hidden items-center gap-3 lg:flex" aria-label="Valmynd">
+      {/* The links sit in one capsule so the nav reads as a single object
+          rather than three loose words; the current page is a filled pill
+          inside it rather than a hairline underneath. */}
+      <div class="flex items-center rounded-full border border-white/[0.07] bg-white/[0.055] p-1">
+        {
+          products.map((product) => {
+            const active = path.startsWith(product.href);
+            return (
+              <a
+                href={product.href}
+                aria-current={active ? "page" : undefined}
+                class:list={[
+                  "rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors duration-200",
+                  active
+                    ? "bg-white/[0.1] text-white shadow-[inset_0_1px_0_rgb(255_255_255/0.09)]"
+                    : "text-white/65 hover:text-white",
+                ]}
+              >
+                {product.nav}
+              </a>
+            );
+          })
+        }
+      </div>
       <a
         href="/samband/"
-        class="ml-3 rounded-full bg-green px-5 py-2.5 text-xs font-bold uppercase tracking-[0.12em] text-navy transition-all duration-300 active:scale-[0.98] hover:brightness-[1.08] hover:shadow-[0_0_25px_-6px_rgba(123,216,101,0.7)]"
+        class="rounded-full bg-green px-5 py-2.5 text-xs font-bold uppercase tracking-[0.12em] text-navy transition-all duration-300 active:scale-[0.98] hover:brightness-[1.08] hover:shadow-[0_0_25px_-6px_rgba(123,216,101,0.7)]"
       >
         {fo.nav.contact}
       </a>
