@@ -279,16 +279,48 @@ body {
   view-transition-name: site-header;
 }
 
-::view-transition-old(root),
-::view-transition-new(root) {
-  animation-duration: 260ms;
-  animation-timing-function: var(--ease-out-expo);
+/*
+ * The new page rises and fades in while the old one settles back, rather than a
+ * flat cross-fade. Short enough that it never delays the reader — the page is
+ * interactive before the animation finishes.
+ */
+::view-transition-old(root) {
+  animation: vt-out 200ms var(--ease-out-expo) both;
 }
 
-/* The header should not animate at all — it is the fixed point. */
+::view-transition-new(root) {
+  animation: vt-in 320ms var(--ease-out-expo) both;
+}
+
+@keyframes vt-out {
+  to {
+    opacity: 0;
+    transform: scale(0.992);
+  }
+}
+
+@keyframes vt-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+}
+
+/* The header is the fixed point: it must not move or fade. */
 ::view-transition-old(site-header),
 ::view-transition-new(site-header) {
   animation: none;
+}
+
+/*
+ * Product card to product page. The card carries the same view-transition-name
+ * as that product's hero, so clicking it morphs the card into the page heading
+ * instead of both cross-fading. Names are per product, so only one pair is ever
+ * live at a time.
+ */
+::view-transition-group(.product-morph) {
+  animation-duration: 420ms;
+  animation-timing-function: var(--ease-out-expo);
 }
 
 @media (prefers-reduced-motion: reduce) {
