@@ -187,21 +187,14 @@ export const fo = {
     label: "Tey brúka Betal",
   },
   steps: {
-    eyebrow: "Gongdin",
-    title: "Frá fyrsta práti til goldið gjald.",
+    eyebrow: "Tilgongdin",
+    title: "Frá byrjan til sølu",
+    // Plain strings, not title/text pairs: the steps are prose now, and a
+    // heading invented to sit above each one would be copy nobody wrote.
     items: [
-      {
-        title: "Tú sigur, hvar tú selur",
-        text: "Nethandil, handil, bilur, marknaður ella serlig skipan. Vit finna røttu loysnina saman.",
-      },
-      {
-        title: "Vit seta avtalu og tøkni upp",
-        text: "Innloysing, uppseting, Softpay og samantvinnan við tína skipan. Tú sleppur undan at ringja runt.",
-      },
-      {
-        title: "Tú tekur ímóti gjaldi",
-        text: "Kendir gjaldshættir og føroysk hjálp, um okkurt ivamál tekur seg upp. Vit standa við.",
-      },
+      "Vit fáa greiði á hvat tær tørvar og bjóða tær tilsvarandi loysn.",
+      "Tú fært atgongd til okkara skipan, útfyllir neyðugu upplýsingarnar og skrivar undir við samleikanum. Eftir 1 til 2 vikur er gjaldsavtalan góðkend.",
+      "Vit tryggja at alt er sett saman og riggar soleiðis sum tú ynskir tað.",
     ],
   },
   methods: {
