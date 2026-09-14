@@ -122,8 +122,14 @@ import { fo, products } from "../content/fo";
     <dl class="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3" data-reveal-group="110">
       {
         fo.values.items.map((item) => (
-          <div class="spotlight rounded-3xl border border-white/10 bg-white/[0.025] p-7" data-reveal>
-            <dt class="text-xl font-bold tracking-[-0.02em] text-green">{item.title}</dt>
+          <div
+            class="spotlight group relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-b from-white/[0.05] to-white/[0.012] p-7 transition-all duration-500 hover:-translate-y-1 hover:border-green/40"
+            data-reveal
+          >
+            <span class="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-green/70 to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
+            <dt class="text-xl font-bold tracking-[-0.02em] text-white transition-colors duration-300 group-hover:text-green">
+              {item.title}
+            </dt>
             <dd class="mt-3 text-sm leading-relaxed text-white/60">{item.text}</dd>
           </div>
         ))
