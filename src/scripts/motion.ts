@@ -9,16 +9,15 @@ function initReveal(): void {
   const targets = document.querySelectorAll<HTMLElement>("[data-reveal]");
   if (targets.length === 0) return;
 
-  if (REDUCED.matches || !("IntersectionObserver" in window)) {
-    targets.forEach((el) => el.classList.add("is-visible"));
-    return;
-  }
+  // Nothing is hidden until we hide it, so with reduced motion or no observer
+  // there is simply nothing to do — the page is already complete.
+  if (REDUCED.matches || !("IntersectionObserver" in window)) return;
 
   const observer = new IntersectionObserver(
     (entries) => {
       for (const entry of entries) {
         if (!entry.isIntersecting) continue;
-        entry.target.classList.add("is-visible");
+        entry.target.classList.remove("reveal-pending");
         observer.unobserve(entry.target);
       }
     },
@@ -33,17 +32,13 @@ function initReveal(): void {
     });
   });
 
-  // Anything already on screen at load is not a "reveal" — it is just the page.
-  // Observing it means every navigation replays the whole above-the-fold
-  // animation, which reads as the layout assembling itself.
+  // Hide only what is below the fold. Anything already on screen stays exactly
+  // as the browser first painted it, so a first visit never shows a gap.
   const viewport = window.innerHeight || document.documentElement.clientHeight;
   targets.forEach((el) => {
     const box = el.getBoundingClientRect();
-    if (box.top < viewport && box.bottom > 0) {
-      el.style.setProperty("--reveal-delay", "0ms");
-      el.classList.add("reveal-instant", "is-visible");
-      return;
-    }
+    if (box.top < viewport && box.bottom > 0) return;
+    el.classList.add("reveal-pending");
     observer.observe(el);
   });
 }
