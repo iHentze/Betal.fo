@@ -317,3 +317,14 @@ body {
     navigation: none;
   }
 }
+
+/*
+ * The capsule's active pill slides between links on navigation. Slightly slower
+ * than the page fade so the movement is legible, and eased so it settles rather
+ * than stopping dead.
+ */
+::view-transition-old(nav-pill),
+::view-transition-new(nav-pill) {
+  animation-duration: 420ms;
+  animation-timing-function: var(--ease-out-expo);
+}

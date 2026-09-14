@@ -25,13 +25,24 @@ const path = Astro.url.pathname;
                 href={product.href}
                 aria-current={active ? "page" : undefined}
                 class:list={[
-                  "rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors duration-200",
-                  active
-                    ? "bg-white/[0.1] text-white shadow-[inset_0_1px_0_rgb(255_255_255/0.09)]"
-                    : "text-white/65 hover:text-white",
+                  "relative rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors duration-200",
+                  active ? "text-white" : "text-white/65 hover:text-white",
                 ]}
               >
-                {product.nav}
+                {/* The pill is its own element, carrying a view-transition-name.
+                    Only one link is ever active, so the name is unique per page
+                    and the browser interpolates it from its old position to its
+                    new one on navigation — it slides across the capsule. Keeping
+                    it separate from the label means only the background moves;
+                    the text is not stretched between two different words. */}
+                {active && (
+                  <span
+                    style="view-transition-name: nav-pill"
+                    class="absolute inset-0 rounded-full bg-white/[0.1] shadow-[inset_0_1px_0_rgb(255_255_255/0.09)]"
+                    aria-hidden="true"
+                  />
+                )}
+                <span class="relative">{product.nav}</span>
               </a>
             );
           })
