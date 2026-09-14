@@ -206,16 +206,28 @@ export const fo = {
     eyebrow: "Hví Betal",
     items: [
       {
+        title: "Gjaldsvindeyga í tínum litum",
+        text: "Litir, búmerki og snið eftir tínum vørumerki. Kundin fer ongantíð av tínari síðu.",
+      },
+      {
+        title: "Gjaldsleinki uttan nethandil",
+        text: "Send eina rokning við telduposti ella SMS og fá inn gjaldið samstundis.",
+      },
+      {
+        title: "Apple Pay og Google Pay",
+        text: "Kundin er liðugur upp á fá sekund, uttan at skriva eitt einasta tal.",
+      },
+      {
+        title: "Telefonin sum terminalur",
+        text: "Softpay ger iPhone ella Android til ein fullgildan nándgjaldsterminal. Eingin leiga.",
+      },
+      {
+        title: "Fult yvirlit í backoffice",
+        text: "Fylg hvørjum gjaldi, tak endurgjald við einum klikki og síggj avrokningina.",
+      },
+      {
         title: "Vit svara á føroyskum",
-        text: "Eitt telefonnummar og fólk, ið kenna tína loysn. Eingin bíðirøð. Einki sáttmálanummar.",
-      },
-      {
-        title: "Roynd tøkni",
-        text: "Vit byggja á kervi, ið avgreiða gjøld hvønn dag runt um Norðurlond.",
-      },
-      {
-        title: "Tú leigar ongan terminal",
-        text: "Telefonin er terminalurin, um tú vilt tað. Eingin bindandi leiga. Veksur virksemið, víðka vit.",
+        text: "Eitt telefonnummar og fólk, ið kenna tína loysn. Eingin bíðirøð.",
       },
     ],
   },
