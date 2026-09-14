@@ -1,0 +1,147 @@
+---
+/**
+ * Small line illustrations for the Hví Betal cards.
+ *
+ * Each one draws the mechanism the card claims rather than a generic symbol —
+ * the link card shows a link leaving a message, the backoffice card shows rows
+ * and a trend. Drawn on one 64x40 grid with one stroke weight so the six read
+ * as a set. Green marks the part that is "yours" or that just happened; the
+ * rest is muted so the card's heading still leads.
+ *
+ * The brand icons in public/brand are solid navy-on-green app marks, which
+ * suit the product cards; these are deliberately lighter so the two groups do
+ * not compete.
+ */
+
+import { methods, applePayBare } from "../content/methods";
+
+interface Props {
+  name: string;
+}
+
+const { name } = Astro.props;
+
+const MUTED = "rgba(255,255,255,0.32)";
+const googlePay = methods.find((m) => m.name === "Google Pay")!;
+const GREEN = "#7bd865";
+---
+
+<svg
+  viewBox="0 0 64 40"
+  width="112"
+  height="70"
+  fill="none"
+  stroke-width="1.6"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+  aria-hidden="true"
+  class="mb-5 h-auto w-28 overflow-visible"
+>
+  {
+    name === "window" && (
+      <g>
+        {/* Payment window with its own header colour and button */}
+        <rect x="6" y="5" width="44" height="30" rx="4" stroke={MUTED} />
+        <path d="M6 13h44" stroke={MUTED} />
+        <circle cx="11" cy="9" r="1.3" fill={GREEN} stroke="none" />
+        <path d="M12 20h20M12 25h13" stroke={MUTED} />
+        <rect x="12" y="28.5" width="17" height="4" rx="2" fill={GREEN} stroke="none" />
+        {/* Swatches: the colours are yours */}
+        <circle cx="56" cy="20" r="3" fill={GREEN} stroke="none" opacity="0.95" />
+        <circle cx="56" cy="27.5" r="3" stroke={MUTED} />
+      </g>
+    )
+  }
+
+  {
+    name === "link" && (
+      <g>
+        {/* A link leaves the message and lands with the customer */}
+        <path d="M3 8h24a3 3 0 0 1 3 3v10a3 3 0 0 1-3 3H14l-6 4.5V24H3a3 3 0 0 1-3-3V11a3 3 0 0 1 3-3Z" stroke={MUTED} />
+        <path d="M9 14h12M9 18.5h7" stroke={MUTED} />
+        {/* Chain link, drawn at a size this grid can actually hold */}
+        <g transform="translate(36 11) scale(0.62)">
+          <path d="M9.5 20.5a7 7 0 0 1 0-9.9l4.2-4.2a7 7 0 0 1 9.9 9.9l-2.1 2.1" stroke={GREEN} stroke-width="2.6" />
+          <path d="M20.5 15.5a7 7 0 0 1 0 9.9l-4.2 4.2a7 7 0 0 1-9.9-9.9l2.1-2.1" stroke={GREEN} stroke-width="2.6" />
+        </g>
+      </g>
+    )
+  }
+
+  {
+    name === "wallet" && (
+      <g>
+        {/* The marks carry this card, so they get the whole grid — no button
+            outlines shrinking them to illegibility. */}
+        <svg
+          x="0"
+          y="5"
+          width="36"
+          height="15.3"
+          viewBox={applePayBare.viewBox}
+          preserveAspectRatio="xMinYMid meet"
+          fill="rgba(255,255,255,0.88)"
+          stroke="none"
+        >
+          <path d={applePayBare.path} />
+        </svg>
+
+        <svg
+          x="0"
+          y="23"
+          width="36"
+          height="14.3"
+          viewBox={googlePay.viewBox}
+          preserveAspectRatio="xMinYMid meet"
+          fill="rgba(255,255,255,0.88)"
+          stroke="none"
+        >
+          <path d={googlePay.path} />
+        </svg>
+
+        <circle cx="52" cy="20" r="8.5" stroke={GREEN} />
+        <path d="m48.2 20.1 2.8 2.9 5-5.6" stroke={GREEN} />
+      </g>
+    )
+  }
+
+  {
+    name === "phone" && (
+      <g>
+        {/* Card tapped against the phone: the phone is the terminal */}
+        <rect x="8" y="4" width="23" height="32" rx="4" stroke={MUTED} />
+        <path d="M16.5 8.5h6" stroke={MUTED} />
+        <rect x="34" y="12" width="20" height="13" rx="2.5" stroke={MUTED} transform="rotate(-12 34 12)" />
+        <path d="M39.5 28.5c2.6-2.4 2.6-6.6 0-9" stroke={GREEN} />
+        <path d="M44.5 32c4.6-4.2 4.6-11.8 0-16" stroke={GREEN} opacity="0.6" />
+      </g>
+    )
+  }
+
+  {
+    name === "backoffice" && (
+      <g>
+        {/* Every payment in a row, with the day's trend above it */}
+        <path d="M5 14l7-6 6 4.5 7-8" stroke={GREEN} />
+        <circle cx="25" cy="4.5" r="1.7" fill={GREEN} stroke="none" />
+        <path d="M5 22h30M5 28h30M5 34h30" stroke={MUTED} />
+        <path d="M44 22h14M44 28h14M44 34h9" stroke={MUTED} />
+        <circle cx="39" cy="22" r="1.4" fill={GREEN} stroke="none" />
+        <circle cx="39" cy="28" r="1.4" stroke={MUTED} />
+        <circle cx="39" cy="34" r="1.4" stroke={MUTED} />
+      </g>
+    )
+  }
+
+  {
+    name === "support" && (
+      <g>
+        {/* You ask, a person answers — one number, no queue */}
+        <path d="M4 7h26a3 3 0 0 1 3 3v9a3 3 0 0 1-3 3H15l-6 4.5V22H4a3 3 0 0 1-3-3v-9a3 3 0 0 1 3-3Z" stroke={MUTED} />
+        <path d="M34 18h22a3 3 0 0 1 3 3v9a3 3 0 0 1-3 3H45l-6 4.5V33h-5a3 3 0 0 1-3-3v-9a3 3 0 0 1 3-3Z" stroke={GREEN} />
+        <circle cx="46.5" cy="24" r="2.6" stroke={GREEN} />
+        <path d="M41.5 30.5c1-2.6 3-3.9 5-3.9s4 1.3 5 3.9" stroke={GREEN} />
+      </g>
+    )
+  }
+</svg>

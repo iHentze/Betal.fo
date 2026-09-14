@@ -6,10 +6,16 @@
 @import "tailwindcss";
 
 @theme {
-  /* Official Betal brand palette, taken from the supplied logo artwork. */
-  --color-navy: #0e0032;
-  --color-navy-deep: #08001d;
-  --color-navy-soft: #170945;
+  /* Betal brand palette from the supplied logo artwork, with the navies lifted.
+     The artwork navy is #0e0032 — oklch(0.160 0.093 286). At that lightness, across
+     the large flat areas this page has, it reads as black rather than as navy: a dark
+     chromatic colour only shows its hue next to something lighter, and there is
+     nothing lighter beside it. The hue and chroma are the artwork's; only lightness
+     moves, so the brand colour is recognisable rather than replaced. Navy-deep stays
+     below navy so the footer still reads as the deeper band. */
+  --color-navy: #190d41; /* oklch(0.215 0.093 286) */
+  --color-navy-deep: #0f042d; /* oklch(0.165 0.078 288) */
+  --color-navy-soft: #231b4d; /* oklch(0.265 0.088 286) */
   --color-green: #7bd865;
   --color-green-bright: #93e57f;
   --color-mist: #98a8aa;
@@ -60,19 +66,33 @@ body {
  * Only hide elements once we know scripting is available, so a failed
  * or blocked bundle can never leave the page blank.
  * ---------------------------------------------------------------- */
-.js [data-reveal] {
-  opacity: 0;
-  transform: translateY(18px);
+/*
+ * Nothing is hidden by CSS alone. Hiding every [data-reveal] up front meant the
+ * browser painted a page with the hero missing and JS put it back a moment
+ * later, so a first visit looked broken and then assembled itself.
+ *
+ * Instead the script marks only the elements below the fold, before the reader
+ * can reach them. Anything on screen at load is never hidden at all, and if the
+ * script fails the page is simply static and complete.
+ *
+ * Deliberately not scoped to a .js class on <html>. ClientRouter copies the
+ * html attributes from the incoming document, which never carries a
+ * runtime-added class, so the scope was silently lost on every navigation and
+ * restored a frame later — the content flickered. The scope is unnecessary
+ * anyway: reveal-pending is only ever added by the script, so without scripting
+ * nothing is hidden.
+ */
+[data-reveal] {
   transition:
     opacity 0.7s var(--ease-out-expo),
     transform 0.7s var(--ease-out-expo);
   transition-delay: var(--reveal-delay, 0ms);
-  will-change: opacity, transform;
 }
 
-.js [data-reveal].is-visible {
-  opacity: 1;
-  transform: none;
+[data-reveal].reveal-pending {
+  opacity: 0;
+  transform: translateY(18px);
+  will-change: opacity, transform;
 }
 
 /* ---------------------------------------------------------------- *
@@ -231,7 +251,7 @@ body {
     animation-delay: 0ms !important;
   }
 
-  .js [data-reveal] {
+  [data-reveal] {
     opacity: 1;
     transform: none;
     transition: none;
@@ -242,6 +262,134 @@ body {
   }
 
   .faq-item::details-content {
+    transition: none;
+  }
+}
+
+/* ---------------------------------------------------------------- *
+ * Cross-document view transitions
+ *
+ * Every click was a bare document swap: the old page vanished, the new one
+ * arrived, and every reveal replayed. The browser now cross-fades between
+ * documents instead. Native CSS, no router and no client-side JS — browsers
+ * without support simply navigate as before.
+ *
+ * The header is named so it stays put across the swap rather than fading out
+ * and back in; it is identical on every page, and cross-fading it is what made
+ * navigation feel like a reload.
+ * ---------------------------------------------------------------- */
+@view-transition {
+  navigation: auto;
+}
+
+[data-header] {
+  view-transition-name: site-header;
+}
+
+/*
+ * The new page rises and fades in while the old one settles back, rather than a
+ * flat cross-fade. Short enough that it never delays the reader — the page is
+ * interactive before the animation finishes.
+ */
+::view-transition-old(root) {
+  animation: vt-out 200ms var(--ease-out-expo) both;
+}
+
+::view-transition-new(root) {
+  animation: vt-in 320ms var(--ease-out-expo) both;
+}
+
+@keyframes vt-out {
+  to {
+    opacity: 0;
+    transform: scale(0.992);
+  }
+}
+
+@keyframes vt-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+}
+
+/* The header is the fixed point: it must not move or fade. */
+::view-transition-old(site-header),
+::view-transition-new(site-header) {
+  animation: none;
+}
+
+/*
+ * Reduced motion is handled by neutralising the animations, NOT by a second
+ * @view-transition rule. That at-rule is only honoured at the top level of a
+ * stylesheet: nested in @media the condition is ignored but the rule still
+ * parses, so "navigation: none" won unconditionally and no transition ran for
+ * anyone. The transition still happens here, it simply does not move.
+ */
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(root),
+  ::view-transition-new(root),
+  ::view-transition-old(nav-pill),
+  ::view-transition-new(nav-pill) {
+    animation: none;
+  }
+}
+
+/*
+ * The capsule's active pill slides between links on navigation. Slightly slower
+ * than the page fade so the movement is legible, and eased so it settles rather
+ * than stopping dead.
+ */
+::view-transition-old(nav-pill),
+::view-transition-new(nav-pill) {
+  animation-duration: 420ms;
+  animation-timing-function: var(--ease-out-expo);
+}
+
+/* ---------------------------------------------------------------- *
+ * Mobile menu: a sheet that rises from the bottom.
+ *
+ * The thumb sits at the bottom of a phone, not at the top-right corner, so the
+ * menu opens next to the hand rather than as far from it as the screen allows.
+ *
+ * Closed is the default so the sheet is out of the way before any script runs,
+ * and inert while closed so its links are not tabbable behind the page.
+ * ---------------------------------------------------------------- */
+[data-menu-root] [data-menu-close] {
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity 0.3s var(--ease-out-expo),
+    visibility 0.3s;
+}
+
+[data-menu-root] #mobile-menu {
+  transform: translateY(101%);
+  visibility: hidden;
+  transition:
+    transform 0.42s var(--ease-out-expo),
+    visibility 0.42s;
+}
+
+[data-menu-root][data-open] [data-menu-close] {
+  opacity: 1;
+  visibility: visible;
+}
+
+[data-menu-root][data-open] #mobile-menu {
+  transform: none;
+  visibility: visible;
+}
+
+/* Holds the page still behind the sheet. */
+html[data-menu-locked],
+html[data-menu-locked] body {
+  overflow: hidden;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-menu-root] [data-menu-close],
+  [data-menu-root] #mobile-menu {
     transition: none;
   }
 }

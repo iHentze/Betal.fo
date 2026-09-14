@@ -5,7 +5,7 @@ export const products = [
     nav: "Á alnetinum",
     eyebrow: "Betal á alnetinum",
     title: "Gjaldsvindeyga til nethandil",
-    card: "Kort, Apple Pay og gjaldsleinki — á ePay.",
+    card: "Kort, Apple Pay og gjaldsleinki — á tínari síðu.",
     lead: "Kundin rindar á tínari síðu — við korti, Apple Pay ella Google Pay. Hevur tú ongan nethandil, sendir tú bert eitt gjaldsleinki.",
     audience: "Nethandlar, talgildar tænastur og øll, ið senda rokningar við gjaldsleinki.",
     tags: ["Gjaldsvindeyga", "Gjaldsleinki", "Apple Pay", "Google Pay"],
@@ -42,7 +42,7 @@ export const products = [
     nav: "Á staðnum",
     eyebrow: "Betal á staðnum",
     title: "Telefonin er terminalurin",
-    card: "Softpay á telefonini. Eingin eyka kassi, eingin tólaleiga.",
+    card: "Softpay á telefonini. Eingin eyka kassi, eingin leiga.",
     lead: "Softpay ger iPhone ella Android til ein fullgildan nándgjaldsterminal. Tak ímóti korti, Apple Pay og Google Pay — har tú stendur, uttan at leiga eitt tól.",
     audience: "Handlar, kaffistovur, handverkarar, tænastubilar, marknaðir og øll, ið selja uttan fastan kassa.",
     points: [
@@ -75,14 +75,14 @@ export const products = [
     href: "/hald/",
     nav: "Hald",
     eyebrow: "Betal hald",
-    title: "Vit røkja gjaldingarnar",
-    card: "Tillagað ePay-loysn. Vit reka tøknina — tú selur.",
-    lead: "Tá standardloysnin ikki røkkur. Vit byggja, samantvinna og reka eina tillagaða ePay-loysn — so tú sleppur undan at ringja runt, tá okkurt steðgar.",
+    title: "Tú selur — vit reka gjaldingarnar.",
+    card: "Ein loysn, bygd um tína sølu. Vit reka hana.",
+    lead: "Tá standardloysnin ikki røkkur. Vit byggja eina loysn um tína sølu og reka hana — so tú sleppur undan at ringja runt, tá okkurt steðgar.",
     audience: "Fyritøkur við haldaraskipan, serligum keypsgongdum ella tørvi á fullari umsiting av gjaldingum.",
     points: [
       {
-        title: "Bygt á ePay",
-        text: "Gjaldsvindeyga, haldgjøld, leinki og backoffice. Trygga kervið, sum føroysk vinna longu kennir.",
+        title: "Bygt um tína sølu",
+        text: "Haldgjøld, leinki og yvirlit — sett saman eftir tí, hvussu tú selur.",
       },
       {
         title: "Tillagað til tína skipan",
@@ -90,7 +90,7 @@ export const products = [
       },
       {
         title: "Vit taka okkum av rakstrinum",
-        text: "Uppseting, eftirlit, backoffice, avstemming og persónlig hjálp, um okkurt ivamál tekur seg upp.",
+        text: "Uppseting, eftirlit, backoffice, avrokning og persónlig hjálp, um okkurt ivamál tekur seg upp.",
       },
       {
         title: "Eitt samband",
@@ -100,39 +100,10 @@ export const products = [
     extra: {
       eyebrow: "Backoffice",
       title: "Vit halda eyga við — tú sært úrslitið.",
-      body: "Vit seta haldgjøld, reglur og integratiónir upp, so gjøldini verða drigin sjálvvirkandi eftir avtalu. Tú hevur altíð fult yvirlit yvir viðskiftafólk og inngjaldingar.",
+      body: "Vit seta haldgjøld, reglur og integratiónir upp, so gjøldini verða drigin sjálvvirkandi eftir avtalu. Tú hevur altíð fult yvirlit yvir kundar og inngjaldingar.",
       photo: "/brand/photo-desk.jpg",
       photoAlt: "Betal á telefon og telduborði",
     },
-  },
-  {
-    id: "lon",
-    href: "/lon/",
-    nav: "Løn",
-    eyebrow: "Betal løn",
-    title: "Løn til føroyska veruleikan",
-    card: "Vit byggja hetta nú. Sig okkum tín tørv.",
-    comingSoon: true,
-    lead: "Eitt lønarkervi, ið er sniðgivið til føroysk viðurskifti. Skipanin er undir menning — lat okkum hoyra tín tørv, so loysnin passar til tín gerandisdag.",
-    audience: "Føroyskar fyritøkur og bókhaldarar, ið vilja hava løn, skatt, TAKS og útgjald á einum stað — uttan ótíðarhóskandi handarbeiði.",
-    points: [
-      {
-        title: "Skraddaraseymað til Føroyar",
-        text: "Løn, TAKS, ALS, heilsutrygd og eftirløn eftir galdandi føroyskum reglum. Eingin útlendsk neyðloysn við føroyskum plástri.",
-      },
-      {
-        title: "Slepp undan óneyðugum Excel-arbeiði",
-        text: "Sjálvvirkandi útrokningar, færri mannagongdir og beinleiðis samantvinnan við banka og TAKS.",
-      },
-      {
-        title: "Alt savnað hjá Betal",
-        text: "Tá loysnin er klár, fært tú alt savnað á einum stað: gjaldsgátt, nándgjald, hald og løn við somu føroysku tænastu.",
-      },
-      {
-        title: "Ver við frá byrjan",
-        text: "Vit menna skipanina í løtuni. Tíni ynski og viðmerkingar eru við til at mynda endaligu loysnina.",
-      },
-    ],
   },
 ] as const;
 
@@ -146,31 +117,33 @@ export const fo = {
   meta: {
     title: "betal — gjaldsloysnir til føroyska vinnu",
     description:
-      "Gjaldsvindeyga til nethandil, Softpay á telefonini og tillagað ePay-hald. Føroyskt svar, tá tú tørvar okkum.",
+      "Gjaldsvindeyga til nethandil, Softpay á telefonini og tillagað hald. Føroyskt svar, tá tú tørvar okkum.",
   },
   nav: {
     home: "Heim",
     products: "Loysnir",
     contact: "Samband",
+    login: "Innrita",
     menu: "Valmynd",
     close: "Lat aftur",
   },
   home: {
-    eyebrow: "Føroyskar gjaldsloysnir",
-    title: "Gjald. Har tú selur.",
-    lead: "Tak ímóti korti, Apple Pay og Google Pay — á síðuni, við borðið ella har tú stendur. Vit seta tað upp. Og tá tað brennur á, svarar eitt føroyskt nummar.",
+    eyebrow: "Føroysk gjaldsloysn",
+    title: "Gjaldsloysn til títt virksemi.",
+    kicker: "Kom skjótt í gongd – Vit hjálpa tær",
+    lead: "Við gjaldsloysn frá betal kanst tú taka ímóti flest gjaldskortum, so sum VISA, MasterCard, Apple Pay, Google Pay og meira. Loysnin lýkur øll nútímans trygdarkrøv og stuðlar 3D-Secure gjaldingar.",
     primary: "Sí loysnir",
     secondary: "Skriva til okkum",
-    pills: ["Bygt á ePay og Softpay", "Føroysk tænasta", "Eingin bindandi tólaleiga"],
+    pills: ["Roynd og trygg tøkni", "Føroysk tænasta", "Eingin bindandi leiga"],
     productsEyebrow: "Loysnir",
-    productsTitle: "Á netinum. Í handlinum. Tillagað.",
+    productsTitle: "Á netinum, í handlinum og tillagað.",
     aboutEyebrow: "Um Betal",
     aboutTitle: "Vit svara, tá tað brennur á.",
     about:
       "Vit eru føroyingar, ið byggja gjaldsloysnir til føroyska vinnu. Vit kenna, hvussu tað er at standa í handlinum ein trongan fríggjadag, tá gjaldið ikki fer ígjøgnum. Tí svara vit, tá tú ringir — og tí sleppa vit ikki, fyrr enn tað virkar.",
     contrast:
-      "Eitt samband til innloysing, gátt og Softpay. Veksur virksemið, víðka vit. Minkar tað, minka vit.",
-    explore: "Kanna loysn",
+      "Eitt samband til innloysing, gjaldsloysn og Softpay. Veksur virksemið, víðka vit. Minkar tað, minka vit.",
+    explore: "Les meira",
     onlineTitle: "Eitt gjaldsvindeyga, ið er bygt til at selja.",
     onlineLead:
       "Apple Pay og Google Pay ovast. Sjálvvirkandi kortkanning. 3D Secure, ið bert steðgar, tá tað veruliga er neyðugt. Alt í tínum litum, á tínum navni.",
@@ -189,19 +162,23 @@ export const fo = {
       },
     ],
     moreAbout: "Les meira um",
-    ribbonLabel: "Gjaldsloysnir til føroyska vinnu",
-    ribbonTitle: "Eitt samband. Alt gjaldið.",
-    ribbonText: "Á alnetinum, á staðnum og tá tú vilt, at vit røkja tað.",
+    specs: [
+      { label: "Frá undirskrift til fyrsta gjald", value: "1–2 vikur" },
+      { label: "Útgjald", value: "Hvønn dag" },
+    ],
+    ribbonLabel: "Føroysk gjaldsloysn",
+    ribbonTitle: "Ger søluna smidligari",
+    ribbonText: "Gjaldsloysn til ein og hvønn tørv",
     backofficeEyebrow: "Backoffice",
-    backofficeTitle: "Øll gjøldini. Eitt yvirlit.",
+    backofficeTitle: "Øll gjøldini í einum yvirliti.",
     backofficeLead:
       "Fylg hvørjum gjaldi — frá góðkenning og 3D Secure til avrokning. Tak gjald, endurgjald ella strika beint úr yvirlitinum.",
-    backofficeTags: ["Beinleiðis yvirlit", "Endurgjald við einum klikki", "Avstemming", "API og webhooks"],
+    backofficeTags: ["Beinleiðis yvirlit", "Endurgjald við einum klikki", "Avrokning", "API og webhooks"],
     backofficeCta: "Sí hvussu vit røkja tað fyri teg",
     softpayLead:
       "Softpay ger iPhone ella Android til ein fullgildan nándgjaldsterminal. Eingin leiga, eingin eyka kassi — bert telefonin, tú longu hevur.",
     softpayCta: "Les meira um Softpay",
-    closingTitle: "Klár at taka ímóti gjaldi?",
+    closingTitle: "Ert tú til reiðar at selja?",
     closingLead:
       "Sig okkum, hvar tú selur. Vit koma aftur við eini loysn, ið passar — og fylgja tær, til tað virkar.",
     closingSecondary: "Sí allar loysnir",
@@ -210,21 +187,14 @@ export const fo = {
     label: "Tey brúka Betal",
   },
   steps: {
-    eyebrow: "Gongdin",
-    title: "Frá fyrsta práti til goldið gjald.",
+    eyebrow: "Tilgongdin",
+    title: "Frá byrjan til sølu",
+    // Plain strings, not title/text pairs: the steps are prose now, and a
+    // heading invented to sit above each one would be copy nobody wrote.
     items: [
-      {
-        title: "Tú sigur, hvar tú selur",
-        text: "Nethandil, handil, bilur, marknaður ella serlig skipan. Vit finna røttu loysnina saman.",
-      },
-      {
-        title: "Vit seta avtalu og tøkni upp",
-        text: "Innloysing, ePay, Softpay og samantvinnan við tína skipan. Tú sleppur undan at ringja runt.",
-      },
-      {
-        title: "Tú tekur ímóti gjaldi",
-        text: "Kendir gjaldshættir og føroysk hjálp, um okkurt ivamál tekur seg upp. Vit standa við.",
-      },
+      "Vit fáa greiði á hvat tær tørvar og bjóða tær tilsvarandi loysn.",
+      "Tú fært atgongd til okkara skipan, útfyllir neyðugu upplýsingarnar og skrivar undir við samleikanum. Eftir 1 til 2 vikur er gjaldsavtalan góðkend.",
+      "Vit tryggja at alt er sett saman og riggar soleiðis sum tú ynskir tað.",
     ],
   },
   methods: {
@@ -234,16 +204,34 @@ export const fo = {
     eyebrow: "Hví Betal",
     items: [
       {
-        title: "Vit svara á føroyskum",
-        text: "Eitt telefonnummar og fólk, ið kenna tína loysn. Eingin bíðirøð. Einki sáttmálanummar.",
+        icon: "window",
+        title: "Gjaldsvindeyga í tínum litum",
+        text: "Tryggja eina góða uppliving. Kundin fer ongantíð av tínari síðu, og vindeygað verður sniðgivið nágreiniliga eftir tínum vørumerki.",
       },
       {
-        title: "Roynd tøkni",
-        text: "Bygt á ePay og Softpay — kervi, ið avgreiða gjøld hvønn dag runt um Norðurlond.",
+        icon: "link",
+        title: "Gjaldsleinki uttan nethandil",
+        text: "Slepp undan bíðitíð og fakturum. Send eitt leinki við SMS ella telduposti, og fá peningin inn samstundis.",
       },
       {
-        title: "Eingin tólaleiga",
-        text: "Telefonin er terminalurin, um tú vilt tað. Eingin bindandi leiga. Veksur virksemið, víðka vit.",
+        icon: "wallet",
+        title: "Apple Pay og Google Pay",
+        text: "Kundin hevur avgreitt keypið innan fá sekund uttan at skriva eitt einasta tal inn.",
+      },
+      {
+        icon: "phone",
+        title: "Telefonin sum terminalur",
+        text: "Softpay ger tína iPhone ella Android til ein nándgjaldsterminal. Eingin dýrur terminalur, smidligt og einfalt.",
+      },
+      {
+        icon: "backoffice",
+        title: "Fult yvirlit í backoffice",
+        text: "Fylg hvørjum gjaldi frá byrjan til enda. Ger endurgjøld við einum klikki og fá eina greiða avrokning til bókhaldið.",
+      },
+      {
+        icon: "support",
+        title: "Føroysk hjálp",
+        text: "Ongar langar bíðiraðir hjá útlendskum veitarum. Tú fært fatur á einum føroyingi, sum altíð er til reiðar at hjálpa.",
       },
     ],
   },
@@ -253,19 +241,19 @@ export const fo = {
     items: [
       {
         q: "Tørvast mær V-tal fyri at koma í gongd?",
-        a: "Ja. Fyritøkan skal vera skrásett hjá TAKS við V-tali, áðrenn vit kunnu stovna innloysingaravtalu og seta gjaldsgátt ella Softpay upp.",
+        a: "Ja. Fyritøkan skal vera skrásett hjá TAKS við V-tali, áðrenn vit kunnu stovna innloysingaravtalu og seta gjaldsloysn ella Softpay upp.",
       },
       {
         q: "Eg havi longu eina aðra gjaldsloysn — er tað trupult at skifta?",
-        a: "Nei. Vit taka flytingina — frá gomlum terminali, nethandilsgátt ella app — so tú sleppur undan at ringja runt.",
+        a: "Nei. Vit taka flytingina — frá gomlum terminali, nethandilsloysn ella app — so tú sleppur undan at ringja runt.",
       },
       {
         q: "Hvat fái eg hjá Betal?",
-        a: "Á alnetinum eina sniðgivna ePay-gátt. Á staðnum tína egnu telefon við Softpay. Skal tað tillagast, røkja vit tøknina. Og tú fært eitt nummar, har tú fært svar á føroyskum.",
+        a: "Á alnetinum eina sniðgivna gjaldsloysn. Á staðnum tína egnu telefon við Softpay. Skal tað tillagast, røkja vit tøknina. Og tú fært eitt nummar, har tú fært svar á føroyskum.",
       },
       {
         q: "Hvussu leingi tekur tað at koma í gongd?",
-        a: "Tá upplýsingar eru á plássi og avtalurnar undirskrivaðar, kann ein vanlig gjaldsgátt ella Softpay vera klár upp á fáar dagar. Tillagað hald tekur longri, alt eftir samantvinnanini við tína skipan.",
+        a: "Tá upplýsingar eru á plássi og avtalurnar undirskrivaðar, kann ein vanlig gjaldsloysn ella Softpay vera klár upp á fáar dagar. Tillagað hald tekur longri, alt eftir samantvinnanini við tína skipan.",
       },
     ],
   },
@@ -279,7 +267,7 @@ export const fo = {
   audienceLabel: "Hóskar til",
   contact: {
     eyebrow: "Samband",
-    title: "Sig frá tínum tørvi. Vit seta tað upp.",
+    title: "Sig frá tínum tørvi — vit seta tað upp.",
     lead: "Greið frá, hvar tú selur, og hvat tú tørvar. Vit venda aftur á føroyskum og fylgja tær, til tað virkar.",
     direct: "Skriva beinleiðis",
     name: "Navn",
@@ -295,6 +283,9 @@ export const fo = {
     emailPlaceholder: "navn@fyritoka.fo",
     messagePlaceholder: "Greið stutt frá, hvar tú selur, og hvat tú tørvar.",
     submit: "Send boð",
+    sending: "Sendi…",
+    sent: "Takk. Vit hava fingið boðini og venda aftur á føroyskum.",
+    sendFailed: "Okkurt gekk skeivt. Royn aftur, ella skriva beinleiðis til okkum á hesari adressu.",
     mailtoHint: "Títt teldupostforrit letur upp, so tú kanst senda boðini.",
     required: "Vinarliga skriva navn, teldupost og boð.",
     invalidEmail: "Vinarliga skriva eina gildiga teldupostadressu.",
@@ -302,7 +293,7 @@ export const fo = {
   privacy: {
     eyebrow: "Privatlívspolitikkur",
     title: "Hvussu vit handfara tínar upplýsingar",
-    lead: "Vit taka vernd av tínum persónupplýsingum í fullum álvara. Tá tú hevur samband við okkum, brúka vit bert tínar upplýsingar til at svara tær og veita tænastu.",
+    lead: "Vit taka vernd av tínum persónsupplýsingum í fullum álvara. Tá tú hevur samband við okkum, brúka vit bert tínar upplýsingar til at svara tær og veita tænastu.",
     body: [
       "Upplýsingar sum navn, teldupostur, telefonnummar, fyritøka og innihald í boðum verða sendar beinleiðis til okkara teldupost. Vit goyma bert hesar upplýsingar so leingi, sum tað er neyðugt fyri at avgreiða tín fyrispurning.",
       "Vit selja ella lata ongantíð tínar upplýsingar víðari til triðjapartsfeløg, og vit brúka tær ikki til óbidna marknaðarføring.",
@@ -315,11 +306,11 @@ export const fo = {
     home: "Aftur á forsíðuna",
   },
   footer: {
-    tagline: "Tak ímóti gjaldi. Har tú selur.",
+    tagline: "Ein føroysk gjaldsloysn til tína fyritøku.",
     products: "Loysnir",
     legal: "Kunning",
     privacy: "Privatlív",
     contact: "Samband",
-    builtOn: "Bygt á ePay og Softpay",
+    builtOn: "Bygt á royndari tøkni",
   },
 };

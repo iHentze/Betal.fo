@@ -9,16 +9,15 @@ function initReveal(): void {
   const targets = document.querySelectorAll<HTMLElement>("[data-reveal]");
   if (targets.length === 0) return;
 
-  if (REDUCED.matches || !("IntersectionObserver" in window)) {
-    targets.forEach((el) => el.classList.add("is-visible"));
-    return;
-  }
+  // Nothing is hidden until we hide it, so with reduced motion or no observer
+  // there is simply nothing to do — the page is already complete.
+  if (REDUCED.matches || !("IntersectionObserver" in window)) return;
 
   const observer = new IntersectionObserver(
     (entries) => {
       for (const entry of entries) {
         if (!entry.isIntersecting) continue;
-        entry.target.classList.add("is-visible");
+        entry.target.classList.remove("reveal-pending");
         observer.unobserve(entry.target);
       }
     },
@@ -33,7 +32,41 @@ function initReveal(): void {
     });
   });
 
-  targets.forEach((el) => observer.observe(el));
+  // Hide only what is below the fold. Anything already on screen stays exactly
+  // as the browser first painted it, so a first visit never shows a gap.
+  const viewport = window.innerHeight || document.documentElement.clientHeight;
+  const hidden: HTMLElement[] = [];
+
+  targets.forEach((el) => {
+    const box = el.getBoundingClientRect();
+    if (box.top < viewport && box.bottom > 0) return;
+    hidden.push(el);
+  });
+
+  /*
+   * Going hidden must not animate — only the reveal should.
+   *
+   * Adding the class alone starts a 0.7s opacity transition from visible to
+   * hidden. On a client-side navigation that happens inside the view
+   * transition, where the browser leaves it stuck at currentTime 0: the element
+   * stays fully visible while marked pending, and then jumps when the observer
+   * removes the class. That was the flicker.
+   *
+   * Suppressing the transition while the class is applied makes the hidden
+   * state instant. One forced reflow for the whole batch commits it before the
+   * transition is restored, so the reveal still animates.
+   */
+  hidden.forEach((el) => {
+    el.style.transition = "none";
+    el.classList.add("reveal-pending");
+  });
+
+  void document.body.offsetHeight;
+
+  hidden.forEach((el) => {
+    el.style.transition = "";
+    observer.observe(el);
+  });
 }
 
 function initSpotlight(): void {
@@ -137,8 +170,30 @@ function init(): void {
   initCountUp();
 }
 
-if (document.readyState === "loading") {
-  document.addEventListener("DOMContentLoaded", init, { once: true });
-} else {
+/*
+ * Timing matters here more than anywhere else on the page.
+ *
+ * initReveal hides whatever is below the fold. On a client-side navigation
+ * astro:page-load fires after the new page has already painted, so the content
+ * appeared and was then hidden a frame later — a visible blink before it
+ * revealed again.
+ *
+ * astro:after-swap fires immediately after the DOM swap and before that paint,
+ * so the marking lands while the new page is still being composed. It does not
+ * fire on the very first load, which is what astro:page-load covers; the flag
+ * keeps a navigation from initialising twice.
+ */
+let handledBySwap = false;
+
+document.addEventListener("astro:after-swap", () => {
+  handledBySwap = true;
   init();
-}
+});
+
+document.addEventListener("astro:page-load", () => {
+  if (handledBySwap) {
+    handledBySwap = false;
+    return;
+  }
+  init();
+});

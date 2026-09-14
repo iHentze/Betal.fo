@@ -8,7 +8,6 @@ Softpay
 
 # Faroese loanwords and forms the upstream wordlist is missing
 appin
-avstemming
 haldaraskipan
 ikoni
 integratiónir
@@ -16,8 +15,11 @@ terminalurin
 
 # Page slugs
 privativ
+umbon
 
 # Code identifiers, tooling and technical terms
+stylesheet
+HSTS
 backoffice
 bento
 etal

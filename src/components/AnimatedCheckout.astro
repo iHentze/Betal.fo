@@ -267,9 +267,5 @@ const APPLE_GLYPH =
     document.querySelectorAll<HTMLElement>("[data-checkout]").forEach(run);
   }
 
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", boot, { once: true });
-  } else {
-    boot();
-  }
+  document.addEventListener("astro:page-load", boot);
 </script>
