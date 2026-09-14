@@ -29,14 +29,14 @@ const GREEN = "#7bd865";
 
 <svg
   viewBox="0 0 64 40"
-  width="72"
-  height="45"
+  width="112"
+  height="70"
   fill="none"
   stroke-width="1.6"
   stroke-linecap="round"
   stroke-linejoin="round"
   aria-hidden="true"
-  class="mb-5 h-auto w-[4.5rem] overflow-visible"
+  class="mb-5 h-auto w-28 overflow-visible"
 >
   {
     name === "window" && (
@@ -72,37 +72,36 @@ const GREEN = "#7bd865";
   {
     name === "wallet" && (
       <g>
-        {/* The two buttons the customer actually taps, and the result */}
-        <rect x="1" y="4" width="41" height="13" rx="3.2" stroke={MUTED} />
+        {/* The marks carry this card, so they get the whole grid — no button
+            outlines shrinking them to illegibility. */}
         <svg
-          x="8"
-          y="7"
-          width="27"
-          height="7"
+          x="0"
+          y="0"
+          width="36"
+          height="23"
           viewBox={applePay.viewBox}
-          preserveAspectRatio="xMidYMid meet"
-          fill="rgba(255,255,255,0.78)"
+          preserveAspectRatio="xMinYMid meet"
+          fill="rgba(255,255,255,0.88)"
           stroke="none"
         >
           <path d={applePay.path} />
         </svg>
 
-        <rect x="1" y="21" width="41" height="13" rx="3.2" stroke={MUTED} />
         <svg
-          x="8"
-          y="24"
-          width="27"
-          height="7"
+          x="0"
+          y="26"
+          width="36"
+          height="14"
           viewBox={googlePay.viewBox}
-          preserveAspectRatio="xMidYMid meet"
-          fill="rgba(255,255,255,0.78)"
+          preserveAspectRatio="xMinYMid meet"
+          fill="rgba(255,255,255,0.88)"
           stroke="none"
         >
           <path d={googlePay.path} />
         </svg>
 
-        <circle cx="54" cy="19" r="7.5" stroke={GREEN} />
-        <path d="m50.6 19.1 2.5 2.6 4.4-5" stroke={GREEN} />
+        <circle cx="52" cy="20" r="8.5" stroke={GREEN} />
+        <path d="m48.2 20.1 2.8 2.9 5-5.6" stroke={GREEN} />
       </g>
     )
   }
