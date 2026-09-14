@@ -345,3 +345,51 @@ body {
   animation-duration: 420ms;
   animation-timing-function: var(--ease-out-expo);
 }
+
+/* ---------------------------------------------------------------- *
+ * Mobile menu: a sheet that rises from the bottom.
+ *
+ * The thumb sits at the bottom of a phone, not at the top-right corner, so the
+ * menu opens next to the hand rather than as far from it as the screen allows.
+ *
+ * Closed is the default so the sheet is out of the way before any script runs,
+ * and inert while closed so its links are not tabbable behind the page.
+ * ---------------------------------------------------------------- */
+[data-menu-root] [data-menu-close] {
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity 0.3s var(--ease-out-expo),
+    visibility 0.3s;
+}
+
+[data-menu-root] #mobile-menu {
+  transform: translateY(101%);
+  visibility: hidden;
+  transition:
+    transform 0.42s var(--ease-out-expo),
+    visibility 0.42s;
+}
+
+[data-menu-root][data-open] [data-menu-close] {
+  opacity: 1;
+  visibility: visible;
+}
+
+[data-menu-root][data-open] #mobile-menu {
+  transform: none;
+  visibility: visible;
+}
+
+/* Holds the page still behind the sheet. */
+html[data-menu-locked],
+html[data-menu-locked] body {
+  overflow: hidden;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-menu-root] [data-menu-close],
+  [data-menu-root] #mobile-menu {
+    transition: none;
+  }
+}
