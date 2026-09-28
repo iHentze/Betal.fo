@@ -39,6 +39,24 @@
       main { padding: 12px 28px 40px; }
       h1 { margin: 8px 0 0; font-size: clamp(2rem, 4vw, 3.2rem); font-weight: 600; letter-spacing: -0.04em; }
       .lead { max-width: 38rem; margin: 10px 0 0; color: rgba(255, 255, 255, 0.72); line-height: 1.5; }
+      .plan-wrap {
+        margin-top: 22px;
+        max-width: 46rem;
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        padding: 14px;
+      }
+      .plan-wrap h2 { margin: 0 0 8px; font-size: 0.95rem; }
+      #plan {
+        margin: 0;
+        max-height: 220px;
+        overflow: auto;
+        white-space: pre-wrap;
+        font: inherit;
+        font-size: 0.86rem;
+        line-height: 1.45;
+        color: rgba(255, 255, 255, 0.86);
+      }
       .boards {
         display: grid;
         grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -201,6 +219,46 @@
     <main>
       <h1>Frá tilboð til opslag.</h1>
       <p class="lead">Vel eitt tilboð. Plakatið er longu gjørt. Teksturin er klárur til Facebook og Instagram.</p>
+      <section class="plan-wrap" aria-labelledby="plan-title">
+        <h2 id="plan-title">Ætlanin</h2>
+        <pre id="plan">Røkta tilboð
+
+Betal turns a product on sale into a finished post for Facebook and Instagram. The shop owner never opens a blank design tool. Canva is not the product. It can be an "open to tweak" later, for someone who wants to move a logo.
+
+What the owner sees
+
+1. Tilboð
+A list of what is on sale. Each row is the photo, the name, and both prices. The first version has no shop connection. "Nýtt tilboð" asks for a name, two prices, an end date, and a photo they already have.
+
+2. Plakat
+Three layouts of the same offer, in the shop's logo and colors. They choose a layout, not a new invention. Sizes:
+- Instagram feed, 4:5, 1080×1350
+- Facebook and Instagram square, 1:1, 1080×1080
+- Story, 9:16, 1080×1920
+
+The photo is theirs. The word TILBOÐ, the name, the old price, the new price, and how long the offer lasts are real text in the template. An image model must not paint the letters or the numbers.
+
+3. Opslag
+The poster sits in a phone frame, once as Instagram and once as Facebook. The caption is already written in Faroese and includes a Betal payment link.
+
+Example:
+Tilboð til fríggjadag. Lambalær, 179 kr í staðin fyri 249 kr. Keyp her: betal.fo/p/lambalaer
+
+The actions are "Kopiera tekst" and "Tak niður myndir". Posting straight into Meta waits.
+
+Why this is Betal
+Canva can make a picture. It does not know the offer, it does not write Faroese, and it does not attach a payment link. The post should sell through the link.
+
+Later
+Shopify can feed the list of offers. An AI background is only for when they have no photo, and the price still stays in the template.
+
+Not in the first version
+Direct publishing, scheduling, and a shop connection.</pre>
+        <div class="actions">
+          <button class="action primary" id="copy-plan" type="button">Kopiera ætlanina</button>
+        </div>
+        <p class="status" id="plan-status" role="status"></p>
+      </section>
       <div class="boards">
         <section class="board" aria-labelledby="step-list">
           <div class="step"><span class="num">1</span><h2 id="step-list">Tilboð</h2></div>
@@ -313,6 +371,34 @@
           note = "Her skrivar tú navn, báðar prísir, dagin og eina mynd.";
           render();
         }
+      });
+
+      async function copyText(text, statusEl, ok, fallback) {
+        let copied = false;
+        try {
+          await navigator.clipboard.writeText(text);
+          copied = true;
+        } catch {}
+        statusEl.textContent = copied ? ok : fallback;
+        if (!copied) {
+          const plan = document.querySelector("#plan");
+          if (statusEl.id === "plan-status" && plan) {
+            const range = document.createRange();
+            range.selectNodeContents(plan);
+            const selection = getSelection();
+            selection.removeAllRanges();
+            selection.addRange(range);
+          }
+        }
+      }
+
+      document.querySelector("#copy-plan").addEventListener("click", () => {
+        copyText(
+          document.querySelector("#plan").textContent,
+          document.querySelector("#plan-status"),
+          "Ætlanin er kopierað.",
+          "Ætlanin er vald. Kopiera hana nú.",
+        );
       });
 
       document.querySelector("#copy").addEventListener("click", async () => {

@@ -4,7 +4,7 @@ Betal turns a product on sale into a post the shop can put on Facebook and Insta
 
 The shop owner does not open Canva. They pick the offer, look at three posters, and copy a Faroese caption that already has a Betal payment link.
 
-Open `prototype/index.html` in a browser to click through the three screens: Tilboð, Plakat, Opslag.
+Open `prototype/index.html` in a browser to click through the three screens: Tilboð, Plakat, Opslag. **Kopiera ætlanina** copies the whole decision, so it can be pasted into another chat.
 
 ## What is fixed
 
