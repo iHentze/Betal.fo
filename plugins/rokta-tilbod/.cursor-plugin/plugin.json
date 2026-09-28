@@ -1,0 +1,7 @@
+{
+  "name": "rokta-tilbod",
+  "displayName": "Røkta tilboð",
+  "description": "Turns a Faroese shop's sale into finished Facebook and Instagram posts. The price is real text, the caption is Faroese, and the link is a Betal payment link.",
+  "version": "0.1.0",
+  "keywords": ["betal", "tilbod", "instagram", "facebook", "faroese"]
+}
