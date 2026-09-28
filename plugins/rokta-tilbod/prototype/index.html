@@ -1,0 +1,334 @@
+<!doctype html>
+<html lang="fo">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Røkta tilboð</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --navy: #0d0033;
+        --green: #7ad966;
+        --mist: #98a8aa;
+        --line: rgba(255, 255, 255, 0.12);
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        min-height: 100dvh;
+        font-family: Poppins, ui-sans-serif, system-ui, sans-serif;
+        background: var(--navy);
+        color: #fff;
+      }
+      header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 22px 28px 8px;
+      }
+      .brand { display: flex; align-items: center; gap: 10px; color: inherit; text-decoration: none; }
+      .brand svg { width: 28px; height: 28px; color: var(--green); }
+      .brand span { font-weight: 300; font-size: 1.4rem; letter-spacing: -0.03em; }
+      .eyebrow { margin: 0; font-size: 0.72rem; font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase; color: var(--green); }
+      main { padding: 12px 28px 40px; }
+      h1 { margin: 8px 0 0; font-size: clamp(2rem, 4vw, 3.2rem); font-weight: 600; letter-spacing: -0.04em; }
+      .lead { max-width: 38rem; margin: 10px 0 0; color: rgba(255, 255, 255, 0.72); line-height: 1.5; }
+      .boards {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 18px;
+        margin-top: 28px;
+      }
+      .board { min-width: 0; }
+      .step {
+        display: flex;
+        align-items: baseline;
+        gap: 8px;
+        margin-bottom: 10px;
+      }
+      .num {
+        display: grid;
+        place-items: center;
+        width: 22px;
+        height: 22px;
+        border-radius: 999px;
+        background: var(--green);
+        color: var(--navy);
+        font-size: 0.75rem;
+        font-weight: 700;
+      }
+      .step h2 { margin: 0; font-size: 1rem; font-weight: 600; }
+      .phone {
+        border: 1px solid var(--line);
+        border-radius: 28px;
+        background: #12083a;
+        min-height: 640px;
+        padding: 16px;
+        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.03);
+      }
+      .offer, .layout, .ghost {
+        width: 100%;
+        text-align: left;
+        color: inherit;
+        font: inherit;
+        cursor: pointer;
+      }
+      .offer, .ghost {
+        border: 1px solid var(--line);
+        background: transparent;
+        border-radius: 16px;
+      }
+      .offer { display: flex; gap: 12px; padding: 10px; margin-bottom: 10px; }
+      .offer[aria-pressed="true"] { border-color: var(--green); }
+      .thumb {
+        width: 64px;
+        height: 64px;
+        border-radius: 12px;
+        flex: none;
+        background:
+          linear-gradient(160deg, rgba(13, 0, 51, 0.15), rgba(13, 0, 51, 0.55)),
+          var(--photo, #5c3b46);
+      }
+      .offer strong, .poster-copy strong { display: block; font-weight: 600; }
+      .meta { color: var(--mist); font-size: 0.82rem; }
+      .was { text-decoration: line-through; margin-right: 6px; }
+      .now { color: var(--green); font-weight: 600; }
+      .ghost {
+        padding: 14px;
+        border-style: dashed;
+        color: rgba(255, 255, 255, 0.8);
+      }
+      .layouts { display: flex; gap: 8px; margin-bottom: 12px; }
+      .layout {
+        border: 1px solid var(--line);
+        background: transparent;
+        border-radius: 12px;
+        padding: 0;
+        overflow: hidden;
+      }
+      .layout[aria-pressed="true"] { border-color: var(--green); }
+      .mini { width: 72px; height: 72px; }
+      .poster {
+        position: relative;
+        overflow: hidden;
+        border-radius: 18px;
+        background: #1a103f;
+        aspect-ratio: 1;
+      }
+      .poster.feed { aspect-ratio: 4 / 5; }
+      .photo {
+        position: absolute;
+        inset: 0;
+        background:
+          linear-gradient(180deg, rgba(13, 0, 51, 0.05) 40%, rgba(13, 0, 51, 0.88)),
+          var(--photo, #5c3b46);
+      }
+      .poster-copy {
+        position: absolute;
+        left: 16px;
+        right: 16px;
+        bottom: 16px;
+      }
+      .kicker { font-size: 0.72rem; letter-spacing: 0.16em; font-weight: 700; color: var(--green); }
+      .prices { margin-top: 6px; font-size: 1.05rem; }
+      .until { margin-top: 4px; font-size: 0.8rem; color: rgba(255, 255, 255, 0.75); }
+      .mark {
+        position: absolute;
+        top: 14px;
+        right: 14px;
+        font-size: 0.8rem;
+        font-weight: 300;
+        opacity: 0.9;
+      }
+      .poster.sticker .photo { background: var(--photo, #5c3b46); }
+      .sticker-price {
+        position: absolute;
+        left: 14px;
+        right: 14px;
+        bottom: 14px;
+        background: var(--green);
+        color: var(--navy);
+        border-radius: 14px;
+        padding: 10px 12px;
+        font-weight: 700;
+      }
+      .sticker-name { display: block; font-size: 0.95rem; }
+      .sticker-price small { display: block; font-weight: 600; text-decoration: line-through; opacity: 0.7; }
+      .caption {
+        margin: 14px 0;
+        font-size: 0.92rem;
+        line-height: 1.45;
+        color: rgba(255, 255, 255, 0.86);
+      }
+      .actions { display: flex; flex-wrap: wrap; gap: 8px; }
+      button.action {
+        border: 0;
+        border-radius: 999px;
+        padding: 10px 14px;
+        font: inherit;
+        font-size: 0.85rem;
+        font-weight: 600;
+        cursor: pointer;
+      }
+      .primary { background: var(--green); color: var(--navy); }
+      .secondary { background: transparent; color: #fff; border: 1px solid var(--line) !important; }
+      .status { min-height: 1.2rem; margin: 10px 0 0; font-size: 0.8rem; color: var(--green); }
+      .channels { display: grid; gap: 10px; }
+      .channel { font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--mist); margin-bottom: 6px; }
+      @media (max-width: 980px) {
+        header, main { padding-left: 16px; padding-right: 16px; }
+        .boards { grid-template-columns: 1fr; }
+        .phone { min-height: 0; }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <a class="brand" href="/" aria-label="betal">
+        <svg viewBox="0 0 32 32" fill="currentColor" aria-hidden="true">
+          <path d="M11.2 5.2h6.1c4.4 0 7.3 2.5 7.3 6.3 0 2.4-1.3 4.3-3.4 5.3 2.6 1 4.2 3.1 4.2 5.8 0 4.2-3.2 6.9-8 6.9H11.2V5.2Zm4.4 8.9h1.6c1.9 0 3-1 3-2.5s-1.1-2.4-3-2.4h-1.6v4.9Zm0 8.4h2c2.1 0 3.4-1.1 3.4-2.8s-1.3-2.7-3.4-2.7h-2v5.5Z" />
+        </svg>
+        <span>betal</span>
+      </a>
+      <p class="eyebrow">Røkta tilboð</p>
+    </header>
+    <main>
+      <h1>Frá tilboð til opslag.</h1>
+      <p class="lead">Vel eitt tilboð. Plakatið er longu gjørt. Teksturin er klárur til Facebook og Instagram.</p>
+      <div class="boards">
+        <section class="board" aria-labelledby="step-list">
+          <div class="step"><span class="num">1</span><h2 id="step-list">Tilboð</h2></div>
+          <div class="phone" id="list"></div>
+        </section>
+        <section class="board" aria-labelledby="step-poster">
+          <div class="step"><span class="num">2</span><h2 id="step-poster">Plakat</h2></div>
+          <div class="phone">
+            <div class="layouts" id="layouts"></div>
+            <div id="poster"></div>
+          </div>
+        </section>
+        <section class="board" aria-labelledby="step-post">
+          <div class="step"><span class="num">3</span><h2 id="step-post">Opslag</h2></div>
+          <div class="phone">
+            <div class="channels">
+              <div>
+                <p class="channel">Instagram</p>
+                <div id="feed"></div>
+              </div>
+              <p class="caption" id="caption"></p>
+              <div class="actions">
+                <button class="action primary" id="copy" type="button">Kopiera tekst</button>
+                <button class="action secondary" id="save" type="button">Tak niður myndir</button>
+              </div>
+              <p class="status" id="status" role="status"></p>
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
+    <script>
+      const offers = [
+        {
+          id: "lamb",
+          name: "Lambalær",
+          was: "249 kr",
+          now: "179 kr",
+          until: "Til fríggjadag",
+          photo: "linear-gradient(145deg, #c4786a, #6a2e38 55%, #2a1020)",
+          caption: "Tilboð til fríggjadag. Lambalær, 179 kr í staðin fyri 249 kr. Keyp her: betal.fo/p/lambalaer",
+        },
+        {
+          id: "kaffi",
+          name: "Kaffi og kaka",
+          was: "85 kr",
+          now: "65 kr",
+          until: "Í dag",
+          photo: "linear-gradient(160deg, #e6d3b3, #8d5a3c 50%, #2c1810)",
+          caption: "Tilboð í dag. Kaffi og kaka, 65 kr í staðin fyri 85 kr. Keyp her: betal.fo/p/kaffi",
+        },
+      ];
+      const layouts = [
+        { id: "bar", label: "Tekstur" },
+        { id: "sticker", label: "Prís" },
+        { id: "feed", label: "Feed" },
+      ];
+      let offer = offers[0];
+      let layout = "bar";
+      let note = "";
+
+      const list = document.querySelector("#list");
+      const layoutsEl = document.querySelector("#layouts");
+      const poster = document.querySelector("#poster");
+      const feed = document.querySelector("#feed");
+      const caption = document.querySelector("#caption");
+      const status = document.querySelector("#status");
+
+      function posterHtml(item, kind) {
+        const klass = kind === "feed" ? "poster feed" : kind === "sticker" ? "poster sticker" : "poster";
+        const body = kind === "sticker"
+          ? `<div class="sticker-price"><span class="sticker-name">${item.name}</span><small>${item.was}</small>${item.now}</div>`
+          : `<div class="poster-copy"><span class="kicker">TILBOÐ</span><strong>${item.name}</strong><div class="prices"><span class="was">${item.was}</span><span class="now">${item.now}</span></div><div class="until">${item.until}</div></div>`;
+        return `<article class="${klass}" style="--photo:${item.photo}"><div class="photo"></div><span class="mark">betal</span>${body}</article>`;
+      }
+
+      function render() {
+        list.innerHTML = offers.map((item) => `
+          <button class="offer" type="button" data-id="${item.id}" aria-pressed="${item.id === offer.id}">
+            <span class="thumb" style="--photo:${item.photo}"></span>
+            <span>
+              <strong>${item.name}</strong>
+              <span class="meta"><span class="was">${item.was}</span><span class="now">${item.now}</span></span>
+              <span class="meta">${item.until}</span>
+            </span>
+          </button>`).join("") + `<button class="ghost" type="button" id="new">Nýtt tilboð</button><p class="status" id="list-status">${note}</p>`;
+        layoutsEl.innerHTML = layouts.map((item) => `
+          <button class="layout" type="button" data-layout="${item.id}" aria-pressed="${item.id === layout}" aria-label="${item.label}">
+            <span class="mini">${posterHtml(offer, item.id === "feed" ? "feed" : item.id)}</span>
+          </button>`).join("");
+        poster.innerHTML = posterHtml(offer, layout === "feed" ? "feed" : layout);
+        feed.innerHTML = posterHtml(offer, "feed");
+        caption.textContent = offer.caption;
+        status.textContent = "";
+      }
+
+      document.body.addEventListener("click", (event) => {
+        const offerButton = event.target.closest("[data-id]");
+        const layoutButton = event.target.closest("[data-layout]");
+        if (offerButton) {
+          offer = offers.find((item) => item.id === offerButton.dataset.id);
+          note = "";
+          render();
+        }
+        if (layoutButton) {
+          layout = layoutButton.dataset.layout;
+          render();
+        }
+        if (event.target.id === "new") {
+          note = "Her skrivar tú navn, báðar prísir, dagin og eina mynd.";
+          render();
+        }
+      });
+
+      document.querySelector("#copy").addEventListener("click", async () => {
+        let copied = false;
+        try {
+          await navigator.clipboard.writeText(offer.caption);
+          copied = true;
+        } catch {}
+        status.textContent = copied
+          ? "Teksturin er kopieraður."
+          : "Vel tekstin omanfyri og kopiera hann.";
+      });
+      document.querySelector("#save").addEventListener("click", () => {
+        status.textContent = "Feed, fýrakant og søga eru klár at taka niður.";
+      });
+      render();
+    </script>
+  </body>
+</html>
